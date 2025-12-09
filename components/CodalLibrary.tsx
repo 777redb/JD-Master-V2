@@ -1,0 +1,519 @@
+import React, { useState } from 'react';
+import { PHILIPPINE_CODALS, CODAL_CATEGORIES } from '../constants';
+import { generateGeneralLegalAdvice } from '../services/gemini';
+import { 
+  Search, 
+  ChevronRight, 
+  ChevronDown, 
+  Loader2, 
+  BookOpen, 
+  Settings, 
+  PanelLeftClose, 
+  PanelLeftOpen, 
+  Type, 
+  Minus, 
+  Plus,
+  X,
+  ZoomIn,
+  ZoomOut
+} from 'lucide-react';
+import { CodalNavigation } from '../types';
+
+interface NavItemProps {
+  item: CodalNavigation;
+  depth?: number;
+  expandedNodes: Record<string, boolean>;
+  activeSectionQuery: string | null;
+  onItemClick: (nav: CodalNavigation) => void;
+}
+
+const NavItem: React.FC<NavItemProps> = ({ item, depth = 0, expandedNodes, activeSectionQuery, onItemClick }) => {
+  const isExpanded = expandedNodes[item.title];
+  const hasChildren = item.children && item.children.length > 0;
+  const isActive = activeSectionQuery === item.query;
+
+  return (
+    <div className="select-none">
+      <button
+        onClick={() => onItemClick(item)}
+        className={`w-full text-left p-3 flex items-start gap-2 hover:bg-slate-50 transition-colors
+          ${isActive ? 'bg-amber-50 text-amber-900 border-r-2 border-amber-500' : 'text-slate-700'}
+          ${depth > 0 ? 'pl-' + (depth * 4 + 3) : ''}
+        `}
+        style={{ paddingLeft: `${depth * 1.5 + 0.75}rem` }}
+      >
+        {hasChildren ? (
+           <div className="mt-1">{isExpanded ? <ChevronDown size={14} className="text-slate-400"/> : <ChevronRight size={14} className="text-slate-400"/>}</div>
+        ) : (
+           <div className="mt-1"><div className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-amber-500' : 'bg-slate-300'}`}></div></div>
+        )}
+        
+        <div>
+          <div className={`text-sm font-serif ${hasChildren ? 'font-bold' : 'font-medium'}`}>{item.title}</div>
+          {item.subtitle && <div className="text-xs text-slate-500 font-sans mt-0.5">{item.subtitle}</div>}
+        </div>
+      </button>
+      
+      {hasChildren && isExpanded && (
+        <div className="border-l border-slate-100 ml-5">
+          {item.children!.map((child, idx) => (
+            <NavItem 
+              key={idx} 
+              item={child} 
+              depth={depth + 1} 
+              expandedNodes={expandedNodes}
+              activeSectionQuery={activeSectionQuery}
+              onItemClick={onItemClick}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+type Theme = 'light' | 'sepia' | 'dark' | 'night';
+type LegalFont = 'font-serif' | 'font-crimson' | 'font-sans' | 'font-mono';
+
+const THEMES: Record<Theme, { bg: string, text: string, ui: string, border: string, prose: string }> = {
+  light: { 
+    bg: 'bg-white', 
+    text: 'text-slate-900', 
+    ui: 'bg-white border-slate-200',
+    border: 'border-slate-200',
+    prose: 'prose-slate'
+  },
+  sepia: { 
+    bg: 'bg-[#f4ecd8]', 
+    text: 'text-[#5b4636]', 
+    ui: 'bg-[#eaddcf] border-[#d3c4b1]',
+    border: 'border-[#d3c4b1]',
+    prose: 'prose-amber'
+  },
+  dark: { 
+    bg: 'bg-[#1e293b]', 
+    text: 'text-slate-100', 
+    ui: 'bg-[#0f172a] border-slate-700',
+    border: 'border-slate-700',
+    prose: 'prose-invert'
+  },
+  night: { 
+    bg: 'bg-black', 
+    text: 'text-gray-300', 
+    ui: 'bg-gray-900 border-gray-800',
+    border: 'border-gray-800',
+    prose: 'prose-invert'
+  }
+};
+
+const FONT_OPTIONS: { label: string, value: LegalFont, desc: string }[] = [
+  { label: 'Merriweather', value: 'font-serif', desc: 'Standard Legal' },
+  { label: 'Crimson Pro', value: 'font-crimson', desc: 'Book / Classic' },
+  { label: 'Inter', value: 'font-sans', desc: 'Modern Clean' },
+  { label: 'JetBrains Mono', value: 'font-mono', desc: 'Technical' },
+];
+
+export const CodalLibrary: React.FC = () => {
+  const [selectedCodeId, setSelectedCodeId] = useState<string | null>(null);
+  const [activeSectionQuery, setActiveSectionQuery] = useState<string | null>(null);
+  const [expandedNodes, setExpandedNodes] = useState<Record<string, boolean>>({});
+  const [searchQuery, setSearchQuery] = useState('');
+  const [aiResponse, setAiResponse] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  
+  // Customization State
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [showAppearance, setShowAppearance] = useState(false);
+  const [theme, setTheme] = useState<Theme>('light');
+  const [zoomLevel, setZoomLevel] = useState(100); // Percentage
+  const [fontFamily, setFontFamily] = useState<LegalFont>('font-serif');
+
+  const selectedCode = PHILIPPINE_CODALS.find(c => c.id === selectedCodeId);
+  const currentTheme = THEMES[theme];
+
+  // Base font size is 16px, zoom adjusts this
+  const effectiveFontSize = Math.round(16 * (zoomLevel / 100));
+
+  const handleCodeSelect = (codeId: string) => {
+    setSelectedCodeId(codeId);
+    setAiResponse(null);
+    setActiveSectionQuery(null);
+    setSearchQuery('');
+    
+    // Auto-load intro if it has structure
+    const code = PHILIPPINE_CODALS.find(c => c.id === codeId);
+    if (code && !code.structure) {
+        // Fallback for codes without structure
+        loadGenericOverview(code);
+    }
+  };
+
+  const loadGenericOverview = async (code: any) => {
+      setIsLoading(true);
+      try {
+        const prompt = `Present a professional, textbook-style Table of Contents and Structural Overview for: ${code.name} (${code.description}).
+        Strict HTML Output Format:
+        1. <h3>${code.name}</h3>
+        2. <p><strong>Overview:</strong> [One paragraph summary of the law]</p>
+        3. <h4>Structure</h4>
+        4. <ul><li>[List major divisions]</li></ul>`;
+        const result = await generateGeneralLegalAdvice(prompt);
+        setAiResponse(result);
+      } catch (e) {
+        setAiResponse("<p>Error loading overview.</p>");
+      } finally {
+          setIsLoading(false);
+      }
+  }
+
+  const handleSectionClick = async (nav: CodalNavigation) => {
+    if (nav.children) {
+      setExpandedNodes(prev => ({...prev, [nav.title]: !prev[nav.title]}));
+      return;
+    }
+
+    setActiveSectionQuery(nav.query);
+    setIsLoading(true);
+    setAiResponse(null);
+    
+    try {
+      const prompt = `
+        Provide the full, authoritative text for: ${nav.query}.
+        
+        Formatting Requirements:
+        - Output strictly as HTML.
+        - Use <h3> for the Title/Chapter Heading.
+        - Use <h4> for Section/Article Headings (e.g., "Article 1156").
+        - Use <p> for the provision text.
+        - Include brief annotations or cross-references to related jurisprudence in <blockquote class="italic border-l-4 my-4 pl-4 opacity-80"> if necessary for context.
+        - Tables: Use <table>, <thead>, <tbody>, <th>, <td>.
+        - STRICTLY NO PARAPHRASING of the law itself.
+      `;
+      const result = await generateGeneralLegalAdvice(prompt);
+      setAiResponse(result);
+    } catch (err) {
+      setAiResponse("<p>Failed to retrieve provision text.</p>");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+
+    setIsLoading(true);
+    try {
+      const codeName = selectedCode ? selectedCode.name : "All Philippine Codals";
+      const prompt = `In the context of ${codeName}, explain or find provisions related to: "${searchQuery}". 
+           Cite specific Articles/Sections. Format as an authoritative legal text with HTML.`;
+      
+      const result = await generateGeneralLegalAdvice(prompt);
+      setAiResponse(result);
+    } catch (err) {
+      setAiResponse("<p>Error searching codals.</p>");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="h-full flex flex-col">
+      <div className="mb-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+           <h2 className="text-2xl font-serif font-bold text-slate-900 flex items-center gap-2">
+            <BookOpen className="text-amber-600" />
+            Codal Library
+          </h2>
+          <p className="text-slate-500 text-sm">Official Philippine Statutes & Codes</p>
+        </div>
+        
+        <form onSubmit={handleSearch} className="relative w-full md:w-96">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={selectedCode 
+                ? `Search within ${selectedCode.name}...` 
+                : "Search all laws..."}
+              className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm font-serif"
+            />
+            <Search className="absolute left-3 top-3 text-slate-400" size={16} />
+        </form>
+      </div>
+
+      <div className="flex-1 flex flex-row gap-0 min-h-0 bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm relative">
+        
+        {/* Left Sidebar: Navigation Tree */}
+        <div className={`
+          border-r border-slate-200 bg-white flex flex-col h-full transition-all duration-300 ease-in-out
+          ${isSidebarOpen ? 'w-full lg:w-80 translate-x-0' : 'w-0 -translate-x-full opacity-0 overflow-hidden absolute lg:relative'}
+        `}>
+          <div className="p-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+             <select 
+               className="w-full p-2 bg-white border border-slate-300 rounded-lg text-sm font-bold text-slate-700 focus:ring-2 focus:ring-amber-500 outline-none"
+               value={selectedCodeId || ''}
+               onChange={(e) => handleCodeSelect(e.target.value)}
+             >
+               <option value="">-- Select a Law --</option>
+               {CODAL_CATEGORIES.map(category => {
+                 const laws = PHILIPPINE_CODALS.filter(c => c.category === category);
+                 if (laws.length === 0) return null;
+                 
+                 const hasSubcategories = laws.some(l => l.subcategory);
+                 if (!hasSubcategories) {
+                    return (
+                       <optgroup label={category} key={category} className="font-serif font-bold text-slate-900">
+                         {laws.map(c => (
+                           <option key={c.id} value={c.id} className="font-sans font-normal text-slate-700">{c.name}</option>
+                         ))}
+                       </optgroup>
+                    );
+                 }
+                 const grouped: Record<string, typeof laws> = {};
+                 const noSub: typeof laws = [];
+                 laws.forEach(l => {
+                    if (l.subcategory) {
+                        if (!grouped[l.subcategory]) grouped[l.subcategory] = [];
+                        grouped[l.subcategory].push(l);
+                    } else {
+                        noSub.push(l);
+                    }
+                 });
+                 return (
+                    <optgroup label={category} key={category} className="font-serif font-bold text-slate-900">
+                       {noSub.map(c => (
+                           <option key={c.id} value={c.id} className="font-sans font-normal text-slate-700">{c.name}</option>
+                       ))}
+                       {Object.keys(grouped).map(sub => (
+                           <React.Fragment key={sub}>
+                               <option disabled className="font-bold text-slate-400 bg-slate-50">── {sub} ──</option>
+                               {grouped[sub].map(c => (
+                                   <option key={c.id} value={c.id} className="font-sans font-normal text-slate-700 pl-4">{c.name}</option>
+                               ))}
+                           </React.Fragment>
+                       ))}
+                    </optgroup>
+                 );
+               })}
+             </select>
+          </div>
+          
+          <div className="flex-1 overflow-y-auto w-full">
+            {selectedCode ? (
+              selectedCode.structure ? (
+                 <div className="py-2 w-80"> 
+                    {selectedCode.structure.map((item, idx) => (
+                      <NavItem 
+                        key={idx} 
+                        item={item} 
+                        expandedNodes={expandedNodes}
+                        activeSectionQuery={activeSectionQuery}
+                        onItemClick={handleSectionClick}
+                      />
+                    ))}
+                 </div>
+              ) : (
+                <div className="p-6 text-center text-slate-400 text-sm italic w-80">
+                   Structure navigation not available for this code. Use search or view overview.
+                </div>
+              )
+            ) : (
+               <div className="p-6 text-center w-80">
+                  <BookOpen size={48} className="mx-auto text-slate-300 mb-4" />
+                  <p className="text-slate-500 font-serif text-sm">Select a law from the dropdown to browse its contents.</p>
+               </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right Panel: Content Reader */}
+        <div className={`flex-1 flex flex-col h-full transition-colors duration-300 relative ${currentTheme.bg}`}>
+           
+           {/* Reader Toolbar */}
+           <div className={`px-6 py-3 border-b flex justify-between items-center z-20 ${currentTheme.ui}`}>
+              <div className="flex items-center gap-2">
+                 <button 
+                   onClick={() => setIsSidebarOpen(!isSidebarOpen)} 
+                   className={`p-2 rounded-lg hover:bg-black/5 transition-colors ${currentTheme.text}`}
+                   title={isSidebarOpen ? "Collapse Sidebar" : "Expand Sidebar"}
+                 >
+                   {isSidebarOpen ? <PanelLeftClose size={20} /> : <PanelLeftOpen size={20} />}
+                 </button>
+                 {!isSidebarOpen && selectedCode && (
+                    <span className={`text-sm font-bold font-serif ml-2 ${currentTheme.text}`}>{selectedCode.name}</span>
+                 )}
+              </div>
+              
+              <div className="relative">
+                <button 
+                  onClick={() => setShowAppearance(!showAppearance)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium hover:bg-black/5 transition-colors ${currentTheme.text}`}
+                >
+                  <Settings size={18} />
+                  <span className="hidden sm:inline">Reader Settings</span>
+                </button>
+
+                {/* Settings Popover */}
+                {showAppearance && (
+                  <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-xl shadow-xl border border-slate-200 p-5 z-50 animate-in fade-in slide-in-from-top-2">
+                    <div className="flex justify-between items-center mb-5">
+                      <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Appearance</span>
+                      <button onClick={() => setShowAppearance(false)} className="text-slate-400 hover:text-slate-600"><X size={16}/></button>
+                    </div>
+
+                    {/* Zoom Level */}
+                    <div className="mb-5 pb-5 border-b border-slate-100">
+                      <div className="flex items-center justify-between mb-2">
+                         <span className="text-sm font-medium text-slate-700">Zoom</span>
+                         <span className="text-xs text-slate-500 font-mono">{zoomLevel}%</span>
+                      </div>
+                      <div className="flex items-center gap-3 bg-slate-100 p-1.5 rounded-lg">
+                        <button onClick={() => setZoomLevel(Math.max(75, zoomLevel - 10))} className="p-2 flex-1 flex justify-center hover:bg-white rounded-md transition-colors" title="Zoom Out"><ZoomOut size={16} className="text-slate-600"/></button>
+                        <button onClick={() => setZoomLevel(Math.min(200, zoomLevel + 10))} className="p-2 flex-1 flex justify-center hover:bg-white rounded-md transition-colors" title="Zoom In"><ZoomIn size={16} className="text-slate-600"/></button>
+                      </div>
+                    </div>
+
+                    {/* Font Family */}
+                    <div className="mb-5 pb-5 border-b border-slate-100">
+                       <span className="text-sm font-medium text-slate-700 block mb-2">Typeface</span>
+                       <div className="grid grid-cols-2 gap-2">
+                          {FONT_OPTIONS.map(font => (
+                            <button
+                              key={font.value}
+                              onClick={() => setFontFamily(font.value)}
+                              className={`p-3 text-left border rounded-lg transition-all
+                                ${fontFamily === font.value 
+                                  ? 'bg-amber-50 border-amber-500 ring-1 ring-amber-500' 
+                                  : 'bg-white border-slate-200 hover:border-slate-300'}`}
+                            >
+                              <span className={`block text-sm font-medium text-slate-900 ${font.value}`}>{font.label}</span>
+                              <span className="block text-[10px] text-slate-400">{font.desc}</span>
+                            </button>
+                          ))}
+                       </div>
+                    </div>
+
+                    {/* Theme */}
+                    <div>
+                       <span className="text-sm font-medium text-slate-700 block mb-2">Theme</span>
+                       <div className="flex gap-3">
+                          <button onClick={() => setTheme('light')} className={`flex-1 h-12 rounded-lg bg-white border-2 flex items-center justify-center transition-all ${theme === 'light' ? 'border-amber-500 ring-1 ring-amber-500' : 'border-slate-200'}`} title="Light"><div className="text-slate-900 font-serif text-lg">Aa</div></button>
+                          <button onClick={() => setTheme('sepia')} className={`flex-1 h-12 rounded-lg bg-[#f4ecd8] border-2 flex items-center justify-center transition-all ${theme === 'sepia' ? 'border-amber-500 ring-1 ring-amber-500' : 'border-[#d3c4b1]'}`} title="Sepia"><div className="text-[#5b4636] font-serif text-lg">Aa</div></button>
+                          <button onClick={() => setTheme('dark')} className={`flex-1 h-12 rounded-lg bg-slate-800 border-2 flex items-center justify-center transition-all ${theme === 'dark' ? 'border-amber-500 ring-1 ring-amber-500' : 'border-slate-700'}`} title="Dark"><div className="text-slate-100 font-serif text-lg">Aa</div></button>
+                          <button onClick={() => setTheme('night')} className={`flex-1 h-12 rounded-lg bg-black border-2 flex items-center justify-center transition-all ${theme === 'night' ? 'border-amber-500 ring-1 ring-amber-500' : 'border-gray-800'}`} title="Night"><div className="text-gray-300 font-serif text-lg">Aa</div></button>
+                       </div>
+                    </div>
+
+                  </div>
+                )}
+              </div>
+           </div>
+
+           {/* Content */}
+           <div className={`flex-1 overflow-y-auto p-6 md:p-12 scroll-smooth ${currentTheme.bg}`}>
+              {isLoading && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/50 z-10 backdrop-blur-sm">
+                    <Loader2 className="animate-spin text-amber-600 mb-4" size={40} />
+                    <p className="font-serif text-slate-600 animate-pulse font-medium">Retrieving provisions...</p>
+                  </div>
+              )}
+
+              {aiResponse ? (
+                 <div 
+                   className={`max-w-4xl mx-auto prose prose-lg ${currentTheme.prose} ${fontFamily}
+                      prose-h3:text-inherit prose-h3:font-bold prose-h3:text-2xl prose-h3:text-center prose-h3:mb-8
+                      prose-h4:text-inherit prose-h4:font-bold prose-h4:text-lg prose-h4:mt-8 prose-h4:border-b prose-h4:pb-2 ${theme === 'light' ? 'prose-h4:border-slate-200' : 'prose-h4:border-white/10'}
+                      prose-p:text-inherit prose-p:leading-loose prose-p:text-justify
+                      prose-blockquote:not-italic prose-blockquote:text-inherit
+                      prose-table:w-full prose-table:border-collapse prose-table:border prose-table:table-auto prose-table:my-8
+                      prose-thead:bg-black/5
+                      prose-th:border prose-th:p-4 prose-th:text-left prose-th:font-bold prose-th:text-inherit prose-th:opacity-100
+                      prose-td:border prose-td:p-4 prose-td:align-top prose-td:text-inherit prose-td:opacity-100
+                   `}
+                   style={{ fontSize: `${effectiveFontSize}px`, 
+                            '--tw-prose-body': 'inherit',
+                            '--tw-prose-headings': 'inherit',
+                            '--tw-prose-td-borders': theme === 'light' ? '#e2e8f0' : '#475569',
+                            '--tw-prose-th-borders': theme === 'light' ? '#e2e8f0' : '#475569',
+                          } as React.CSSProperties}
+                 >
+                    <div className="overflow-x-auto rounded-lg">
+                      <div dangerouslySetInnerHTML={{ __html: aiResponse }} />
+                    </div>
+                    <div className="mt-12 pt-8 border-t border-white/10 flex justify-center opacity-50">
+                       <p className="text-xs uppercase tracking-widest">End of Section</p>
+                    </div>
+                 </div>
+              ) : selectedCode && selectedCode.structure ? (
+                  <div className={`max-w-5xl mx-auto shadow-sm border p-10 lg:p-16 min-h-full ${currentTheme.ui}`}>
+                    {/* Textbook Header */}
+                    <div className={`text-center border-b-2 pb-8 mb-12 ${theme === 'light' ? 'border-slate-900' : 'border-current'}`}>
+                        <div className="text-xs font-bold opacity-60 uppercase tracking-[0.2em] mb-4">Philippine Codal Library</div>
+                        <h1 className={`font-bold text-3xl md:text-5xl mb-6 tracking-tight leading-tight ${fontFamily} ${currentTheme.text}`}>{selectedCode.name}</h1>
+                        <p className={`text-lg md:text-xl italic font-medium opacity-80 ${fontFamily} ${currentTheme.text}`}>{selectedCode.description}</p>
+                    </div>
+                    
+                    {/* Compact Textbook TOC */}
+                    <div className="columns-1 md:columns-2 gap-x-16 space-y-0">
+                        {selectedCode.structure.map((item, idx) => (
+                            <div key={idx} className="break-inside-avoid mb-8 group">
+                                <div 
+                                    className="cursor-pointer"
+                                    onClick={() => handleSectionClick(item)}
+                                >
+                                    <h4 className={`font-bold text-lg border-b pb-1 mb-2 inline-block w-full ${fontFamily} ${currentTheme.text} border-current opacity-90 group-hover:opacity-100 group-hover:text-amber-600`}>
+                                        {item.title}
+                                    </h4>
+                                    {item.subtitle && (
+                                        <p className={`text-sm italic mb-3 pl-1 opacity-70 ${fontFamily} ${currentTheme.text}`}>
+                                            {item.subtitle}
+                                        </p>
+                                    )}
+                                </div>
+                                
+                                {item.children && (
+                                    <ul className="space-y-1.5 pl-1">
+                                        {item.children.map((child, cIdx) => (
+                                            <li 
+                                                key={cIdx}
+                                                onClick={(e) => { e.stopPropagation(); handleSectionClick(child); }}
+                                                className={`text-sm cursor-pointer flex items-baseline leading-tight group/child hover:text-amber-600 ${fontFamily} ${currentTheme.text} opacity-80`}
+                                            >
+                                                <span className="font-bold text-xs opacity-50 uppercase tracking-wider shrink-0 w-16 text-right mr-3">{child.title}</span>
+                                                <span className="border-b border-transparent group-hover/child:border-current transition-all">{child.subtitle}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="mt-16 pt-8 border-t border-white/20 text-center opacity-60">
+                        <p className={`text-xs italic ${fontFamily} ${currentTheme.text}`}>
+                            Select any section above to open the full legal text with AI annotations.
+                        </p>
+                    </div>
+                  </div>
+              ) : (
+                !isLoading && (
+                  <div className="h-full flex flex-col items-center justify-center text-slate-400 opacity-60">
+                    <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-6 border ${currentTheme.border} ${currentTheme.bg}`}>
+                      <BookOpen size={32} className={currentTheme.text} />
+                    </div>
+                    {selectedCode ? (
+                       <p className={`text-lg ${fontFamily} ${currentTheme.text}`}>Select a section from the index to read.</p>
+                    ) : (
+                       <p className={`text-lg ${fontFamily} ${currentTheme.text}`}>Open a law to begin studying.</p>
+                    )}
+                  </div>
+                )
+              )}
+           </div>
+        </div>
+
+      </div>
+    </div>
+  );
+};
