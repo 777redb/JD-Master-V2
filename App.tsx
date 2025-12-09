@@ -78,47 +78,51 @@ const LegalNews = () => {
 
   return (
     <div className="mt-8 pt-8 border-t border-slate-200">
-      <div className="mb-6">
-        <h2 className="text-xl font-serif font-bold text-slate-900 flex items-center gap-2">
-            <Globe className="text-amber-600" size={24}/> LegalPH News & Resources
-        </h2>
-        <p className="text-sm text-slate-500 mt-1">Direct access to official portals and latest updates.</p>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
         
-        {/* Column 1: Trusted Sources (Compact List) */}
-        <div>
-           <span className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 block">Official Portals</span>
-           <div className="grid grid-cols-1 gap-3">
-            {sources.map((source, idx) => (
-               <a 
-                 key={idx}
-                 href={source.url}
-                 target="_blank" 
-                 rel="noopener noreferrer"
-                 className="group flex items-center gap-4 p-3 rounded-xl border border-slate-200 hover:border-amber-300 bg-white hover:bg-amber-50/30 transition-all shadow-sm hover:shadow-md"
-               >
-                  <div className={`p-2.5 rounded-lg shrink-0 ${source.color} group-hover:scale-105 transition-transform`}>
-                     <source.icon size={20} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                     <div className="flex items-center gap-2">
-                        <h3 className="font-bold text-sm text-slate-900 truncate group-hover:text-amber-700 transition-colors">{source.name}</h3>
-                        <ExternalLink size={12} className="text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-                     </div>
-                     <p className="text-xs text-slate-500 truncate group-hover:text-slate-600">{source.desc}</p>
-                  </div>
-                  <div className="text-slate-300 group-hover:text-amber-500 -translate-x-2 group-hover:translate-x-0 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                      <ArrowRight size={16} />
-                  </div>
-               </a>
-            ))}
-           </div>
+        {/* LEFT COLUMN: Header & Official Portals */}
+        <div className="flex flex-col gap-8 h-full">
+            {/* Header Section (Moved to Left Column) */}
+            <div>
+                <h2 className="text-xl font-serif font-bold text-slate-900 flex items-center gap-2">
+                    <Globe className="text-amber-600" size={24}/> LegalPH News & Resources
+                </h2>
+                <p className="text-sm text-slate-500 mt-1">Direct access to official portals and latest updates.</p>
+            </div>
+
+            {/* Official Portals List */}
+            <div className="flex-1">
+               <span className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 block">Official Portals</span>
+               <div className="grid grid-cols-1 gap-3">
+                {sources.map((source, idx) => (
+                   <a 
+                     key={idx}
+                     href={source.url}
+                     target="_blank" 
+                     rel="noopener noreferrer"
+                     className="group flex items-center gap-4 p-4 rounded-xl border border-slate-200 hover:border-amber-300 bg-white hover:bg-amber-50/30 transition-all shadow-sm hover:shadow-md"
+                   >
+                      <div className={`p-2.5 rounded-lg shrink-0 ${source.color} group-hover:scale-105 transition-transform`}>
+                         <source.icon size={20} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                         <div className="flex items-center gap-2">
+                            <h3 className="font-bold text-sm text-slate-900 truncate group-hover:text-amber-700 transition-colors">{source.name}</h3>
+                            <ExternalLink size={12} className="text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                         </div>
+                         <p className="text-xs text-slate-500 truncate group-hover:text-slate-600">{source.desc}</p>
+                      </div>
+                      <div className="text-slate-300 group-hover:text-amber-500 -translate-x-2 group-hover:translate-x-0 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                          <ArrowRight size={16} />
+                      </div>
+                   </a>
+                ))}
+               </div>
+            </div>
         </div>
 
-        {/* Column 2: Live Updates Feed */}
-        <div className="flex flex-col h-full">
+        {/* RIGHT COLUMN: Latest Highlights (Full Height) */}
+        <div className="flex flex-col h-full min-h-[500px]">
            <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Latest Highlights</span>
               <button 
@@ -131,10 +135,10 @@ const LegalNews = () => {
               </button>
            </div>
            
-           <div className="flex-1 bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex flex-col max-h-[340px]">
+           <div className="flex-1 bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col h-full">
                <div className="flex-1 overflow-y-auto scroll-smooth pr-2">
                   {loading ? (
-                     <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-2 py-8">
+                     <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-2 py-12">
                         <RefreshCw className="animate-spin text-amber-500" size={24} />
                         <span className="text-xs font-medium">Fetching updates from SC & Gazette...</span>
                      </div>
@@ -143,14 +147,14 @@ const LegalNews = () => {
                         <div dangerouslySetInnerHTML={{ __html: news }} />
                      </div>
                   ) : (
-                     <div className="text-center text-slate-400 py-12 flex flex-col items-center gap-2">
+                     <div className="text-center text-slate-400 py-20 flex flex-col items-center gap-2">
                         <Globe size={32} className="opacity-20" />
                         <span className="text-xs">Click refresh to check for updates.</span>
                      </div>
                   )}
                </div>
                
-               <div className="mt-4 pt-3 border-t border-slate-50 flex justify-between items-center">
+               <div className="mt-4 pt-4 border-t border-slate-50 flex justify-between items-center">
                  <span className="text-[10px] text-slate-400 italic">Powered by Google Search Grounding</span>
                  <span className="text-[10px] font-bold text-amber-600/80 bg-amber-50 px-2 py-0.5 rounded-full">LIVE</span>
                </div>
