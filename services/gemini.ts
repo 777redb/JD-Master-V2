@@ -68,9 +68,11 @@ export const fetchLegalNews = async (): Promise<string> => {
     Format the output as a raw HTML list (<ul>) with the following classes:
     - <ul> class="space-y-4"
     - <li> class="pb-4 border-b border-slate-100 last:border-0"
-    - Headline: <div class="font-bold text-slate-800 text-sm mb-1 group-hover:text-amber-600 transition-colors">[Headline]</div>
-    - Snippet: <div class="text-xs text-slate-600 leading-relaxed line-clamp-2">[Brief Summary]</div>
-    - Source/Date: <div class="text-[10px] text-amber-600 font-bold mt-2 uppercase tracking-wide flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> [Source Domain] • [Date]</div>
+    - Wrap the content in an anchor tag pointing to the source URL: <a href="[Source Link]" target="_blank" rel="noopener noreferrer" class="block group">
+      - Headline: <div class="font-bold text-slate-800 text-sm mb-1 group-hover:text-amber-600 transition-colors">[Headline]</div>
+      - Snippet: <div class="text-xs text-slate-600 leading-relaxed line-clamp-2">[Brief Summary]</div>
+      - Source/Date: <div class="text-[10px] text-amber-600 font-bold mt-2 uppercase tracking-wide flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> [Source Domain] • [Date]</div>
+    - </a>
     
     Do not add any other text. Just the <ul>.
   `;
