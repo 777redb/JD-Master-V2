@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { CodalLibrary } from './components/CodalLibrary';
 import { CaseDigest } from './components/CaseDigest';
@@ -8,7 +8,7 @@ import { LawReview } from './components/LawReview';
 import { Jurisprudence } from './components/Jurisprudence';
 import { ContractDrafting } from './components/ContractDrafting';
 import { AppView } from './types';
-import { analyzeLegalResearch } from './services/gemini';
+import { analyzeLegalResearch, fetchLegalNews } from './services/gemini';
 import { 
   Briefcase, 
   Gavel, 
@@ -21,8 +21,145 @@ import {
   FileEdit,
   ArrowRight,
   Sparkles,
-  Quote
+  Quote,
+  Globe,
+  Monitor,
+  Newspaper,
+  ExternalLink,
+  RefreshCw
 } from 'lucide-react';
+
+const LegalNews = () => {
+  const [news, setNews] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    // Initial fetch on mount
+    handleRefresh();
+  }, []);
+
+  const handleRefresh = async () => {
+    setLoading(true);
+    const updates = await fetchLegalNews();
+    setNews(updates);
+    setLoading(false);
+  };
+
+  const sources = [
+    {
+      name: "Supreme Court",
+      url: "https://sc.judiciary.gov.ph/",
+      desc: "Official portal. Bar Announcements & Issuances.",
+      icon: Scale,
+      color: "bg-red-50 text-red-700"
+    },
+    {
+      name: "SC e-Court",
+      url: "https://sc.judiciary.gov.ph/ecourt-ph/",
+      desc: "Digital court services & case tracking.",
+      icon: Monitor,
+      color: "bg-blue-50 text-blue-700"
+    },
+    {
+      name: "Official Gazette",
+      url: "https://www.officialgazette.gov.ph/",
+      desc: "Official journal. Executive Orders & Republic Acts.",
+      icon: Newspaper,
+      color: "bg-slate-50 text-slate-700"
+    },
+    {
+      name: "Lawphil",
+      url: "https://lawphil.net/",
+      desc: "Archive of Philippine laws and jurisprudence.",
+      icon: BookOpen,
+      color: "bg-amber-50 text-amber-700"
+    }
+  ];
+
+  return (
+    <div className="mt-8 pt-8 border-t border-slate-200">
+      <div className="mb-6">
+        <h2 className="text-xl font-serif font-bold text-slate-900 flex items-center gap-2">
+            <Globe className="text-amber-600" size={24}/> LegalPH News & Resources
+        </h2>
+        <p className="text-sm text-slate-500 mt-1">Direct access to official portals and latest updates.</p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        
+        {/* Column 1: Trusted Sources (Compact List) */}
+        <div>
+           <span className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 block">Official Portals</span>
+           <div className="grid grid-cols-1 gap-3">
+            {sources.map((source, idx) => (
+               <a 
+                 key={idx}
+                 href={source.url}
+                 target="_blank" 
+                 rel="noopener noreferrer"
+                 className="group flex items-center gap-4 p-3 rounded-xl border border-slate-200 hover:border-amber-300 bg-white hover:bg-amber-50/30 transition-all shadow-sm hover:shadow-md"
+               >
+                  <div className={`p-2.5 rounded-lg shrink-0 ${source.color} group-hover:scale-105 transition-transform`}>
+                     <source.icon size={20} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                     <div className="flex items-center gap-2">
+                        <h3 className="font-bold text-sm text-slate-900 truncate group-hover:text-amber-700 transition-colors">{source.name}</h3>
+                        <ExternalLink size={12} className="text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                     </div>
+                     <p className="text-xs text-slate-500 truncate group-hover:text-slate-600">{source.desc}</p>
+                  </div>
+                  <div className="text-slate-300 group-hover:text-amber-500 -translate-x-2 group-hover:translate-x-0 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                      <ArrowRight size={16} />
+                  </div>
+               </a>
+            ))}
+           </div>
+        </div>
+
+        {/* Column 2: Live Updates Feed */}
+        <div className="flex flex-col h-full">
+           <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Latest Highlights</span>
+              <button 
+                onClick={handleRefresh} 
+                disabled={loading}
+                className="text-slate-400 hover:text-amber-600 transition-colors flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide"
+                title="Refresh Updates"
+              >
+                <RefreshCw size={12} className={loading ? "animate-spin" : ""} /> Refresh
+              </button>
+           </div>
+           
+           <div className="flex-1 bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex flex-col max-h-[340px]">
+               <div className="flex-1 overflow-y-auto scroll-smooth pr-2">
+                  {loading ? (
+                     <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-2 py-8">
+                        <RefreshCw className="animate-spin text-amber-500" size={24} />
+                        <span className="text-xs font-medium">Fetching updates from SC & Gazette...</span>
+                     </div>
+                  ) : news ? (
+                     <div className="text-sm">
+                        <div dangerouslySetInnerHTML={{ __html: news }} />
+                     </div>
+                  ) : (
+                     <div className="text-center text-slate-400 py-12 flex flex-col items-center gap-2">
+                        <Globe size={32} className="opacity-20" />
+                        <span className="text-xs">Click refresh to check for updates.</span>
+                     </div>
+                  )}
+               </div>
+               
+               <div className="mt-4 pt-3 border-t border-slate-50 flex justify-between items-center">
+                 <span className="text-[10px] text-slate-400 italic">Powered by Google Search Grounding</span>
+                 <span className="text-[10px] font-bold text-amber-600/80 bg-amber-50 px-2 py-0.5 rounded-full">LIVE</span>
+               </div>
+           </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const Dashboard = ({ onChangeView }: { onChangeView: (v: AppView) => void }) => {
   // Daily Quote
@@ -90,24 +227,24 @@ const Dashboard = ({ onChangeView }: { onChangeView: (v: AppView) => void }) => 
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 pb-12">
-      {/* Integrated Hero Section & Maxim */}
+      {/* Integrated Hero Section & Widgets */}
       <div className="relative overflow-hidden rounded-2xl bg-slate-900 text-white shadow-lg isolate">
         <div className="absolute inset-0 -z-10 opacity-30 bg-[radial-gradient(45rem_50rem_at_top,theme(colors.amber.600),theme(colors.slate.900))]"></div>
         {/* Decorative subtle element */}
         <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/3 w-64 h-64 bg-amber-500/20 rounded-full blur-3xl -z-10"></div>
         
-        <div className="px-6 py-8 md:px-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8">
+        <div className="px-5 py-6 md:px-8 flex flex-col lg:flex-row items-center justify-between gap-6">
           {/* Welcome Message */}
-          <div className="flex-1">
+          <div className="flex-1 w-full lg:w-auto self-start lg:self-center">
             <div className="inline-flex items-center rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-400 ring-1 ring-inset ring-amber-500/20 mb-3 backdrop-blur-sm">
               <Sparkles size={12} className="mr-1.5" />
               JD Master v2.0
             </div>
-            <h1 className="text-2xl md:text-3xl font-serif font-bold tracking-tight text-white mb-2">
-              Welcome to the team, <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-amber-500">Counsel!</span>
+            <h1 className="text-3xl md:text-4xl font-serif font-bold tracking-tight text-white mb-2">
+              Welcome, <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-amber-500">Counsel!</span>
             </h1>
             <p className="text-slate-400 text-sm max-w-lg mb-6 leading-relaxed">
-              Your AI-powered legal command center is ready. Draft, research, and review in seconds.
+              Your AI-powered legal command center is ready. Draft documents, research jurisprudence, and review with precision.
             </p>
             
             <div className="flex flex-wrap gap-3">
@@ -126,21 +263,67 @@ const Dashboard = ({ onChangeView }: { onChangeView: (v: AppView) => void }) => 
             </div>
           </div>
           
-          {/* Embedded Maxim of the Day */}
-          <div className="w-full lg:w-auto lg:max-w-md shrink-0">
-             <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-white/10 to-white/5 border border-white/10 p-5 backdrop-blur-md shadow-2xl group hover:bg-white/10 transition-colors duration-500">
+          {/* Widgets Grid - Compact */}
+          <div className="w-full lg:w-[400px] shrink-0 grid grid-cols-2 gap-3">
+             {/* Maxim of the Day */}
+             <div className="col-span-2 relative overflow-hidden rounded-xl bg-gradient-to-br from-white/10 to-white/5 border border-white/10 p-4 backdrop-blur-md shadow-lg group hover:bg-white/10 transition-colors duration-500">
                 <div className="absolute top-0 right-0 -mt-2 -mr-2 w-16 h-16 bg-amber-500/20 rounded-full blur-xl group-hover:bg-amber-500/30 transition-colors"></div>
                 <div className="relative z-10">
-                    <div className="flex items-center gap-2 mb-3">
-                        <div className="p-1.5 bg-amber-500/20 rounded-md">
-                            <Quote size={14} className="text-amber-400" />
+                    <div className="flex items-center gap-2 mb-2">
+                        <div className="p-1 bg-amber-500/20 rounded-md">
+                            <Quote size={12} className="text-amber-400" />
                         </div>
-                        <span className="text-[10px] font-bold text-amber-200/80 uppercase tracking-widest">Maxim of the Day</span>
+                        <span className="text-[10px] font-bold text-amber-200/80 uppercase tracking-widest">Maxim</span>
                     </div>
-                    <p className="text-lg font-serif font-medium text-white italic leading-snug mb-2">"{quote.latin}"</p>
-                    <p className="text-slate-400 text-xs font-medium tracking-wide border-l-2 border-amber-500/50 pl-3">{quote.english}</p>
+                    <p className="text-base font-serif font-medium text-white italic leading-snug mb-1">"{quote.latin}"</p>
+                    <p className="text-slate-400 text-[10px] font-medium tracking-wide border-l-2 border-amber-500/50 pl-2">{quote.english}</p>
                 </div>
              </div>
+
+             {/* Legal Pad Widget */}
+             <div 
+                onClick={() => onChangeView(AppView.LEGAL_PAD)}
+                className="col-span-1 relative overflow-hidden rounded-xl bg-gradient-to-br from-white/10 to-white/5 border border-white/10 p-3 backdrop-blur-md shadow-lg cursor-pointer group hover:bg-white/15 hover:border-white/20 hover:-translate-y-1 transition-all duration-300"
+             >
+                 <div className="absolute -right-3 -bottom-3 text-white/5 group-hover:text-white/10 transition-colors">
+                    <FileEdit size={48} />
+                 </div>
+                 <div className="relative z-10 flex flex-col h-full justify-between gap-3">
+                    <div className="flex items-start justify-between">
+                       <div className="p-1.5 bg-blue-500/20 rounded-md">
+                          <FileEdit size={14} className="text-blue-300" />
+                       </div>
+                       <ArrowRight size={12} className="text-slate-500 group-hover:text-white transition-colors opacity-0 group-hover:opacity-100" />
+                    </div>
+                    <div>
+                        <h3 className="font-serif font-bold text-white text-xs">Legal Pad</h3>
+                        <p className="text-[10px] text-slate-400 leading-tight group-hover:text-slate-300">My Notes</p>
+                    </div>
+                 </div>
+             </div>
+
+             {/* Law Review Widget */}
+             <div 
+                onClick={() => onChangeView(AppView.LAW_REVIEW)}
+                className="col-span-1 relative overflow-hidden rounded-xl bg-gradient-to-br from-white/10 to-white/5 border border-white/10 p-3 backdrop-blur-md shadow-lg cursor-pointer group hover:bg-white/15 hover:border-white/20 hover:-translate-y-1 transition-all duration-300"
+             >
+                 <div className="absolute -right-3 -bottom-3 text-white/5 group-hover:text-white/10 transition-colors">
+                    <ScrollText size={48} />
+                 </div>
+                 <div className="relative z-10 flex flex-col h-full justify-between gap-3">
+                    <div className="flex items-start justify-between">
+                       <div className="p-1.5 bg-purple-500/20 rounded-md">
+                          <ScrollText size={14} className="text-purple-300" />
+                       </div>
+                       <ArrowRight size={12} className="text-slate-500 group-hover:text-white transition-colors opacity-0 group-hover:opacity-100" />
+                    </div>
+                    <div>
+                        <h3 className="font-serif font-bold text-white text-xs">Law Review</h3>
+                        <p className="text-[10px] text-slate-400 leading-tight group-hover:text-slate-300">Study Guide</p>
+                    </div>
+                 </div>
+             </div>
+
           </div>
         </div>
       </div>
@@ -179,52 +362,31 @@ const Dashboard = ({ onChangeView }: { onChangeView: (v: AppView) => void }) => 
           ))}
         </div>
       </div>
-
-      {/* Quick Links */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-6 border-t border-slate-200">
-        <div className="bg-slate-50 rounded-xl p-6 border border-slate-100 flex flex-col justify-center relative overflow-hidden group hover:border-slate-300 transition-colors cursor-pointer" onClick={() => onChangeView(AppView.LEGAL_PAD)}>
-          <div className="absolute right-4 top-4 opacity-10 group-hover:opacity-20 transition-opacity">
-              <FileEdit size={100} />
-          </div>
-          <h3 className="font-serif font-bold text-slate-900 text-lg mb-2 relative z-10">Legal Pad</h3>
-          <p className="text-slate-500 mb-4 text-xs relative z-10 max-w-sm">Organize your notes, case briefs, and research in one secure workspace designed for lawyers.</p>
-          <span className="w-fit text-xs font-bold text-slate-700 hover:text-amber-600 flex items-center gap-2 relative z-10">
-            Go to Workspace <ArrowRight size={12}/>
-          </span>
-        </div>
-        <div className="bg-slate-50 rounded-xl p-6 border border-slate-100 flex flex-col justify-center relative overflow-hidden group hover:border-slate-300 transition-colors cursor-pointer" onClick={() => onChangeView(AppView.LAW_REVIEW)}>
-          <div className="absolute right-4 top-4 opacity-10 group-hover:opacity-20 transition-opacity">
-              <ScrollText size={100} />
-          </div>
-          <h3 className="font-serif font-bold text-slate-900 text-lg mb-2 relative z-10">Law Review</h3>
-          <p className="text-slate-500 mb-4 text-xs relative z-10 max-w-sm">Generate comprehensive syllabi and study guides tailored to your learning level.</p>
-          <span className="w-fit text-xs font-bold text-slate-700 hover:text-amber-600 flex items-center gap-2 relative z-10">
-            Create Study Guide <ArrowRight size={12}/>
-          </span>
-        </div>
-      </div>
+      
+      {/* Legal News Component */}
+      <LegalNews />
 
       {/* Footer & Disclaimer */}
-      <footer className="mt-10 pt-6 pb-8 border-t border-slate-100 bg-gradient-to-b from-transparent to-slate-50/80">
+      <footer className="mt-10 py-8 bg-slate-900 rounded-2xl border border-slate-800 shadow-lg">
         <div className="max-w-3xl mx-auto px-6 text-center">
             
             {/* Interactive Disclaimer */}
             <div className="group relative mb-6 cursor-default">
-              <div className="absolute inset-0 bg-amber-100/0 group-hover:bg-amber-50/50 rounded-xl transition-all duration-500 ease-out"></div>
-              <p className="relative text-[10px] text-slate-400 group-hover:text-slate-600 leading-loose transition-colors duration-300 px-4 py-2">
-                <span className="font-bold text-amber-600/60 group-hover:text-amber-600 uppercase tracking-wider text-[9px] mr-2 transition-colors">Disclaimer</span>
+              <div className="absolute inset-0 bg-white/0 group-hover:bg-white/5 rounded-xl transition-all duration-500 ease-out"></div>
+              <p className="relative text-[10px] text-slate-500 group-hover:text-slate-300 leading-loose transition-colors duration-300 px-4 py-2">
+                <span className="font-bold text-amber-600 group-hover:text-amber-500 uppercase tracking-wider text-[9px] mr-2 transition-colors">Disclaimer</span>
                 LegalPH is an educational tool designed to assist in learning Philippine law. All AI-generated content is based on authoritative sources but should not be considered as legal advice. Always verify information with official legal documents and consult with qualified legal professionals for specific legal matters.
               </p>
             </div>
 
             {/* Copyright */}
             <div className="flex flex-col items-center justify-center gap-1.5 opacity-80 hover:opacity-100 transition-opacity duration-500">
-               <div className="flex items-center gap-2 text-[10px] font-bold text-slate-600 uppercase tracking-widest">
+               <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                   <span>© 2025 LegalPH</span>
                   <span className="w-1 h-1 rounded-full bg-amber-500"></span>
                   <span>All rights reserved</span>
                </div>
-               <p className="text-[10px] text-slate-400 font-medium tracking-wide">
+               <p className="text-[10px] text-slate-600 font-medium tracking-wide">
                  Built for law students, legal professionals, and lifelong learners
                </p>
             </div>
@@ -280,6 +442,7 @@ const CaseBuild = () => {
                 <div className="max-w-4xl mx-auto prose prose-slate prose-lg max-w-none 
                     prose-h3:font-serif prose-h3:font-bold prose-h3:text-2xl prose-h3:text-center prose-h3:text-slate-900 prose-h3:mb-8
                     prose-h4:font-serif prose-h4:font-bold prose-h4:text-lg prose-h4:text-slate-800 prose-h4:mt-8
+                    prose-h4:border-b prose-h4:border-slate-200 prose-h4:pb-2
                     prose-p:text-slate-700 prose-p:leading-loose prose-p:text-justify prose-p:font-serif
                     prose-li:text-slate-700 prose-li:font-serif">
                     <div dangerouslySetInnerHTML={{ __html: result }} />

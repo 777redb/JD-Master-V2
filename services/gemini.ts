@@ -7,38 +7,36 @@ const apiKey = process.env.API_KEY || '';
 const ai = new GoogleGenAI({ apiKey });
 
 const LEGAL_PH_SYSTEM_INSTRUCTION = `
-You are LegalPH’s Textbook Formatter Engine, designed to transform any legal content—codal provisions, jurisprudence, case digests, legal articles, reviewer notes, and study guides—into a professional, authoritative, and visually structured textbook format.
+You are LegalPH’s Textbook Formatter Engine, designed to transform any legal content—codal provisions, jurisprudence, case digests, legal articles, reviewer notes, and study guides—into a professional, authoritative, and SEO-STRUCTURED textbook format.
 
-Your formatting must resemble that of premium Philippine law textbooks, reviewers, and annotated codals.
+Your output must be optimized for readability and structural hierarchy, adhering to strict Philippine legal standards.
 
-OUTPUT REQUIREMENTS:
+*** SEO & STRUCTURE RULES (STRICT COMPLIANCE) ***
 
-1. **FORMAT: SEMANTIC HTML**
-   - You MUST output the response in raw **HTML** format.
-   - Do NOT use Markdown (no **bold**, no # headings).
-   - Do NOT use \`\`\`html code blocks. Just return the raw HTML string.
+1. **FORMAT: SEMANTIC HTML ONLY**
+   - Output raw HTML strings compatible with safe renderers.
+   - NO Markdown symbols (no **, no #).
+   - NO \`\`\`html code blocks.
 
-2. **Textbook Layout Hierarchy**
-   - **Title / Case Name**: Use <h3> with class="text-center font-bold mb-6".
-   - **Subtitles / Subsections**: Use <h4> with class="font-bold mt-6 mb-3".
-   - **Body Text**: Use <p> with class="mb-4 text-justify leading-relaxed".
-   - **Enumerations**: Use <ul> or <ol> with <li>.
-   - **Emphasis**: Use <strong> for key terms.
-   - **Tables**: MUST use semantic HTML <table>, <thead>, <tbody>, <tr>, <th>, <td> for any tabular data (e.g. tax rates, penalties, schedules).
-     - Do NOT use lists for tabular data.
-     - Ensure headers are in <thead>.
+2. **HIERARCHY & TAGS**
+   - **H3**: Main Title / Case Name / Topic Head (Class: "text-center font-bold mb-6 text-2xl")
+   - **H4**: Subsections / Facts / Ruling / Doctrine (Class: "font-bold mt-6 mb-3 text-lg border-b border-slate-200 pb-2")
+   - **P**: Body text (Class: "mb-4 text-justify leading-relaxed")
+   - **UL/OL**: Enumerations (Class: "list-disc pl-6 mb-4 space-y-2")
+   - **STRONG**: Key legal terms (Class: "font-bold text-slate-900")
+   - **BLOCKQUOTE**: Direct quotes, mnemonics, or emphasized notes (Class: "border-l-4 border-amber-500 pl-4 italic my-4 bg-slate-50 py-3 rounded-r-lg")
+   - **TABLE**: Data presentation (Class: "w-full text-left border-collapse border my-6 text-sm")
+     - Use <thead>, <tbody>, <th>, <td> tags properly.
 
-3. **Content Standards**
-   - **Codals**: Cite Article number clearly. Structure: <h4>Article 123. Title</h4><p>...</p>
-   - **Jurisprudence**: Order: Title (H3), Summary (P), Facts (H4/P), Issues (H4/P), Ruling (H4/P), Doctrine (H4/P), Ratio (H4/P).
-   - **Case Digest**: Follow strict order: Summary, Facts, Issues, Ruling, Doctrine, Ratio.
-   - **Contracts**: Use standard legal contract formatting (centered titles, verified clauses).
+3. **CONTENT STRATEGY**
+   - **Codals**: Structure as H4 (Article Title) -> P (Text).
+   - **Jurisprudence**: H3 (Title), P (G.R. No & Date), H4 (Facts), H4 (Issues), H4 (Ruling), H4 (Doctrine).
+   - **Internal Linking**: Where relevant, explicitly mention "See also [Related Law/Case]" in the text to encourage conceptual linking.
 
-4. **Accuracy & Tone**
-   - High academic polish.
-   - Strict Philippine law accuracy.
+4. **TONE & ACCURACY**
+   - Academic, formal, direct.
+   - 100% adherence to Philippine Law.
    - Zero invented laws or cases.
-   - Formal legal-academic tone.
 `;
 
 export const generateGeneralLegalAdvice = async (prompt: string): Promise<string> => {
@@ -56,6 +54,39 @@ export const generateGeneralLegalAdvice = async (prompt: string): Promise<string
   } catch (error) {
     console.error("AI Error:", error);
     return "<p>An error occurred while consulting the legal database. Please try again.</p>";
+  }
+};
+
+export const fetchLegalNews = async (): Promise<string> => {
+  const prompt = `
+    Perform a Google Search for the latest (last 30 days) Supreme Court announcements, new Republic Acts, or legal memorandums from these specific sources:
+    1. sc.judiciary.gov.ph
+    2. officialgazette.gov.ph
+    
+    Select the top 3 most important updates.
+    
+    Format the output as a raw HTML list (<ul>) with the following classes:
+    - <ul> class="space-y-4"
+    - <li> class="pb-4 border-b border-slate-100 last:border-0"
+    - Headline: <div class="font-bold text-slate-800 text-sm mb-1 group-hover:text-amber-600 transition-colors">[Headline]</div>
+    - Snippet: <div class="text-xs text-slate-600 leading-relaxed line-clamp-2">[Brief Summary]</div>
+    - Source/Date: <div class="text-[10px] text-amber-600 font-bold mt-2 uppercase tracking-wide flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> [Source Domain] • [Date]</div>
+    
+    Do not add any other text. Just the <ul>.
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-pro-preview',
+      contents: prompt,
+      config: {
+        systemInstruction: "You are a news aggregator. Output HTML only.",
+        tools: [{ googleSearch: {} }],
+      }
+    });
+    return response.text || "<li>No updates found.</li>";
+  } catch (e) {
+    return "<li>Unable to fetch news updates at this time.</li>";
   }
 };
 
