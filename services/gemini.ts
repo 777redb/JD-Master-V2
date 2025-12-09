@@ -63,7 +63,7 @@ export const fetchLegalNews = async (): Promise<string> => {
     1. sc.judiciary.gov.ph
     2. officialgazette.gov.ph
     
-    Select the top 7 most important updates.
+    Select the top 12 most important updates.
     
     Format the output as a raw HTML list (<ul>) with the following classes:
     - <ul> class="space-y-4"

@@ -121,8 +121,8 @@ const LegalNews = () => {
             </div>
         </div>
 
-        {/* RIGHT COLUMN: Latest Highlights (Full Height) */}
-        <div className="flex flex-col h-full min-h-[500px]">
+        {/* RIGHT COLUMN: Latest Highlights (Fixed Height for ~5 items) */}
+        <div className="flex flex-col h-[600px]">
            <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Latest Highlights</span>
               <button 
@@ -135,7 +135,7 @@ const LegalNews = () => {
               </button>
            </div>
            
-           <div className="flex-1 bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col h-full">
+           <div className="flex-1 bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col h-full overflow-hidden">
                <div className="flex-1 overflow-y-auto scroll-smooth pr-2">
                   {loading ? (
                      <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-2 py-12">
@@ -154,7 +154,7 @@ const LegalNews = () => {
                   )}
                </div>
                
-               <div className="mt-4 pt-4 border-t border-slate-50 flex justify-between items-center">
+               <div className="mt-4 pt-4 border-t border-slate-50 flex justify-between items-center shrink-0">
                  <span className="text-[10px] text-slate-400 italic">Powered by Google Search Grounding</span>
                  <span className="text-[10px] font-bold text-amber-600/80 bg-amber-50 px-2 py-0.5 rounded-full">LIVE</span>
                </div>
