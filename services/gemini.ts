@@ -1,10 +1,45 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { MockBarQuestion } from "../types";
 
-const apiKey = process.env.API_KEY || '';
+// Helper to get client with latest key
+const getAi = () => {
+  const apiKey = process.env.API_KEY || '';
+  return new GoogleGenAI({ apiKey });
+};
 
-// Initialize client securely. 
-const ai = new GoogleGenAI({ apiKey });
+// Helper to handle errors and retries with key selection
+async function withErrorHandling<T>(
+  operation: (ai: GoogleGenAI) => Promise<T>, 
+  fallback: T
+): Promise<T> {
+  try {
+    const ai = getAi();
+    return await operation(ai);
+  } catch (error: any) {
+    // Check for quota (429) or auth errors
+    const isQuotaError = error.status === 429 || 
+                         (error.message && (error.message.includes('429') || error.message.includes('quota') || error.message.includes('RESOURCE_EXHAUSTED')));
+    
+    // Cast window to any to access aistudio which might have conflicting global types
+    const win = window as any;
+
+    if (isQuotaError && win.aistudio) {
+      try {
+        console.log("Quota exceeded, triggering key selection...");
+        await win.aistudio.openSelectKey();
+        // Retry immediately with the new key (instantiate new client)
+        const aiRetry = getAi();
+        return await operation(aiRetry);
+      } catch (retryError) {
+        console.error("Retry failed:", retryError);
+        return fallback;
+      }
+    }
+    
+    console.error("AI Error:", error);
+    return fallback;
+  }
+}
 
 const LEGAL_PH_SYSTEM_INSTRUCTION = `
 You are LegalPH’s Textbook Formatter Engine, designed to transform any legal content—codal provisions, jurisprudence, case digests, legal articles, reviewer notes, and study guides—into a professional, authoritative, and SEO-STRUCTURED textbook format.
@@ -29,7 +64,7 @@ Your output must be optimized for readability and structural hierarchy, adhering
      - Use <thead>, <tbody>, <th>, <td> tags properly.
 
 3. **CONTENT STRATEGY**
-   - **Codals**: Structure as H4 (Article Title) -> P (Text).
+   - **Codals**: GENERATE VERBATIM TEXT. Do not summarize unless explicitly asked. Structure as H4 (Article Title) -> P (Text).
    - **Jurisprudence**: H3 (Title), P (G.R. No & Date), H4 (Facts), H4 (Issues), H4 (Ruling), H4 (Doctrine).
    - **Internal Linking**: Where relevant, explicitly mention "See also [Related Law/Case]" in the text to encourage conceptual linking.
 
@@ -40,7 +75,7 @@ Your output must be optimized for readability and structural hierarchy, adhering
 `;
 
 export const generateGeneralLegalAdvice = async (prompt: string): Promise<string> => {
-  try {
+  return withErrorHandling(async (ai) => {
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview', 
       contents: prompt,
@@ -49,12 +84,8 @@ export const generateGeneralLegalAdvice = async (prompt: string): Promise<string
         tools: [{ googleSearch: {} }], 
       }
     });
-    
     return response.text || "<p>No response generated.</p>";
-  } catch (error) {
-    console.error("AI Error:", error);
-    return "<p>An error occurred while consulting the legal database. Please try again.</p>";
-  }
+  }, "<p>Unable to retrieve legal information. Please check your API key quota or internet connection.</p>");
 };
 
 export const fetchLegalNews = async (): Promise<string> => {
@@ -77,7 +108,7 @@ export const fetchLegalNews = async (): Promise<string> => {
     Do not add any other text. Just the <ul>.
   `;
 
-  try {
+  return withErrorHandling(async (ai) => {
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
       contents: prompt,
@@ -87,9 +118,7 @@ export const fetchLegalNews = async (): Promise<string> => {
       }
     });
     return response.text || "<li>No updates found.</li>";
-  } catch (e) {
-    return "<li>Unable to fetch news updates at this time.</li>";
-  }
+  }, "<li>Unable to fetch news updates at this time.</li>");
 };
 
 export const generateCaseDigest = async (caseInfo: string): Promise<string> => {
@@ -112,7 +141,7 @@ export const generateCaseDigest = async (caseInfo: string): Promise<string> => {
 };
 
 export const generateMockBarQuestion = async (subject: string, profile: string, type: 'MCQ' | 'ESSAY'): Promise<MockBarQuestion | null> => {
-  try {
+  return withErrorHandling(async (ai) => {
     let difficulty = "Moderate";
     if (profile.toLowerCase().includes('freshman')) difficulty = "Easy / Fundamental";
     if (profile.toLowerCase().includes('bar reviewee') || profile.toLowerCase().includes('lawyer')) difficulty = "Difficult / Bar Exam Standard";
@@ -185,10 +214,7 @@ export const generateMockBarQuestion = async (subject: string, profile: string, 
       return result as MockBarQuestion;
     }
     return null;
-  } catch (e) {
-    console.error("Mock Bar Error", e);
-    return null;
-  }
+  }, null);
 };
 
 export const generateContract = async (mode: 'TEMPLATE' | 'CUSTOM', title: string, details: any): Promise<string> => {
@@ -220,7 +246,7 @@ export const generateContract = async (mode: 'TEMPLATE' | 'CUSTOM', title: strin
     `;
   }
 
-  try {
+  return withErrorHandling(async (ai) => {
      const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
       contents: prompt,
@@ -229,9 +255,7 @@ export const generateContract = async (mode: 'TEMPLATE' | 'CUSTOM', title: strin
       }
     });
     return response.text || "<p>Failed to draft contract.</p>";
-  } catch (e) {
-    return "<p>Error drafting contract.</p>";
-  }
+  }, "<p>Error drafting contract.</p>");
 };
 
 export const analyzeLegalResearch = async (query: string): Promise<string> => {

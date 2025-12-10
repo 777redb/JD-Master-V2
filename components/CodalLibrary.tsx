@@ -178,16 +178,21 @@ export const CodalLibrary: React.FC = () => {
     
     try {
       const prompt = `
-        Provide the full, authoritative text for: ${nav.query}.
+        You are an authoritative legal database. 
+        FETCH and GENERATE the COMPLETE, VERBATIM TEXT for: ${nav.query}.
         
-        Formatting Requirements:
+        CRITICAL INSTRUCTIONS:
+        1. DO NOT Summarize. DO NOT Paraphrase.
+        2. Output EVERY single Article/Section within this requested scope.
+        3. If the scope is large (e.g. "Civil Code Book IV"), you must ensure the response covers the primary Articles in the Title/Chapter requested.
+        
+        FORMATTING:
         - Output strictly as HTML.
         - Use <h3> for the Title/Chapter Heading.
         - Use <h4> for Section/Article Headings (e.g., "Article 1156").
         - Use <p> for the provision text.
         - Include brief annotations or cross-references to related jurisprudence in <blockquote class="italic border-l-4 my-4 pl-4 opacity-80"> if necessary for context.
         - Tables: Use <table>, <thead>, <tbody>, <th>, <td>.
-        - STRICTLY NO PARAPHRASING of the law itself.
       `;
       const result = await generateGeneralLegalAdvice(prompt);
       setAiResponse(result);
