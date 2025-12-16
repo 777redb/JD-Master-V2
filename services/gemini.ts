@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { MockBarQuestion } from "../types";
 
@@ -42,36 +43,157 @@ async function withErrorHandling<T>(
 }
 
 const LEGAL_PH_SYSTEM_INSTRUCTION = `
-You are LegalPH’s Textbook Formatter Engine, designed to transform any legal content—codal provisions, jurisprudence, case digests, legal articles, reviewer notes, and study guides—into a professional, authoritative, and SEO-STRUCTURED textbook format.
+You are the **LegalPH Readability & Formatting Engine**.
+Your task is to transform ALL generated legal content—codals, jurisprudence, case digests, reviewer chapters, case-build outputs, contracts, and articles—into **highly readable, professionally typeset, book-quality text**, consistent throughout the entire LegalPH ecosystem.
 
-Your output must be optimized for readability and structural hierarchy, adhering to strict Philippine legal standards.
+You must present information with **perfect structural clarity**, using consistent rules for:
+* Typography
+* Margins
+* Spacing
+* Hierarchical headings
+* Chapter structuring
+* Section breaks
+* Numbering
+* Visual element placeholders
 
-*** SEO & STRUCTURE RULES (STRICT COMPLIANCE) ***
+Your formatting must be compatible with the existing LegalPH UI and must render cleanly in 'dangerouslySetInnerHTML' without modifying the application’s architecture, CSS, or typography system.
 
-1. **FORMAT: SEMANTIC HTML ONLY**
-   - Output raw HTML strings compatible with safe renderers.
-   - NO Markdown symbols (no **, no #).
-   - NO \`\`\`html code blocks.
+# 1. **Typography Standards (Content-Level Only)**
 
-2. **HIERARCHY & TAGS**
-   - **H3**: Main Title / Case Name / Topic Head (Class: "text-center font-bold mb-6 text-2xl")
-   - **H4**: Subsections / Facts / Ruling / Doctrine (Class: "font-bold mt-6 mb-3 text-lg border-b border-slate-200 pb-2")
-   - **P**: Body text (Class: "mb-4 text-justify leading-relaxed")
-   - **UL/OL**: Enumerations (Class: "list-disc pl-6 mb-4 space-y-2")
-   - **STRONG**: Key legal terms (Class: "font-bold text-slate-900")
-   - **BLOCKQUOTE**: Direct quotes, mnemonics, or emphasized notes (Class: "border-l-4 border-amber-500 pl-4 italic my-4 bg-slate-50 py-3 rounded-r-lg")
-   - **TABLE**: Data presentation (Class: "w-full text-left border-collapse border my-6 text-sm")
-     - Use <thead>, <tbody>, <th>, <td> tags properly.
+Your generated output must follow these rules:
 
-3. **CONTENT STRATEGY**
-   - **Codals**: GENERATE VERBATIM TEXT. Do not summarize unless explicitly asked. Structure as H4 (Article Title) -> P (Text).
-   - **Jurisprudence**: H3 (Title), P (G.R. No & Date), H4 (Facts), H4 (Issues), H4 (Ruling), H4 (Doctrine).
-   - **Internal Linking**: Where relevant, explicitly mention "See also [Related Law/Case]" in the text to encourage conceptual linking.
+### **Font & Typography**
+* Use a **serif typeface style** (book-like) in content (the UI already handles font-family; you just generate clean HTML semantics).
+* Use proper typographic punctuation:
+  * Curly quotes
+  * En-dashes and em-dashes
+  * Proper ellipses
+* Ensure consistent **emphasis rules**:
+  * Italics for doctrines, case names, special terms
+  * Bold only for section titles or key legal points
 
-4. **TONE & ACCURACY**
-   - Academic, formal, direct.
-   - 100% adherence to Philippine Law.
-   - Zero invented laws or cases.
+### **Readable Text Flow**
+* Avoid long unbroken blocks.
+* Use paragraphs of 3–6 lines for ideal readability.
+* Ensure proper transitions between ideas.
+
+# 2. **Spacing, Margins, and Paragraph Structure**
+
+All generated text must simulate the spacing of a legal textbook:
+
+### **Margins (simulated via spacing rules)**
+* Add comfortable whitespace before major headings.
+* Use consistent vertical rhythm:
+  * 1 line space before H2 headings
+  * 0.75 line space before H3
+  * 2 lines before chapter titles
+
+### **Line Spacing**
+Represent 1.5 book-style line spacing by:
+* Avoiding crammed paragraphs
+* Adding sufficient paragraph breaks
+
+### **Paragraph Indentation**
+* **Do NOT indent** paragraphs with special characters or HTML; instead begin each paragraph with:
+  * A clear topic sentence
+  * Natural separation via blank lines
+
+# 3. **Section Structuring Rules**
+
+All generated content must be formatted like a professional legal publication.
+
+### **Core Section Layout**
+Use a hierarchical structure like:
+
+<h3>CHAPTER TITLE (H3)</h3>
+<p>Short introductory paragraph.</p>
+
+<h4>I. Section Heading (H4)</h4>
+<p>Short section introduction.</p>
+
+<p><strong>A. Subsection Heading</strong></p>
+<p>Detailed content.</p>
+
+<ol>
+  <li>Numbered paragraph
+    <p>Explanations, steps, or legal doctrine.</p>
+  </li>
+</ol>
+
+### **Key Rules**
+* Never skip heading levels.
+* Use consistent numbering for legal analysis:
+  * I, II, III → Roman numerals for major sections (H4)
+  * A, B, C → Subsections
+  * 1, 2, 3 → Steps or key points
+
+# 4. **Chapter Breaks & Section Dividers**
+
+When generating long-form content (reviewers, jurisprudence compilations, legal commentary):
+
+### **Chapter Break Format**
+Begin a new chapter with:
+<hr />
+<h3>CHAPTER [Number]: [Chapter Title]</h3>
+<hr />
+<p>Introductory overview paragraph...</p>
+
+### **Section Dividers**
+Between major conceptual blocks use <hr />
+
+# 5. **Visual Elements (Text-Compatible Only)**
+
+For diagrams, flowcharts, tables, or case-maps that cannot render naturally:
+
+### **Use structured placeholders:**
+
+**Table:**
+<table>
+  <thead><tr><th>Column 1</th><th>Column 2</th></tr></thead>
+  <tbody><tr><td>Data 1</td><td>Data 2</td></tr></tbody>
+</table>
+
+**Diagram:**
+<blockquote>[Diagram: Liability Flow – Offender → Act → Damage]</blockquote>
+
+# 6. **Formatting Rules for Specific LegalPH Outputs**
+
+### **Codal Text**
+* Present articles as:
+  <h4>ARTICLE 315. – Estafa</h4>
+  <p>[Statutory text...]</p>
+* Use consistent indentation and spacing.
+* Maintain fidelity to official text.
+
+### **Case Digest**
+ALWAYS begin with a **case summary** before the full structure.
+
+<p><strong>CASE SUMMARY</strong></p>
+<p>One-paragraph overview...</p>
+
+<h4>I. Facts</h4>
+<h4>II. Issues</h4>
+<h4>III. Ruling</h4>
+<h4>IV. Doctrine</h4>
+
+### **Jurisprudence**
+* Use clear citation formatting.
+* Italicize case titles.
+* Use block-style quotes for excerpts.
+
+### **Contract Drafting**
+* Use numbered articles.
+* Use consistent clause spacing.
+* Add section dividers between major parts.
+
+# 7. **Output Requirements (Non-Negotiable)**
+
+All generated text must be:
+* Clean, professional, and book-like.
+* Textbook-readable on mobile or desktop.
+* Structured with proper hierarchy (H3, H4, P, UL/OL).
+* Free of casual or informal tone.
+* Typographically consistent.
 `;
 
 export const generateGeneralLegalAdvice = async (prompt: string): Promise<string> => {
@@ -138,6 +260,35 @@ export const generateCaseDigest = async (caseInfo: string): Promise<string> => {
   `;
   
   return generateGeneralLegalAdvice(prompt);
+};
+
+export const getCaseSuggestions = async (query: string): Promise<string[]> => {
+  if (query.length < 3) return [];
+  
+  const prompt = `
+    List 5 specific, real Philippine Supreme Court case titles that start with or contain: "${query}".
+    Return ONLY a JSON array of strings. Example: ["Chi Ming Tsoi v. CA", "Chavez v. JBC"].
+    Do not invent cases. If none found, return empty array.
+  `;
+
+  return withErrorHandling(async (ai) => {
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash', // Use flash for speed
+      contents: prompt,
+      config: {
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: Type.ARRAY,
+          items: { type: Type.STRING }
+        }
+      }
+    });
+    
+    if (response.text) {
+      return JSON.parse(response.text);
+    }
+    return [];
+  }, []);
 };
 
 export const generateMockBarQuestion = async (subject: string, profile: string, type: 'MCQ' | 'ESSAY'): Promise<MockBarQuestion | null> => {
@@ -273,18 +424,109 @@ export const analyzeLegalResearch = async (query: string): Promise<string> => {
 }
 
 export const generateLawSyllabus = async (topic: string, profile: string): Promise<string> => {
-  const prompt = `
-    Create a tailor-fit, AI-Assisted Law Reviewer Syllabus / Study Guide for the topic: "${topic}".
-    Target Learner: ${profile}.
+  // Determine sophistication level based on profile
+  const isAdvanced = profile.toLowerCase().includes('bar') || profile.toLowerCase().includes('lawyer') || profile.toLowerCase().includes('senior');
+  
+  let instructions = "";
+  let structure = "";
 
-    Format as HTML:
-    1. <h3 class="text-center">Learning Objectives</h3>
-    2. <h4>Subject Outline</h4> (Strategic study path)
-    3. <h4>Key Codal Provisions</h4>
-    4. <h4>Landmark Jurisprudence</h4>
-    5. <h4>Bar Exam Trends & Tips</h4>
-    6. <h4>Memory Aids & Mnemonics</h4>
-    7. <h4>Quick Recall Summary</h4>
+  if (isAdvanced) {
+    instructions = `
+      **Target Audience:** ${profile} (Advanced Level).
+      **Approach:** Act as a Bar Review Director. 
+      **Goal:** Create a high-yield, dense reviewer module.
+      **Strict Rules:**
+      1. **NO FLUFF.** Do not define basic terms unless necessary for distinction.
+      2. **FOCUS:** Focus on **Exceptions to the Rule**, **Conflicting Doctrines**, **Recent Jurisprudence (2015-Present)**, and **Remedial Complexities**.
+      3. **DEPTH:** Minimum 2000 words equivalent.
+    `;
+    structure = `
+      <h1>${topic.toUpperCase()} (ADVANCED REVIEWER)</h1>
+      <p><strong>Focus:</strong> High-Yield Bar Topics & Jurisprudential Updates</p>
+      <hr />
+
+      <h3>I. DOCTRINAL REFRESHER & NUANCES</h3>
+      <p>[Briefly state the general rule, then immediately pivot to the <strong>Exceptions</strong> and <strong>Qualifications</strong>. Cite specific provisions.]</p>
+      
+      <h3>II. JURISPRUDENTIAL EVOLUTION</h3>
+      <p>[Analyze how the Supreme Court's interpretation has shifted. Compare old vs. new rulings.]</p>
+      <ul>
+         <li><strong><em>Old Doctrine:</em></strong> [Case Name]</li>
+         <li><strong><em>Controlling Doctrine:</em></strong> [Case Name] - [Explain the shift]</li>
+      </ul>
+
+      <h3>III. COMPLEX SCENARIOS & BAR TRAPS</h3>
+      <p>[Present complex hypothetical scenarios often found in Bar Exams. Explain the solution using the "Legal Basis - Application - Conclusion" format.]</p>
+
+      <h3>IV. REMEDIAL LAW INTEGRATION</h3>
+      <p>[Explain the procedural aspects relevant to this substantive topic (e.g., Jurisdiction, Pleadings, Evidence required).]</p>
+    `;
+  } else {
+    // Freshman / Junior
+    instructions = `
+      **Target Audience:** ${profile} (Foundational Level).
+      **Approach:** Act as a Professor of Law. 
+      **Goal:** Create a comprehensive, textbook-style chapter.
+      **Strict Rules:**
+      1. **CLARITY:** Define every legal term. Explain the "Why" (Ratio Legis).
+      2. **BASICS:** Focus on **Statutory Construction**, **Verba Legis**, **Elements/Requisites**, and **Illustrative Examples**.
+      3. **DEPTH:** Minimum 1500 words equivalent.
+    `;
+    structure = `
+      <h1>${topic.toUpperCase()} (FOUNDATIONAL MODULE)</h1>
+      <p><strong>Scope:</strong> Comprehensive Analysis for Law Students</p>
+      <hr />
+
+      <h3>I. GENERAL CONCEPT & RATIONALE</h3>
+      <p>[Define the concept clearly. Explain the "Why" (Ratio Legis). What is the purpose of this law?]</p>
+
+      <h3>II. ESSENTIAL ELEMENTS (REQUISITES)</h3>
+      <p>For this law to apply, the following elements must concur. Memorize these:</p>
+      <ul>
+         <li><strong>Element 1: [Name]</strong> — [Detailed explanation with simple example]</li>
+         <li><strong>Element 2: [Name]</strong> — [Detailed explanation with simple example]</li>
+      </ul>
+
+      <h3>III. STATUTORY BASIS (CODAL PROVISIONS)</h3>
+      <div class="statute-box">
+         <p><strong>[Primary Article/Section]</strong></p>
+         <p>[Verbatim Text of the Law]</p>
+         <p><em>Professor's Annotation:</em> [Break down the legalese into plain English.]</p>
+      </div>
+
+      <h3>IV. ILLUSTRATIVE CASES</h3>
+      <p>How does the Supreme Court apply this?</p>
+      <blockquote>
+         <strong>[Case Name]</strong><br/>
+         "[Key Ruling/Doctrine. Keep it focused on the application of the elements.]"
+      </blockquote>
+    `;
+  }
+
+  const prompt = `
+    Act as the **Editor-in-Chief of a Premium Philippine Law Publishing House**.
+    
+    **Task:** Write a **Reviewer Module** on: "${topic}".
+    ${instructions}
+
+    **STRICT HTML FORMATTING RULES:**
+    1. Use semantic HTML (h1, h3, p, ul, li, blockquote).
+    2. **NO Markdown** (no ** or ##). Use <strong> for bold, <em> for italics.
+    3. **Paragraphs:** Must be substantial (5-8 sentences). Do NOT write one-sentence paragraphs.
+    4. **Indentation:** Do NOT add spaces/tabs in HTML. The CSS handles indentation.
+    
+    **REQUIRED STRUCTURE:**
+    ${structure}
+
+    <h3>V. DISTINCTIONS</h3>
+    <p>[Distinguish from similar concepts (e.g., Theft vs Estafa). Use a table.]</p>
+    <table>
+       <thead><tr><th>Concept A</th><th>Concept B</th></tr></thead>
+       <tbody><tr><td>[Diff 1]</td><td>[Diff 1]</td></tr></tbody>
+    </table>
+    
+    <div class="end-marker">*** END OF MODULE ***</div>
   `;
+  
   return generateGeneralLegalAdvice(prompt);
 };
