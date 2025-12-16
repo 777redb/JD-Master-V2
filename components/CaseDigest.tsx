@@ -13,40 +13,46 @@ import {
   ZoomIn,
   ZoomOut,
   X,
-  Sparkles
+  Sparkles,
+  AlignLeft,
+  AlignJustify
 } from 'lucide-react';
 
 type Theme = 'light' | 'sepia' | 'dark' | 'night';
 type LegalFont = 'font-serif' | 'font-crimson' | 'font-sans' | 'font-mono';
 
-const THEMES: Record<Theme, { bg: string, text: string, ui: string, border: string, prose: string }> = {
+const THEMES: Record<Theme, { bg: string, text: string, ui: string, border: string, prose: string, pageBg: string }> = {
   light: { 
-    bg: 'bg-white', 
+    bg: 'bg-slate-200', 
     text: 'text-slate-900', 
     ui: 'bg-white border-slate-200',
     border: 'border-slate-200',
-    prose: 'prose-slate'
+    prose: 'prose-slate',
+    pageBg: 'bg-white'
   },
   sepia: { 
-    bg: 'bg-[#f4ecd8]', 
-    text: 'text-[#5b4636]', 
-    ui: 'bg-[#eaddcf] border-[#d3c4b1]',
+    bg: 'bg-[#eaddcf]', 
+    text: 'text-[#463525]', 
+    ui: 'bg-[#f4ecd8] border-[#d3c4b1]',
     border: 'border-[#d3c4b1]',
-    prose: 'prose-amber'
+    prose: 'prose-amber',
+    pageBg: 'bg-[#fbf7f0]'
   },
   dark: { 
-    bg: 'bg-[#1e293b]', 
-    text: 'text-slate-100', 
-    ui: 'bg-[#0f172a] border-slate-700',
+    bg: 'bg-[#0f172a]', 
+    text: 'text-slate-300', 
+    ui: 'bg-[#1e293b] border-slate-700',
     border: 'border-slate-700',
-    prose: 'prose-invert'
+    prose: 'prose-invert',
+    pageBg: 'bg-[#1e293b]'
   },
   night: { 
     bg: 'bg-black', 
-    text: 'text-gray-300', 
+    text: 'text-gray-400', 
     ui: 'bg-gray-900 border-gray-800',
     border: 'border-gray-800',
-    prose: 'prose-invert'
+    prose: 'prose-invert',
+    pageBg: 'bg-[#0a0a0a]'
   }
 };
 
@@ -68,11 +74,13 @@ export const CaseDigest: React.FC = () => {
   // Reading Settings
   const [theme, setTheme] = useState<Theme>('light');
   const [zoomLevel, setZoomLevel] = useState(100);
-  const [fontFamily, setFontFamily] = useState<LegalFont>('font-serif');
+  const [fontFamily, setFontFamily] = useState<LegalFont>('font-crimson');
   const [showAppearance, setShowAppearance] = useState(false);
+  const [textAlign, setTextAlign] = useState<'justify' | 'left'>('justify');
 
   const currentTheme = THEMES[theme];
-  const effectiveFontSize = Math.round(16 * (zoomLevel / 100));
+  // Base font size calculations to mimic print points (pt)
+  const effectiveFontSize = Math.round(18 * (zoomLevel / 100)); 
   const debounceTimer = useRef<any>(null);
 
   // Auto-suggest logic
@@ -134,11 +142,111 @@ export const CaseDigest: React.FC = () => {
   };
 
   return (
-    <div className={`h-full flex flex-col ${currentTheme.bg} transition-colors duration-300`}>
+    <div className={`h-full flex flex-col ${currentTheme.bg} transition-colors duration-300 relative`}>
+      {/* 
+         Dynamic CSS Injection for "Book-Grade" Typography.
+         Strict adherence to typesetting rules.
+      */}
+      <style>{`
+        .book-content {
+          text-align: ${textAlign};
+          line-height: 1.7; /* Relaxed leading for readability */
+          hyphens: auto;
+        }
+
+        /* HEADINGS */
+        .book-content h1, .book-content h2, .book-content h3 {
+          text-align: center;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          margin-top: 2.5rem;
+          margin-bottom: 1.5rem;
+          line-height: 1.2;
+          padding-bottom: 1rem;
+          border-bottom: 3px double ${theme === 'light' ? '#1e293b' : 'currentColor'};
+          text-indent: 0;
+        }
+        
+        .book-content h3 {
+           font-size: 1.25em;
+           border-bottom-width: 1px;
+           border-style: solid;
+        }
+
+        .book-content h4 {
+          font-weight: 700;
+          margin-top: 2rem;
+          margin-bottom: 1rem;
+          font-size: 1.1em;
+          text-transform: uppercase;
+          text-indent: 0;
+          page-break-after: avoid;
+          color: ${theme === 'light' ? '#b45309' : theme === 'sepia' ? '#78350f' : 'inherit'}; /* Amber-700 for light */
+        }
+
+        /* PARAGRAPH INDENTATION LOGIC */
+        /* Standard: Indent all paragraphs by default */
+        .book-content p {
+          margin-top: 0;
+          margin-bottom: 0.75rem;
+          text-indent: 2.5em; 
+        }
+        
+        /* EXCEPTION: No indent for the first paragraph after a heading (Typographic Standard) */
+        .book-content h1 + p,
+        .book-content h3 + p,
+        .book-content h4 + p,
+        .book-content hr + p,
+        .book-content div + p,
+        .book-content blockquote + p {
+          text-indent: 0;
+        }
+
+        /* LISTS */
+        .book-content ul, .book-content ol {
+          margin-top: 1rem;
+          margin-bottom: 1.5rem;
+          padding-left: 2rem;
+          text-indent: 0; /* Reset indent for list container */
+        }
+        
+        .book-content li {
+          margin-bottom: 0.5rem;
+          padding-left: 0.5rem;
+          text-indent: 0; /* Reset indent for list items */
+        }
+        
+        .book-content li p {
+          text-indent: 0; 
+          margin-bottom: 0;
+        }
+
+        /* BLOCKQUOTES (Annotations/Jurisprudence) */
+        .book-content blockquote {
+          margin: 2rem 2.5rem;
+          padding: 1rem 1.5rem;
+          border-left: 3px solid ${theme === 'light' || theme === 'sepia' ? '#b45309' : '#fbbf24'};
+          background-color: ${theme === 'light' ? 'rgba(0,0,0,0.03)' : theme === 'sepia' ? 'rgba(91, 70, 54, 0.05)' : 'rgba(255,255,255,0.05)'};
+          font-style: italic;
+          font-size: 0.95em;
+          text-indent: 0;
+        }
+
+        /* UTILS */
+        .book-content strong { font-weight: 700; color: inherit; }
+        .book-content em { font-style: italic; color: inherit; }
+        .book-content hr { 
+          border: 0; 
+          border-top: 1px solid ${theme === 'light' || theme === 'sepia' ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.2)'}; 
+          margin: 3rem auto; 
+          width: 40%;
+        }
+      `}</style>
       
       {/* Top Bar: Controls & Input */}
-      <div className={`border-b z-20 transition-all duration-300 ease-in-out ${currentTheme.ui} shadow-sm ${isInputExpanded ? 'py-4' : 'py-2'}`}>
-        <div className="px-6 flex items-start gap-4">
+      <div className={`border-b z-20 sticky top-0 transition-all duration-300 ease-in-out ${currentTheme.ui} shadow-md ${isInputExpanded ? 'py-4' : 'py-2'}`}>
+        <div className="max-w-7xl mx-auto w-full px-4 lg:px-6 flex items-start gap-4">
           
           {/* Input Area */}
           {isInputExpanded ? (
@@ -242,18 +350,18 @@ export const CaseDigest: React.FC = () => {
                   <Settings size={20} />
                 </button>
                 
-                 {/* Settings Popover (Reused) */}
+                 {/* Settings Popover */}
                 {showAppearance && (
-                  <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-xl shadow-xl border border-slate-200 p-5 z-50">
+                  <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-xl shadow-xl border border-slate-200 p-5 z-50 animate-in fade-in slide-in-from-top-2 text-slate-900">
                     <div className="flex justify-between items-center mb-4">
-                      <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Display</span>
+                      <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Reader View</span>
                       <button onClick={() => setShowAppearance(false)} className="text-slate-400 hover:text-slate-600"><X size={16}/></button>
                     </div>
 
                     {/* Zoom */}
                     <div className="mb-4">
                       <div className="flex items-center justify-between mb-2">
-                         <span className="text-xs font-bold text-slate-600">Size</span>
+                         <span className="text-xs font-bold text-slate-600">Font Size</span>
                          <span className="text-xs text-slate-400">{zoomLevel}%</span>
                       </div>
                       <div className="flex bg-slate-100 rounded-lg p-1">
@@ -262,15 +370,35 @@ export const CaseDigest: React.FC = () => {
                       </div>
                     </div>
 
+                    {/* Alignment */}
+                    <div className="mb-4">
+                       <span className="text-xs font-bold text-slate-600 block mb-2">Alignment</span>
+                       <div className="flex bg-slate-100 rounded-lg p-1">
+                          <button 
+                            onClick={() => setTextAlign('left')} 
+                            className={`flex-1 flex justify-center py-1.5 rounded transition-colors ${textAlign === 'left' ? 'bg-white shadow text-amber-600' : 'text-slate-500 hover:text-slate-700'}`}
+                          >
+                             <AlignLeft size={16} />
+                          </button>
+                          <button 
+                            onClick={() => setTextAlign('justify')} 
+                            className={`flex-1 flex justify-center py-1.5 rounded transition-colors ${textAlign === 'justify' ? 'bg-white shadow text-amber-600' : 'text-slate-500 hover:text-slate-700'}`}
+                          >
+                             <AlignJustify size={16} />
+                          </button>
+                       </div>
+                    </div>
+
                     {/* Theme */}
                     <div className="mb-4">
-                       <span className="text-xs font-bold text-slate-600 block mb-2">Theme</span>
+                       <span className="text-xs font-bold text-slate-600 block mb-2">Paper Color</span>
                        <div className="grid grid-cols-4 gap-2">
                           {Object.keys(THEMES).map((t) => (
                              <button 
                                 key={t} 
                                 onClick={() => setTheme(t as Theme)}
                                 className={`h-8 rounded-full border-2 ${THEMES[t as Theme].bg} ${theme === t ? 'border-amber-500 ring-1 ring-amber-500' : 'border-slate-200'}`}
+                                title={t}
                              />
                           ))}
                        </div>
@@ -278,7 +406,7 @@ export const CaseDigest: React.FC = () => {
                     
                      {/* Font */}
                      <div>
-                       <span className="text-xs font-bold text-slate-600 block mb-2">Typeface</span>
+                       <span className="text-xs font-bold text-slate-600 block mb-2">Typography</span>
                        <select 
                          value={fontFamily}
                          onChange={(e) => setFontFamily(e.target.value as LegalFont)}
@@ -302,69 +430,63 @@ export const CaseDigest: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Reading Area */}
-      <div className={`flex-1 overflow-y-auto p-6 md:p-12 scroll-smooth ${currentTheme.bg}`}>
+      {/* Main Reading Area - Paper Simulation */}
+      <div className={`flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth ${currentTheme.bg}`}>
         {isProcessing ? (
            <div className="h-full flex flex-col items-center justify-center opacity-70">
-              <Loader2 className={`animate-spin mb-4 ${theme === 'light' ? 'text-amber-600' : 'text-amber-400'}`} size={48} />
-              <p className={`font-serif text-lg animate-pulse ${currentTheme.text}`}>Analyzing Jurisprudence...</p>
+              <Loader2 className={`animate-spin mb-4 ${theme === 'light' ? 'text-amber-800' : 'text-amber-500'}`} size={64} />
+              <p className={`font-serif text-xl font-medium animate-pulse ${currentTheme.text}`}>Analyzing Case Jurisprudence...</p>
+              <p className={`text-sm mt-2 opacity-60 ${currentTheme.text}`}>Extracting Facts, Issue, and Ruling</p>
            </div>
         ) : digest ? (
            <div 
-             className={`max-w-4xl mx-auto min-h-full pb-20 ${fontFamily}`}
+             className={`
+                max-w-[8.5in] mx-auto min-h-[11in] 
+                ${currentTheme.pageBg} 
+                ${fontFamily} 
+                ${currentTheme.text}
+                shadow-2xl 
+                py-16 px-12 md:px-16
+                mb-20
+                rounded-sm
+                transition-all duration-500
+                book-content
+             `}
+             style={{ fontSize: `${effectiveFontSize}px` }}
            >
               {/* Digest Header */}
-              <div className={`border-b-2 pb-6 mb-10 ${theme === 'light' ? 'border-slate-900' : 'border-slate-500'}`}>
-                 <div className="flex justify-between items-start">
-                    <div>
-                       <span className="text-xs font-bold uppercase tracking-[0.2em] opacity-60">Case Digest</span>
-                       <h1 className={`text-3xl font-bold mt-2 leading-tight ${currentTheme.text}`}>{input}</h1>
-                    </div>
+              <div className={`border-b-2 pb-6 mb-10 text-center ${theme === 'light' ? 'border-slate-900' : 'border-current'}`}>
+                 <div className="flex justify-between items-start absolute right-16 top-16 opacity-50 hover:opacity-100 transition-opacity">
                     <button 
                       onClick={handleCopy}
-                      className={`p-2 rounded-lg hover:bg-black/5 transition-colors opacity-50 hover:opacity-100 ${currentTheme.text}`}
+                      className="p-2 rounded-lg hover:bg-black/5"
                       title="Copy to Clipboard"
                     >
                       <Copy size={20} />
                     </button>
                  </div>
+                 <span className="text-xs font-bold uppercase tracking-[0.2em] opacity-60">Case Digest</span>
+                 <h1 className="text-3xl font-bold mt-4 leading-tight uppercase tracking-tight">{input}</h1>
               </div>
 
               {/* Content */}
               <div 
-                  className={`
-                      prose prose-lg max-w-none 
-                      ${currentTheme.prose}
-                      
-                      prose-headings:font-serif prose-headings:text-inherit
-                      prose-h3:text-2xl prose-h3:text-center prose-h3:uppercase prose-h3:tracking-widest prose-h3:font-bold prose-h3:my-10
-                      prose-h4:text-lg prose-h4:uppercase prose-h4:tracking-widest prose-h4:font-bold 
-                      prose-h4:mt-12 prose-h4:mb-4 prose-h4:pb-2 
-                      prose-h4:border-b ${theme === 'light' ? 'prose-h4:border-slate-300' : 'prose-h4:border-white/20'}
-
-                      prose-p:text-inherit prose-p:leading-loose prose-p:text-justify prose-p:indent-8 prose-p:mb-6
-                      prose-blockquote:not-italic prose-blockquote:border-l-4 prose-blockquote:pl-6 prose-blockquote:py-2
-                      ${theme === 'light' ? 'prose-blockquote:border-amber-500 prose-blockquote:bg-amber-50/50' : 'prose-blockquote:border-amber-400 prose-blockquote:bg-white/10'}
-                  `}
-                  style={{ 
-                      fontSize: `${effectiveFontSize}px`,
-                      '--tw-prose-body': 'inherit',
-                      '--tw-prose-headings': 'inherit',
-                  } as React.CSSProperties}
                   dangerouslySetInnerHTML={{ __html: digest }} 
               />
               
-              <div className="mt-16 text-center opacity-40">
+              <div className="mt-20 pt-10 border-t border-current/20 text-center opacity-40">
                  <p className="text-xs uppercase tracking-widest">*** End of Digest ***</p>
               </div>
            </div>
         ) : (
-           <div className="h-full flex flex-col items-center justify-center opacity-40">
-              <div className={`w-24 h-24 rounded-full flex items-center justify-center mb-6 border-2 ${currentTheme.border}`}>
+           <div className="h-full flex flex-col items-center justify-center opacity-60">
+              <div className={`w-32 h-32 rounded-full flex items-center justify-center mb-8 border-4 border-double ${currentTheme.border} ${currentTheme.pageBg} shadow-lg`}>
                   <FileText size={48} className={currentTheme.text} />
               </div>
-              <p className={`font-serif text-xl ${currentTheme.text}`}>Enter a Case Name or G.R. Number to begin.</p>
-              <p className="text-sm mt-2 opacity-60">Try searching for "Chi Ming Tsoi vs CA"</p>
+              <h2 className={`text-3xl font-serif font-bold mb-4 ${currentTheme.text}`}>Case Digest AI</h2>
+              <p className={`text-lg text-center max-w-md leading-relaxed opacity-80 ${currentTheme.text}`}>
+                Enter a Case Name or G.R. Number to generate a structured, textbook-quality legal summary instantly.
+              </p>
            </div>
         )}
       </div>
