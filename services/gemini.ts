@@ -424,108 +424,115 @@ export const analyzeLegalResearch = async (query: string): Promise<string> => {
 }
 
 export const generateLawSyllabus = async (topic: string, profile: string): Promise<string> => {
-  // Determine sophistication level based on profile
   const isAdvanced = profile.toLowerCase().includes('bar') || profile.toLowerCase().includes('lawyer') || profile.toLowerCase().includes('senior');
   
-  let instructions = "";
-  let structure = "";
+  // -- ADVANCED / BAR REVIEWEE STRATEGY --
+  // Focus: Exceptions, Jurisprudential Shifts, Bar Traps, Remedial Integration
+  const advancedStrategy = `
+    **ROLE:** You are a **Bar Review Director** and **Senior Legal Editor**.
+    **AUDIENCE:** ${profile} (Advanced/Bar Candidates). They know the basics. Do NOT give them generic definitions.
+    **TASK:** Write a **Premium Reviewer Chapter** on "${topic}".
+    **TONE:** Authoritative, high-density, jurisprudential, and analytical.
+    
+    **MANDATORY CONTENT REQUIREMENTS:**
+    1.  **DEPTH OVER BREADTH:** Do not summarize. Elaborate on the *nuances*.
+    2.  **JURISPRUDENCE HEAVY:** You MUST cite at least 4-6 specific Supreme Court cases (include G.R. Nos. where possible). Explain *why* the doctrine applies.
+    3.  **EXCEPTIONS TO THE RULE:** Devote at least 30% of the content to exceptions, qualifications, and "Bar Exam Traps".
+    4.  **CONFLICTING DOCTRINES:** If applicable, discuss the evolution of the rule (Old Rule vs. New Rule).
+    5.  **REMEDIAL INTEGRATION:** Explain the procedural aspect (Jurisdiction, Evidence, Pleadings) related to this substantive topic.
+    
+    **STRUCTURE (HTML):**
+    <h1>${topic.toUpperCase()}</h1>
+    <hr />
+    
+    <h3>I. DOCTRINAL CORE & NUANCES</h3>
+    <p>[Deep dive into the specific legal provision. Go beyond the text. Explain the "Verba Legis" vs "Ratio Legis".]</p>
+    
+    <h3>II. THE "GENERAL RULE" VS. EXCEPTIONS</h3>
+    <p>[State the general rule briefly, then EXPAND HEAVILY on the exceptions. Use bullet points for exceptions.]</p>
+    <ul>
+      <li><strong>Exception 1:</strong> [Detailed explanation with case citation]</li>
+      <li><strong>Exception 2:</strong> [Detailed explanation with case citation]</li>
+    </ul>
 
-  if (isAdvanced) {
-    instructions = `
-      **Target Audience:** ${profile} (Advanced Level).
-      **Approach:** Act as a Bar Review Director. 
-      **Goal:** Create a high-yield, dense reviewer module.
-      **Strict Rules:**
-      1. **NO FLUFF.** Do not define basic terms unless necessary for distinction.
-      2. **FOCUS:** Focus on **Exceptions to the Rule**, **Conflicting Doctrines**, **Recent Jurisprudence (2015-Present)**, and **Remedial Complexities**.
-      3. **DEPTH:** Minimum 2000 words equivalent.
-    `;
-    structure = `
-      <h1>${topic.toUpperCase()} (ADVANCED REVIEWER)</h1>
-      <p><strong>Focus:</strong> High-Yield Bar Topics & Jurisprudential Updates</p>
-      <hr />
+    <h3>III. CRITICAL JURISPRUDENCE (MUST KNOW)</h3>
+    <p>The Supreme Court has clarified this doctrine in the following landmark cases:</p>
+    <blockquote>
+       <strong>[Case Name 1]</strong><br/>
+       "[Insert the specific controlling doctrine/ruling here. Not just the facts, but the legal principle.]"
+    </blockquote>
+    <blockquote>
+       <strong>[Case Name 2]</strong><br/>
+       "[Insert the specific controlling doctrine/ruling here.]"
+    </blockquote>
 
-      <h3>I. DOCTRINAL REFRESHER & NUANCES</h3>
-      <p>[Briefly state the general rule, then immediately pivot to the <strong>Exceptions</strong> and <strong>Qualifications</strong>. Cite specific provisions.]</p>
-      
-      <h3>II. JURISPRUDENTIAL EVOLUTION</h3>
-      <p>[Analyze how the Supreme Court's interpretation has shifted. Compare old vs. new rulings.]</p>
-      <ul>
-         <li><strong><em>Old Doctrine:</em></strong> [Case Name]</li>
-         <li><strong><em>Controlling Doctrine:</em></strong> [Case Name] - [Explain the shift]</li>
-      </ul>
+    <h3>IV. BAR EXAM TRAPS & DISTINCTIONS</h3>
+    <p>[Identify common confusing concepts. Distinguish them clearly.]</p>
+    <table>
+       <thead><tr><th>Concept A</th><th>Concept B</th><th>Distinction</th></tr></thead>
+       <tbody><tr><td>...</td><td>...</td><td>...</td></tr></tbody>
+    </table>
 
-      <h3>III. COMPLEX SCENARIOS & BAR TRAPS</h3>
-      <p>[Present complex hypothetical scenarios often found in Bar Exams. Explain the solution using the "Legal Basis - Application - Conclusion" format.]</p>
+    <h3>V. PROCEDURAL & PRACTICAL APPLICATION</h3>
+    <p>[How is this applied in court? What are the evidentiary requirements? Which court has jurisdiction?]</p>
+  `;
 
-      <h3>IV. REMEDIAL LAW INTEGRATION</h3>
-      <p>[Explain the procedural aspects relevant to this substantive topic (e.g., Jurisdiction, Pleadings, Evidence required).]</p>
-    `;
-  } else {
-    // Freshman / Junior
-    instructions = `
-      **Target Audience:** ${profile} (Foundational Level).
-      **Approach:** Act as a Professor of Law. 
-      **Goal:** Create a comprehensive, textbook-style chapter.
-      **Strict Rules:**
-      1. **CLARITY:** Define every legal term. Explain the "Why" (Ratio Legis).
-      2. **BASICS:** Focus on **Statutory Construction**, **Verba Legis**, **Elements/Requisites**, and **Illustrative Examples**.
-      3. **DEPTH:** Minimum 1500 words equivalent.
-    `;
-    structure = `
-      <h1>${topic.toUpperCase()} (FOUNDATIONAL MODULE)</h1>
-      <p><strong>Scope:</strong> Comprehensive Analysis for Law Students</p>
-      <hr />
+  // -- FOUNDATIONAL / FRESHMAN STRATEGY --
+  // Focus: Rationale, Elements, Definitions, Illustrations
+  const foundationalStrategy = `
+    **ROLE:** You are a **Professor of Law** and **Book Author**.
+    **AUDIENCE:** ${profile} (Freshman/Foundational). They need clarity and structure.
+    **TASK:** Write a **Comprehensive Textbook Chapter** on "${topic}".
+    **TONE:** Didactic, clear, explanatory, and illustrative.
+    
+    **MANDATORY CONTENT REQUIREMENTS:**
+    1.  **CLARITY FIRST:** Define every legal term used. Explain the Latin maxims.
+    2.  **RATIO LEGIS:** Explain the *purpose* of the law. Why does it exist?
+    3.  **ELEMENTS-BASED:** Break down the concept into its essential requisites/elements.
+    4.  **ILLUSTRATIONS:** Provide concrete, real-world examples (hypothetical scenarios) for every major point.
+    
+    **STRUCTURE (HTML):**
+    <h1>${topic.toUpperCase()}</h1>
+    <hr />
+    
+    <h3>I. GENERAL CONCEPT & DEFINITION</h3>
+    <p>[Define the concept in simple terms first, then provide the legal definition. Explain the etymology or history if relevant.]</p>
+    
+    <h3>II. THE PURPOSE OF THE LAW (RATIO LEGIS)</h3>
+    <p>[Why did Congress enact this? What evil does it seek to prevent?]</p>
 
-      <h3>I. GENERAL CONCEPT & RATIONALE</h3>
-      <p>[Define the concept clearly. Explain the "Why" (Ratio Legis). What is the purpose of this law?]</p>
+    <h3>III. ESSENTIAL REQUISITES (ELEMENTS)</h3>
+    <p>For this law to apply, the following elements must be present:</p>
+    <ul>
+      <li><strong>Element 1: [Name]</strong> — [Explain what this means. Give an example.]</li>
+      <li><strong>Element 2: [Name]</strong> — [Explain what this means. Give an example.]</li>
+    </ul>
 
-      <h3>II. ESSENTIAL ELEMENTS (REQUISITES)</h3>
-      <p>For this law to apply, the following elements must concur. Memorize these:</p>
-      <ul>
-         <li><strong>Element 1: [Name]</strong> — [Detailed explanation with simple example]</li>
-         <li><strong>Element 2: [Name]</strong> — [Detailed explanation with simple example]</li>
-      </ul>
+    <h3>IV. STATUTORY BASIS</h3>
+    <div class="statute-box">
+       <p><strong>[Article/Section Number]</strong></p>
+       <p>[Verbatim Text of the Law]</p>
+       <p><em>Professor's Note:</em> [Break down the difficult words in the provision.]</p>
+    </div>
 
-      <h3>III. STATUTORY BASIS (CODAL PROVISIONS)</h3>
-      <div class="statute-box">
-         <p><strong>[Primary Article/Section]</strong></p>
-         <p>[Verbatim Text of the Law]</p>
-         <p><em>Professor's Annotation:</em> [Break down the legalese into plain English.]</p>
-      </div>
+    <h3>V. ILLUSTRATIVE EXAMPLES</h3>
+    <p><strong>Scenario A:</strong> [Give a simple facts scenario]</p>
+    <p><strong>Answer:</strong> [Explain the answer using the elements above.]</p>
+  `;
 
-      <h3>IV. ILLUSTRATIVE CASES</h3>
-      <p>How does the Supreme Court apply this?</p>
-      <blockquote>
-         <strong>[Case Name]</strong><br/>
-         "[Key Ruling/Doctrine. Keep it focused on the application of the elements.]"
-      </blockquote>
-    `;
-  }
+  const selectedStrategy = isAdvanced ? advancedStrategy : foundationalStrategy;
 
   const prompt = `
-    Act as the **Editor-in-Chief of a Premium Philippine Law Publishing House**.
-    
-    **Task:** Write a **Reviewer Module** on: "${topic}".
-    ${instructions}
+    ${selectedStrategy}
 
-    **STRICT HTML FORMATTING RULES:**
-    1. Use semantic HTML (h1, h3, p, ul, li, blockquote).
-    2. **NO Markdown** (no ** or ##). Use <strong> for bold, <em> for italics.
-    3. **Paragraphs:** Must be substantial (5-8 sentences). Do NOT write one-sentence paragraphs.
-    4. **Indentation:** Do NOT add spaces/tabs in HTML. The CSS handles indentation.
+    **UNIVERSAL FORMATTING RULES (STRICT):**
+    1.  **HTML ONLY:** Output pure HTML. No Markdown (\`\`\`).
+    2.  **NO SUMMARIES:** This must be a **full chapter**. Target length: equivalent to 3-5 book pages.
+    3.  **SEMANTIC TAGS:** Use <h3> for main headers, <h4> for sub-headers.
+    4.  **PARAGRAPHS:** Use dense, well-structured paragraphs (5-8 sentences minimum). Do not write one-sentence paragraphs.
+    5.  **INDENTATION:** Do NOT add non-breaking spaces. The CSS handles indentation.
     
-    **REQUIRED STRUCTURE:**
-    ${structure}
-
-    <h3>V. DISTINCTIONS</h3>
-    <p>[Distinguish from similar concepts (e.g., Theft vs Estafa). Use a table.]</p>
-    <table>
-       <thead><tr><th>Concept A</th><th>Concept B</th></tr></thead>
-       <tbody><tr><td>[Diff 1]</td><td>[Diff 1]</td></tr></tbody>
-    </table>
-    
-    <div class="end-marker">*** END OF MODULE ***</div>
+    <div class="end-marker">*** END OF CHAPTER ***</div>
   `;
   
   return generateGeneralLegalAdvice(prompt);

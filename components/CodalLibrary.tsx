@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { PHILIPPINE_CODALS, CODAL_CATEGORIES } from '../constants';
 import { generateGeneralLegalAdvice } from '../services/gemini';
@@ -15,7 +16,9 @@ import {
   Plus,
   X,
   ZoomIn,
-  ZoomOut
+  ZoomOut,
+  AlignLeft,
+  AlignJustify
 } from 'lucide-react';
 import { CodalNavigation } from '../types';
 
@@ -75,34 +78,38 @@ const NavItem: React.FC<NavItemProps> = ({ item, depth = 0, expandedNodes, activ
 type Theme = 'light' | 'sepia' | 'dark' | 'night';
 type LegalFont = 'font-serif' | 'font-crimson' | 'font-sans' | 'font-mono';
 
-const THEMES: Record<Theme, { bg: string, text: string, ui: string, border: string, prose: string }> = {
+const THEMES: Record<Theme, { bg: string, text: string, ui: string, border: string, prose: string, pageBg: string }> = {
   light: { 
-    bg: 'bg-white', 
+    bg: 'bg-slate-200', 
     text: 'text-slate-900', 
     ui: 'bg-white border-slate-200',
     border: 'border-slate-200',
-    prose: 'prose-slate'
+    prose: 'prose-slate',
+    pageBg: 'bg-white'
   },
   sepia: { 
-    bg: 'bg-[#f4ecd8]', 
-    text: 'text-[#5b4636]', 
-    ui: 'bg-[#eaddcf] border-[#d3c4b1]',
+    bg: 'bg-[#eaddcf]', 
+    text: 'text-[#463525]', 
+    ui: 'bg-[#f4ecd8] border-[#d3c4b1]',
     border: 'border-[#d3c4b1]',
-    prose: 'prose-amber'
+    prose: 'prose-amber',
+    pageBg: 'bg-[#fbf7f0]'
   },
   dark: { 
-    bg: 'bg-[#1e293b]', 
-    text: 'text-slate-100', 
-    ui: 'bg-[#0f172a] border-slate-700',
+    bg: 'bg-[#0f172a]', 
+    text: 'text-slate-300', 
+    ui: 'bg-[#1e293b] border-slate-700',
     border: 'border-slate-700',
-    prose: 'prose-invert'
+    prose: 'prose-invert',
+    pageBg: 'bg-[#1e293b]'
   },
   night: { 
     bg: 'bg-black', 
-    text: 'text-gray-300', 
+    text: 'text-gray-400', 
     ui: 'bg-gray-900 border-gray-800',
     border: 'border-gray-800',
-    prose: 'prose-invert'
+    prose: 'prose-invert',
+    pageBg: 'bg-[#0a0a0a]'
   }
 };
 
@@ -126,13 +133,14 @@ export const CodalLibrary: React.FC = () => {
   const [showAppearance, setShowAppearance] = useState(false);
   const [theme, setTheme] = useState<Theme>('light');
   const [zoomLevel, setZoomLevel] = useState(100); // Percentage
-  const [fontFamily, setFontFamily] = useState<LegalFont>('font-serif');
+  const [fontFamily, setFontFamily] = useState<LegalFont>('font-crimson');
+  const [textAlign, setTextAlign] = useState<'justify' | 'left'>('justify');
 
   const selectedCode = PHILIPPINE_CODALS.find(c => c.id === selectedCodeId);
   const currentTheme = THEMES[theme];
 
-  // Base font size is 16px, zoom adjusts this
-  const effectiveFontSize = Math.round(16 * (zoomLevel / 100));
+  // Base font size is 18px (book standard), zoom adjusts this
+  const effectiveFontSize = Math.round(18 * (zoomLevel / 100));
 
   const handleCodeSelect = (codeId: string) => {
     setSelectedCodeId(codeId);
@@ -178,21 +186,48 @@ export const CodalLibrary: React.FC = () => {
     
     try {
       const prompt = `
-        You are an authoritative legal database. 
-        FETCH and GENERATE the COMPLETE, VERBATIM TEXT for: ${nav.query}.
+        Act as a **Senior Legal Commentator and Supreme Court Justice**.
+        Context: ${selectedCode?.name || 'Philippine Law'}.
+        Task: Provide a **Comprehensive Annotated Commentary** on: "${nav.query}".
+
+        **STRICT OUTPUT FORMAT (Book Layout):**
         
-        CRITICAL INSTRUCTIONS:
-        1. DO NOT Summarize. DO NOT Paraphrase.
-        2. Output EVERY single Article/Section within this requested scope.
-        3. If the scope is large (e.g. "Civil Code Book IV"), you must ensure the response covers the primary Articles in the Title/Chapter requested.
+        <h3>[Title of Article/Section]</h3>
+
+        <div class="statute-box">
+           <p><strong>[Article Number]</strong></p>
+           <p>[Provide the VERBATIM text of the law here. Do not summarize.]</p>
+        </div>
+
+        <h4>I. CONCEPT & RATIONALE</h4>
+        <p>[Explain the spirit of the law (Ratio Legis). Why was this enacted? What is the core concept?]</p>
+
+        <h4>II. ESSENTIAL ELEMENTS / REQUISITES</h4>
+        <p>[Break down the provision into its components.]</p>
+        <ul>
+           <li><strong>[Element 1]</strong>: [Explanation]</li>
+           <li><strong>[Element 2]</strong>: [Explanation]</li>
+        </ul>
+
+        <h4>III. JURISPRUDENCE & DOCTRINES</h4>
+        <p>The Supreme Court has interpreted this provision in the following key cases:</p>
+        <blockquote>
+           <strong>[Case Name, G.R. No.]</strong><br/>
+           "[Insert the specific doctrine or ruling. This must be a direct quote or a faithful abstract of the ruling.]"
+        </blockquote>
+        <blockquote>
+           <strong>[Case Name, G.R. No.]</strong><br/>
+           "[Insert another relevant doctrine.]"
+        </blockquote>
+
+        <h4>IV. ILLUSTRATION / APPLICATION</h4>
+        <p><strong>Scenario:</strong> [A simple hypothetical problem]</p>
+        <p><strong>Answer:</strong> [Apply the law to the facts.]</p>
+
+        <hr/>
+        <p><em>See also: [Related Provisions or Laws]</em></p>
         
-        FORMATTING:
-        - Output strictly as HTML.
-        - Use <h3> for the Title/Chapter Heading.
-        - Use <h4> for Section/Article Headings (e.g., "Article 1156").
-        - Use <p> for the provision text.
-        - Include brief annotations or cross-references to related jurisprudence in <blockquote class="italic border-l-4 my-4 pl-4 opacity-80"> if necessary for context.
-        - Tables: Use <table>, <thead>, <tbody>, <th>, <td>.
+        OUTPUT HTML ONLY. NO MARKDOWN.
       `;
       const result = await generateGeneralLegalAdvice(prompt);
       setAiResponse(result);
@@ -210,8 +245,27 @@ export const CodalLibrary: React.FC = () => {
     setIsLoading(true);
     try {
       const codeName = selectedCode ? selectedCode.name : "All Philippine Codals";
-      const prompt = `In the context of ${codeName}, explain or find provisions related to: "${searchQuery}". 
-           Cite specific Articles/Sections. Format as an authoritative legal text with HTML.`;
+      const prompt = `
+        Act as an **Annotated Legal Library**.
+        Context: ${codeName}.
+        Search Query: "${searchQuery}".
+        
+        Task: Find the specific legal provisions (Articles/Sections) relevant to the query and provide a **Commentary**.
+        
+        **REQUIRED STRUCTURE (HTML):**
+        <h3>[Main Article/Provision Found]</h3>
+        
+        <div class="statute-box">
+           <p>[Verbatim Text of the Law]</p>
+        </div>
+
+        <h4>COMMENTARY & JURISPRUDENCE</h4>
+        <p>[Explain the law in relation to the search query ("${searchQuery}").]</p>
+        <p><strong>Relevant Doctrine:</strong> [Cite a Supreme Court case that applies here.]</p>
+        
+        <h4>APPLICATION</h4>
+        <p>[How does this apply to the user's search?]</p>
+      `;
       
       const result = await generateGeneralLegalAdvice(prompt);
       setAiResponse(result);
@@ -224,13 +278,169 @@ export const CodalLibrary: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col">
+       {/* 
+         Dynamic CSS Injection for "Book-Grade" Typography.
+         Strict adherence to typesetting rules.
+      */}
+      <style>{`
+        .book-content {
+          text-align: ${textAlign};
+          line-height: 1.7; /* Relaxed leading for readability */
+          hyphens: auto;
+        }
+
+        /* HEADINGS */
+        .book-content h1, .book-content h2, .book-content h3 {
+          text-align: center;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          margin-top: 2.5rem;
+          margin-bottom: 1.5rem;
+          line-height: 1.2;
+          padding-bottom: 1rem;
+          border-bottom: 3px double ${theme === 'light' ? '#1e293b' : 'currentColor'};
+          text-indent: 0;
+        }
+        
+        .book-content h3 {
+           font-size: 1.25em;
+           border-bottom-width: 1px;
+           border-style: solid;
+        }
+
+        .book-content h4 {
+          font-weight: 700;
+          margin-top: 2rem;
+          margin-bottom: 1rem;
+          font-size: 1.1em;
+          text-transform: uppercase;
+          text-indent: 0;
+          page-break-after: avoid;
+          color: ${theme === 'light' ? '#b45309' : theme === 'sepia' ? '#78350f' : 'inherit'}; /* Amber-700 for light */
+        }
+
+        /* STATUTE BOX (The Law Itself) */
+        .book-content .statute-box {
+          border: 1px solid ${theme === 'light' || theme === 'sepia' ? '#cbd5e1' : '#334155'};
+          background-color: ${theme === 'light' ? '#f8fafc' : theme === 'sepia' ? '#f4e9d6' : 'rgba(255,255,255,0.03)'};
+          padding: 1.5rem;
+          margin: 2rem 0;
+          border-radius: 2px;
+          text-indent: 0;
+          font-family: 'Merriweather', serif;
+          position: relative;
+        }
+        
+        .book-content .statute-box::before {
+           content: 'THE LAW';
+           position: absolute;
+           top: -10px;
+           left: 20px;
+           background: ${theme === 'light' ? '#f8fafc' : theme === 'sepia' ? '#f4e9d6' : '#1e293b'};
+           padding: 0 10px;
+           font-size: 10px;
+           font-weight: bold;
+           color: #94a3b8;
+           letter-spacing: 1px;
+        }
+
+        .book-content .statute-box p {
+          text-indent: 0;
+          margin-bottom: 1em;
+        }
+        .book-content .statute-box p:last-child {
+          margin-bottom: 0;
+        }
+
+        /* PARAGRAPH INDENTATION LOGIC */
+        /* Standard: Indent all paragraphs by default */
+        .book-content p {
+          margin-top: 0;
+          margin-bottom: 0.75rem;
+          text-indent: 2.5em; 
+        }
+        
+        /* EXCEPTION: No indent for the first paragraph after a heading (Typographic Standard) */
+        .book-content h1 + p,
+        .book-content h3 + p,
+        .book-content h4 + p,
+        .book-content hr + p,
+        .book-content div + p,
+        .book-content blockquote + p {
+          text-indent: 0;
+        }
+
+        /* LISTS */
+        .book-content ul, .book-content ol {
+          margin-top: 1rem;
+          margin-bottom: 1.5rem;
+          padding-left: 2rem;
+          text-indent: 0; /* Reset indent for list container */
+        }
+        
+        .book-content li {
+          margin-bottom: 0.5rem;
+          padding-left: 0.5rem;
+          text-indent: 0; /* Reset indent for list items */
+        }
+        
+        .book-content li p {
+          text-indent: 0; 
+          margin-bottom: 0;
+        }
+
+        /* BLOCKQUOTES (Annotations/Jurisprudence) */
+        .book-content blockquote {
+          margin: 2rem 2.5rem;
+          padding: 1rem 1.5rem;
+          border-left: 3px solid ${theme === 'light' || theme === 'sepia' ? '#b45309' : '#fbbf24'};
+          background-color: ${theme === 'light' ? 'rgba(0,0,0,0.03)' : theme === 'sepia' ? 'rgba(91, 70, 54, 0.05)' : 'rgba(255,255,255,0.05)'};
+          font-style: italic;
+          font-size: 0.95em;
+          text-indent: 0;
+        }
+
+        /* TABLES */
+        .book-content table {
+          width: 100%;
+          border-collapse: collapse;
+          margin: 2rem 0;
+          font-size: 0.9em;
+          text-indent: 0;
+        }
+        .book-content th, .book-content td {
+          border: 1px solid ${theme === 'light' || theme === 'sepia' ? '#cbd5e1' : '#475569'};
+          padding: 0.75rem;
+          vertical-align: top;
+          text-align: left;
+        }
+        .book-content th {
+          background-color: ${theme === 'light' || theme === 'sepia' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)'};
+          font-weight: bold;
+          text-transform: uppercase;
+          font-size: 0.85em;
+          letter-spacing: 0.05em;
+        }
+
+        /* UTILS */
+        .book-content strong { font-weight: 700; color: inherit; }
+        .book-content em { font-style: italic; color: inherit; }
+        .book-content hr { 
+          border: 0; 
+          border-top: 1px solid ${theme === 'light' || theme === 'sepia' ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.2)'}; 
+          margin: 3rem auto; 
+          width: 40%;
+        }
+      `}</style>
+
       <div className="mb-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
            <h2 className="text-2xl font-serif font-bold text-slate-900 flex items-center gap-2">
             <BookOpen className="text-amber-600" />
             Codal Library
           </h2>
-          <p className="text-slate-500 text-sm">Official Philippine Statutes & Codes</p>
+          <p className="text-slate-500 text-sm">Official Statutes with Annotated Commentary</p>
         </div>
         
         <form onSubmit={handleSearch} className="relative w-full md:w-96">
@@ -379,6 +589,25 @@ export const CodalLibrary: React.FC = () => {
                       </div>
                     </div>
 
+                    {/* Alignment */}
+                    <div className="mb-5 pb-5 border-b border-slate-100">
+                       <span className="text-xs font-bold text-slate-600 block mb-2">Alignment</span>
+                       <div className="flex bg-slate-100 rounded-lg p-1">
+                          <button 
+                            onClick={() => setTextAlign('left')} 
+                            className={`flex-1 flex justify-center py-1.5 rounded transition-colors ${textAlign === 'left' ? 'bg-white shadow text-amber-600' : 'text-slate-500 hover:text-slate-700'}`}
+                          >
+                             <AlignLeft size={16} />
+                          </button>
+                          <button 
+                            onClick={() => setTextAlign('justify')} 
+                            className={`flex-1 flex justify-center py-1.5 rounded transition-colors ${textAlign === 'justify' ? 'bg-white shadow text-amber-600' : 'text-slate-500 hover:text-slate-700'}`}
+                          >
+                             <AlignJustify size={16} />
+                          </button>
+                       </div>
+                    </div>
+
                     {/* Font Family */}
                     <div className="mb-5 pb-5 border-b border-slate-100">
                        <span className="text-sm font-medium text-slate-700 block mb-2">Typeface</span>
@@ -420,36 +649,26 @@ export const CodalLibrary: React.FC = () => {
               {isLoading && (
                   <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/50 z-10 backdrop-blur-sm">
                     <Loader2 className="animate-spin text-amber-600 mb-4" size={40} />
-                    <p className="font-serif text-slate-600 animate-pulse font-medium">Retrieving provisions...</p>
+                    <p className="font-serif text-slate-800 font-bold text-lg animate-pulse">Annotating Law...</p>
+                    <p className="font-sans text-slate-500 text-sm mt-1">Consulting Jurisprudence & Commentaries</p>
                   </div>
               )}
 
               {aiResponse ? (
                  <div 
-                   className={`max-w-4xl mx-auto prose prose-lg ${currentTheme.prose} ${fontFamily}
-                      prose-h3:text-inherit prose-h3:font-bold prose-h3:text-2xl prose-h3:text-center prose-h3:mb-8
-                      prose-h4:text-inherit prose-h4:font-bold prose-h4:text-lg prose-h4:mt-8 prose-h4:border-b prose-h4:pb-2 ${theme === 'light' ? 'prose-h4:border-slate-200' : 'prose-h4:border-white/10'}
-                      prose-p:text-inherit prose-p:leading-loose prose-p:text-justify
-                      prose-blockquote:not-italic prose-blockquote:text-inherit
-                      prose-table:w-full prose-table:border-collapse prose-table:border prose-table:table-auto prose-table:my-8
-                      prose-thead:bg-black/5
-                      prose-th:border prose-th:p-4 prose-th:text-left prose-th:font-bold prose-th:text-inherit prose-th:opacity-100
-                      prose-td:border prose-td:p-4 prose-td:align-top prose-td:text-inherit prose-td:opacity-100
+                   className={`
+                     max-w-[8.5in] mx-auto min-h-[11in] 
+                     ${currentTheme.pageBg} ${fontFamily} ${currentTheme.text}
+                     shadow-xl
+                     py-16 px-12 md:px-16
+                     mb-20
+                     rounded-sm
+                     transition-all duration-500
+                     book-content
                    `}
-                   style={{ fontSize: `${effectiveFontSize}px`, 
-                            '--tw-prose-body': 'inherit',
-                            '--tw-prose-headings': 'inherit',
-                            '--tw-prose-td-borders': theme === 'light' ? '#e2e8f0' : '#475569',
-                            '--tw-prose-th-borders': theme === 'light' ? '#e2e8f0' : '#475569',
-                          } as React.CSSProperties}
-                 >
-                    <div className="overflow-x-auto rounded-lg">
-                      <div dangerouslySetInnerHTML={{ __html: aiResponse }} />
-                    </div>
-                    <div className="mt-12 pt-8 border-t border-white/10 flex justify-center opacity-50">
-                       <p className="text-xs uppercase tracking-widest">End of Section</p>
-                    </div>
-                 </div>
+                   style={{ fontSize: `${effectiveFontSize}px` }}
+                   dangerouslySetInnerHTML={{ __html: aiResponse }}
+                 />
               ) : selectedCode && selectedCode.structure ? (
                   <div className={`max-w-5xl mx-auto shadow-sm border p-10 lg:p-16 min-h-full ${currentTheme.ui}`}>
                     {/* Textbook Header */}

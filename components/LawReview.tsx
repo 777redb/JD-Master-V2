@@ -114,7 +114,7 @@ export const LawReview: React.FC = () => {
       <style>{`
         .book-content {
           text-align: ${textAlign};
-          line-height: 1.7; /* Relaxed leading for readability */
+          line-height: 1.8; /* Relaxed leading for long-form readability */
           hyphens: auto;
         }
 
@@ -402,8 +402,8 @@ export const LawReview: React.FC = () => {
         {isLoading ? (
             <div className="h-full flex flex-col items-center justify-center opacity-70">
               <Loader2 className={`animate-spin mb-6 ${theme === 'light' ? 'text-amber-800' : 'text-amber-500'}`} size={64} />
-              <p className={`font-serif text-xl font-medium animate-pulse ${currentTheme.text}`}>Authoring Comprehensive Module...</p>
-              <p className={`text-sm mt-2 opacity-60 ${currentTheme.text}`}>Consulting Jurisprudence & Statutes</p>
+              <p className={`font-serif text-xl font-medium animate-pulse ${currentTheme.text}`}>Drafting Comprehensive Chapter...</p>
+              <p className={`text-sm mt-2 opacity-60 ${currentTheme.text}`}>Consulting Jurisprudence & Statutes (This may take a moment)</p>
            </div>
         ) : syllabus ? (
           <div 
