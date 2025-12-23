@@ -2,9 +2,11 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { MockBarQuestion } from "../types";
 
+/**
+ * FIX: Initializing GoogleGenAI with named parameter apiKey from process.env.API_KEY
+ */
 const getAi = () => {
-  const apiKey = process.env.API_KEY || '';
-  return new GoogleGenAI({ apiKey });
+  return new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
 };
 
 async function withErrorHandling<T>(
@@ -47,6 +49,9 @@ Your task is to transform ALL generated legal content—codals, jurisprudence, c
 
 export const generateGeneralLegalAdvice = async (prompt: string): Promise<string> => {
   return withErrorHandling(async (ai) => {
+    /**
+     * FIX: Using gemini-3-pro-preview for complex text tasks as per model guidelines
+     */
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview', 
       contents: prompt,
@@ -83,12 +88,12 @@ export const generateJDModuleContent = async (subjectCode: string, subjectTitle:
   return generateGeneralLegalAdvice(prompt);
 };
 
-export const fetchLegalNews = async (): Promise<string> => {
-  const prompt = `Perform a Google Search for the latest 5 Supreme Court announcements and Republic Acts. Output as a clean HTML list using only <li> tags for each news item. Each <li> should contain a short headline in <strong> and a 1-sentence summary.`;
+export const fetchLegalNews = async (prompt?: string): Promise<string> => {
+  const defaultPrompt = `Perform a Google Search for the latest 5 Supreme Court announcements and Republic Acts. Output as a clean HTML list using only <li> tags for each news item. Each <li> should contain a short headline in <strong> and a 1-sentence summary.`;
   return withErrorHandling(async (ai) => {
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
-      contents: prompt,
+      contents: prompt || defaultPrompt,
       config: {
         systemInstruction: "You are a legal news aggregator. Output only the <li> items. No <ul> tags.",
         tools: [{ googleSearch: {} }],
@@ -105,8 +110,11 @@ export const generateCaseDigest = async (caseInfo: string): Promise<string> => {
 
 export const getCaseSuggestions = async (query: string): Promise<string[]> => {
   return withErrorHandling(async (ai) => {
+    /**
+     * FIX: Using gemini-3-flash-preview for basic text tasks
+     */
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3-flash-preview',
       contents: `5 cases containing "${query}". JSON array only.`,
       config: { responseMimeType: 'application/json' }
     });
@@ -116,11 +124,44 @@ export const getCaseSuggestions = async (query: string): Promise<string[]> => {
 
 export const generateMockBarQuestion = async (subject: string, profile: string, type: 'MCQ' | 'ESSAY'): Promise<MockBarQuestion | null> => {
   return withErrorHandling(async (ai) => {
-    const prompt = `Bar question for ${subject} (${profile}). Return JSON.`;
+    const prompt = `
+      Act as a **Member of the Philippine Bar Board of Examiners**. 
+      Create a high-level ${type} question for the Bar subject: "${subject}".
+      The difficulty should be calibrated for a **${profile}**.
+      
+      **TASK:**
+      1. Create a realistic, factual scenario (problem) typical of the Philippine Bar.
+      2. If MCQ: Provide 4 plausible choices (A, B, C, D).
+      3. If Essay: Provide a complex scenario requiring analysis.
+      4. Provide a comprehensive explanation in HTML (p, strong, blockquote).
+      5. Provide a specific citation (Article number or SC Case Name).
+      
+      Return as JSON ONLY with this schema:
+      {
+        "question": "string",
+        "choices": ["string", "string", "string", "string"], (empty if ESSAY)
+        "correctAnswerIndex": number, (0-3, -1 if ESSAY)
+        "explanation": "HTML string summarizing the reasoning and ratio decidendi",
+        "citation": "Article/Case Name"
+      }
+    `;
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
       contents: prompt,
-      config: { responseMimeType: "application/json" }
+      config: { 
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            question: { type: Type.STRING },
+            choices: { type: Type.ARRAY, items: { type: Type.STRING } },
+            correctAnswerIndex: { type: Type.NUMBER },
+            explanation: { type: Type.STRING },
+            citation: { type: Type.STRING }
+          },
+          required: ["question", "choices", "correctAnswerIndex", "explanation", "citation"]
+        }
+      }
     });
     return response.text ? JSON.parse(response.text) : null;
   }, null);
