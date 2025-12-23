@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { AppView } from '../types';
 import { 
@@ -9,7 +10,8 @@ import {
   PenTool, 
   Layout, 
   FileEdit,
-  ScrollText
+  ScrollText,
+  GraduationCap
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -67,17 +69,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, isM
 
         <nav className="flex-1 overflow-y-auto py-6 px-3">
           <div className="mb-6">
-            <p className="px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Study</p>
+            <p className="px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Academic</p>
             <NavItem view={AppView.DASHBOARD} icon={Layout} label="Dashboard" active={currentView === AppView.DASHBOARD} onClick={() => handleNav(AppView.DASHBOARD)} />
+            <NavItem view={AppView.JD_PROGRAM} icon={GraduationCap} label="JD Program" active={currentView === AppView.JD_PROGRAM} onClick={() => handleNav(AppView.JD_PROGRAM)} />
             <NavItem view={AppView.CODAL_LIBRARY} icon={BookOpen} label="Codal Library" active={currentView === AppView.CODAL_LIBRARY} onClick={() => handleNav(AppView.CODAL_LIBRARY)} />
             <NavItem view={AppView.JURISPRUDENCE} icon={Scale} label="Jurisprudence" active={currentView === AppView.JURISPRUDENCE} onClick={() => handleNav(AppView.JURISPRUDENCE)} />
             <NavItem view={AppView.CASE_DIGEST} icon={FileText} label="Case Digest" active={currentView === AppView.CASE_DIGEST} onClick={() => handleNav(AppView.CASE_DIGEST)} />
-            <NavItem view={AppView.MOCK_BAR} icon={Award} label="Mock Bar" active={currentView === AppView.MOCK_BAR} onClick={() => handleNav(AppView.MOCK_BAR)} />
             <NavItem view={AppView.LAW_REVIEW} icon={ScrollText} label="Law Review" active={currentView === AppView.LAW_REVIEW} onClick={() => handleNav(AppView.LAW_REVIEW)} />
           </div>
 
           <div>
-            <p className="px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Practice</p>
+            <p className="px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Training</p>
+            <NavItem view={AppView.MOCK_BAR} icon={Award} label="Mock Bar" active={currentView === AppView.MOCK_BAR} onClick={() => handleNav(AppView.MOCK_BAR)} />
             <NavItem view={AppView.CASE_BUILD} icon={Briefcase} label="Case Build" active={currentView === AppView.CASE_BUILD} onClick={() => handleNav(AppView.CASE_BUILD)} />
             <NavItem view={AppView.CONTRACT_DRAFTING} icon={PenTool} label="Drafting" active={currentView === AppView.CONTRACT_DRAFTING} onClick={() => handleNav(AppView.CONTRACT_DRAFTING)} />
             <NavItem view={AppView.LEGAL_PAD} icon={FileEdit} label="Legal Pad" active={currentView === AppView.LEGAL_PAD} onClick={() => handleNav(AppView.LEGAL_PAD)} />
@@ -87,7 +90,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, isM
         <div className="p-4 border-t border-slate-100">
            <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
              <p className="text-xs text-slate-500 text-center">
-               Powered by <span className="font-bold text-slate-700">Gemini 2.5 & 3.0</span>
+               Powered by <span className="font-bold text-slate-700">Gemini 3.0</span>
              </p>
            </div>
         </div>

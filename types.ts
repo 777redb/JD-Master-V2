@@ -9,6 +9,7 @@ export enum AppView {
   LAW_REVIEW = 'LAW_REVIEW',
   CONTRACT_DRAFTING = 'CONTRACT_DRAFTING',
   LEGAL_PAD = 'LEGAL_PAD',
+  JD_PROGRAM = 'JD_PROGRAM',
 }
 
 export interface ChatMessage {
@@ -21,7 +22,7 @@ export interface ChatMessage {
 export interface CodalNavigation {
   title: string;
   subtitle?: string;
-  query: string; // The specific search query to send to AI (e.g. "Civil Code Book 1 Title 1")
+  query: string; 
   children?: CodalNavigation[];
 }
 
@@ -42,16 +43,33 @@ export interface LawCode {
   name: string;
   description: string;
   category: LawCategory;
-  subcategory?: string; // Optional for finer grouping (e.g. "Public International Law")
+  subcategory?: string; 
   structure?: CodalNavigation[];
+}
+
+export interface JDSubject {
+  code: string;
+  title: string;
+  units: number;
+  description?: string;
+}
+
+export interface JDSemester {
+  name: string;
+  subjects: JDSubject[];
+}
+
+export interface JDYear {
+  year: number;
+  semesters: JDSemester[];
 }
 
 export interface MockBarQuestion {
   type?: 'MCQ' | 'ESSAY';
   question: string;
-  choices: string[]; // Empty if Essay
-  correctAnswerIndex: number; // -1 if Essay
-  explanation: string; // Model Answer for Essay
+  choices: string[]; 
+  correctAnswerIndex: number; 
+  explanation: string; 
   citation: string;
 }
 

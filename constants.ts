@@ -1,5 +1,111 @@
 
-import { LawCode, ContractTemplate, LawCategory } from "./types";
+import { LawCode, ContractTemplate, LawCategory, JDYear } from "./types";
+
+export const JD_CURRICULUM: JDYear[] = [
+  {
+    year: 1,
+    semesters: [
+      {
+        name: "First Semester",
+        subjects: [
+          { code: "Law 99", title: "Legal Bibliography", units: 1 },
+          { code: "Law 100", title: "Persons and Family Relations", units: 4 },
+          { code: "Law 109", title: "Criminal Law 1", units: 3 },
+          { code: "Law 115", title: "Legal History", units: 2 },
+          { code: "Law 116", title: "Legal Method", units: 2 },
+          { code: "Law 121", title: "Constitutional Law 1", units: 4 }
+        ]
+      },
+      {
+        name: "Second Semester",
+        subjects: [
+          { code: "Law 101", title: "Obligations and Contracts", units: 5 },
+          { code: "Law 110", title: "Criminal Law 2", units: 4 },
+          { code: "Law 117", title: "Legal Theory", units: 2 },
+          { code: "Law 120", title: "The Legal Profession", units: 2 },
+          { code: "Law 122", title: "Constitutional Law 2", units: 4 }
+        ]
+      }
+    ]
+  },
+  {
+    year: 2,
+    semesters: [
+      {
+        name: "First Semester",
+        subjects: [
+          { code: "Law 102", title: "Property", units: 4 },
+          { code: "Law 103", title: "Sales", units: 2 },
+          { code: "Law 104", title: "Torts and Damages", units: 3 },
+          { code: "Law 113", title: "Labor Law 1 (Social Legislation)", units: 3 },
+          { code: "Law 124", title: "Remedial Law 1 (Criminal Procedure)", units: 3 },
+          { code: "Law 139", title: "Insurance", units: 2 }
+        ]
+      },
+      {
+        name: "Second Semester",
+        subjects: [
+          { code: "Law 107", title: "Credit Transactions", units: 3 },
+          { code: "Law 114", title: "Labor Law 2 (Relations)", units: 3 },
+          { code: "Law 123", title: "Administrative Law", units: 3 },
+          { code: "Law 125", title: "Remedial Law 2 (Civil Procedure)", units: 5 },
+          { code: "Law 173", title: "Agency and Partnership", units: 3 }
+        ]
+      }
+    ]
+  },
+  {
+    year: 3,
+    semesters: [
+      {
+        name: "First Semester",
+        subjects: [
+          { code: "Law 105", title: "Succession", units: 3 },
+          { code: "Law 108", title: "Negotiable Instruments", units: 3 },
+          { code: "Law 111", title: "Public International Law", units: 3 },
+          { code: "Law 126", title: "Remedial Law 3 (Evidence)", units: 3 },
+          { code: "Law 129-A", title: "Taxation 1", units: 3 },
+          { code: "Law 138", title: "Transportation and Public Utilities", units: 2 }
+        ]
+      },
+      {
+        name: "Second Semester",
+        subjects: [
+          { code: "Law 106", title: "Corporation Law and Securities", units: 5 },
+          { code: "Law 112", title: "Private International Law", units: 2 },
+          { code: "Law 118", title: "Medical Jurisprudence", units: 1 },
+          { code: "Law 129-B", title: "Taxation 2", units: 3 },
+          { code: "Law 154", title: "Local Governments", units: 2 },
+          { code: "Law 174", title: "Remedial Law 4 (Special Proceedings)", units: 2 }
+        ]
+      }
+    ]
+  },
+  {
+    year: 4,
+    semesters: [
+      {
+        name: "First Semester",
+        subjects: [
+          { code: "Law 119", title: "Supervised Legal Research & Writing", units: 2 },
+          { code: "Law 127", title: "Remedial Law 5 (Practicum 1)", units: 4 },
+          { code: "Law 156", title: "Electoral Process and Public Office", units: 3 },
+          { code: "Law Elective", title: "Major Elective 1", units: 2 },
+          { code: "Law Elective", title: "Major Elective 2", units: 2 }
+        ]
+      },
+      {
+        name: "Second Semester",
+        subjects: [
+          { code: "Law 128", title: "Remedial Law 6 (Practicum 2)", units: 4 },
+          { code: "Law Elective", title: "Major Elective 3", units: 2 },
+          { code: "Law Elective", title: "Major Elective 4", units: 2 },
+          { code: "Law 152", title: "Thesis", units: 2 }
+        ]
+      }
+    ]
+  }
+];
 
 export const CODAL_CATEGORIES: LawCategory[] = [
   'Political and Public International Law',
@@ -298,7 +404,6 @@ export const PHILIPPINE_CODALS: LawCode[] = [
       { title: 'Article II', subtitle: 'Bangsamoro Identity', query: 'RA 11054 Article II verbatim' },
       { title: 'Article III', subtitle: 'Territory', query: 'RA 11054 Article III verbatim' },
       { title: 'Article IV', subtitle: 'General Principles and Policies', query: 'RA 11054 Article IV verbatim' },
-      { title: 'Article V', subtitle: 'Powers of Government', query: 'RA 11054 Article V verbatim' },
       { title: 'Article VI', subtitle: 'Intergovernmental Relations', query: 'RA 11054 Article VI verbatim' },
       { title: 'Article VII', subtitle: 'The Bangsamoro Government', query: 'RA 11054 Article VII verbatim' },
       { title: 'Article VIII', subtitle: 'Wali', query: 'RA 11054 Article VIII verbatim' },
@@ -467,7 +572,7 @@ export const PHILIPPINE_CODALS: LawCode[] = [
           { title: 'Title I', subtitle: 'Classification of Property (Arts. 414-426)', query: 'Civil Code Book II Title I verbatim' },
           { title: 'Title II', subtitle: 'Ownership (Arts. 427-483)', query: 'Civil Code Book II Title II verbatim' },
           { title: 'Title III', subtitle: 'Co-ownership (Arts. 484-501)', query: 'Civil Code Book II Title III verbatim' },
-          { title: 'Title IV', subtitle: 'Some Special Properties (Arts. 502-522)', query: 'Civil Code Book II Title IV verbatim' },
+          { title: 'Title II', subtitle: 'Special Properties (Arts. 502-522)', query: 'Civil Code Book II Title IV verbatim' },
           { title: 'Title V', subtitle: 'Possession (Arts. 523-561)', query: 'Civil Code Book II Title V verbatim' },
           { title: 'Title VI', subtitle: 'Usufruct (Arts. 562-612)', query: 'Civil Code Book II Title VI verbatim' },
           { title: 'Title VII', subtitle: 'Easements or Servitudes (Arts. 613-693)', query: 'Civil Code Book II Title VII verbatim' },
