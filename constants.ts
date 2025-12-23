@@ -6,24 +6,23 @@ export const JD_CURRICULUM: JDYear[] = [
     year: 1,
     semesters: [
       {
-        name: "First Semester",
+        name: "First Semester: Foundations & Legal Thinking",
         subjects: [
-          { code: "Law 99", title: "Legal Bibliography", units: 1 },
-          { code: "Law 100", title: "Persons and Family Relations", units: 4 },
-          { code: "Law 109", title: "Criminal Law 1", units: 3 },
-          { code: "Law 115", title: "Legal History", units: 2 },
-          { code: "Law 116", title: "Legal Method", units: 2 },
-          { code: "Law 121", title: "Constitutional Law 1", units: 4 }
+          { code: "JD 111", title: "Constitutional Law I (State & Powers)", units: 4 },
+          { code: "JD 112", title: "Civil Law I (Persons & Family Relations)", units: 4 },
+          { code: "JD 113", title: "Criminal Law I (RPC Book I)", units: 3 },
+          { code: "JD 114", title: "Legal Method & Jurisprudence", units: 2 },
+          { code: "JD 115", title: "Legal Research & Writing I", units: 2 }
         ]
       },
       {
-        name: "Second Semester",
+        name: "Second Semester: Statutory & Ethical Foundations",
         subjects: [
-          { code: "Law 101", title: "Obligations and Contracts", units: 5 },
-          { code: "Law 110", title: "Criminal Law 2", units: 4 },
-          { code: "Law 117", title: "Legal Theory", units: 2 },
-          { code: "Law 120", title: "The Legal Profession", units: 2 },
-          { code: "Law 122", title: "Constitutional Law 2", units: 4 }
+          { code: "JD 121", title: "Constitutional Law II (Rights & Liberties)", units: 4 },
+          { code: "JD 122", title: "Civil Law II (Property)", units: 4 },
+          { code: "JD 123", title: "Criminal Law II (RPC Book II)", units: 4 },
+          { code: "JD 124", title: "Statutory Construction", units: 2 },
+          { code: "JD 125", title: "Legal Ethics I", units: 2 }
         ]
       }
     ]
@@ -32,24 +31,23 @@ export const JD_CURRICULUM: JDYear[] = [
     year: 2,
     semesters: [
       {
-        name: "First Semester",
+        name: "First Semester: Core Doctrines & Procedure",
         subjects: [
-          { code: "Law 102", title: "Property", units: 4 },
-          { code: "Law 103", title: "Sales", units: 2 },
-          { code: "Law 104", title: "Torts and Damages", units: 3 },
-          { code: "Law 113", title: "Labor Law 1 (Social Legislation)", units: 3 },
-          { code: "Law 124", title: "Remedial Law 1 (Criminal Procedure)", units: 3 },
-          { code: "Law 139", title: "Insurance", units: 2 }
+          { code: "JD 211", title: "Civil Law III (Obligations & Contracts)", units: 5 },
+          { code: "JD 212", title: "Remedial Law I (Civil Procedure)", units: 4 },
+          { code: "JD 213", title: "Public International Law", units: 3 },
+          { code: "JD 214", title: "Legal Research & Writing II (Pleadings)", units: 2 },
+          { code: "JD 215", title: "Trial Advocacy I", units: 2 }
         ]
       },
       {
-        name: "Second Semester",
+        name: "Second Semester: Evidence & Public Administration",
         subjects: [
-          { code: "Law 107", title: "Credit Transactions", units: 3 },
-          { code: "Law 114", title: "Labor Law 2 (Relations)", units: 3 },
-          { code: "Law 123", title: "Administrative Law", units: 3 },
-          { code: "Law 125", title: "Remedial Law 2 (Civil Procedure)", units: 5 },
-          { code: "Law 173", title: "Agency and Partnership", units: 3 }
+          { code: "JD 221", title: "Civil Law IV (Sales, Lease, Agency)", units: 4 },
+          { code: "JD 222", title: "Remedial Law II (Criminal Procedure)", units: 3 },
+          { code: "JD 223", title: "Administrative Law", units: 3 },
+          { code: "JD 224", title: "Evidence", units: 4 },
+          { code: "JD 225", title: "Legal Ethics II", units: 2 }
         ]
       }
     ]
@@ -58,25 +56,23 @@ export const JD_CURRICULUM: JDYear[] = [
     year: 3,
     semesters: [
       {
-        name: "First Semester",
+        name: "First Semester: Integration & Strategy",
         subjects: [
-          { code: "Law 105", title: "Succession", units: 3 },
-          { code: "Law 108", title: "Negotiable Instruments", units: 3 },
-          { code: "Law 111", title: "Public International Law", units: 3 },
-          { code: "Law 126", title: "Remedial Law 3 (Evidence)", units: 3 },
-          { code: "Law 129-A", title: "Taxation 1", units: 3 },
-          { code: "Law 138", title: "Transportation and Public Utilities", units: 2 }
+          { code: "JD 311", title: "Civil Law V (Credit Transactions)", units: 3 },
+          { code: "JD 312", title: "Commercial Law I (Negotiable Instruments)", units: 3 },
+          { code: "JD 313", title: "Remedial Law III (Special Proceedings)", units: 2 },
+          { code: "JD 314", title: "Labor Law I (Social Legislation)", units: 3 },
+          { code: "JD 315", title: "Trial Advocacy II", units: 2 }
         ]
       },
       {
-        name: "Second Semester",
+        name: "Second Semester: Transactions & Clinical Prep",
         subjects: [
-          { code: "Law 106", title: "Corporation Law and Securities", units: 5 },
-          { code: "Law 112", title: "Private International Law", units: 2 },
-          { code: "Law 118", title: "Medical Jurisprudence", units: 1 },
-          { code: "Law 129-B", title: "Taxation 2", units: 3 },
-          { code: "Law 154", title: "Local Governments", units: 2 },
-          { code: "Law 174", title: "Remedial Law 4 (Special Proceedings)", units: 2 }
+          { code: "JD 321", title: "Commercial Law II (Corporations)", units: 4 },
+          { code: "JD 322", title: "Taxation Law I (Income Taxation)", units: 3 },
+          { code: "JD 323", title: "Labor Law II (Relations)", units: 3 },
+          { code: "JD 324", title: "Remedial Law IV (Special Civil Actions)", units: 2 },
+          { code: "JD 325", title: "Clinical Legal Education I", units: 2 }
         ]
       }
     ]
@@ -85,22 +81,23 @@ export const JD_CURRICULUM: JDYear[] = [
     year: 4,
     semesters: [
       {
-        name: "First Semester",
+        name: "First Semester: Mastery & Specialized Laws",
         subjects: [
-          { code: "Law 119", title: "Supervised Legal Research & Writing", units: 2 },
-          { code: "Law 127", title: "Remedial Law 5 (Practicum 1)", units: 4 },
-          { code: "Law 156", title: "Electoral Process and Public Office", units: 3 },
-          { code: "Law Elective", title: "Major Elective 1", units: 2 },
-          { code: "Law Elective", title: "Major Elective 2", units: 2 }
+          { code: "JD 411", title: "Taxation Law II (Transfer & Business Taxes)", units: 3 },
+          { code: "JD 412", title: "Conflict of Laws", units: 2 },
+          { code: "JD 413", title: "Environmental & Natural Resources Law", units: 2 },
+          { code: "JD 414", title: "Clinical Legal Education II", units: 4 },
+          { code: "JD 415", title: "Bar Integration I (Pre-Week Style)", units: 4 }
         ]
       },
       {
-        name: "Second Semester",
+        name: "Second Semester: Advanced Practice & Bar Readiness",
         subjects: [
-          { code: "Law 128", title: "Remedial Law 6 (Practicum 2)", units: 4 },
-          { code: "Law Elective", title: "Major Elective 3", units: 2 },
-          { code: "Law Elective", title: "Major Elective 4", units: 2 },
-          { code: "Law 152", title: "Thesis", units: 2 }
+          { code: "JD 421", title: "Legal Profession & Advanced Ethics", units: 2 },
+          { code: "JD 422", title: "Law on Public Officers & Election Law", units: 3 },
+          { code: "JD 423", title: "Advanced Remedial Law (Bar-Focused)", units: 4 },
+          { code: "JD 424", title: "Bar Integration II", units: 4 },
+          { code: "JD 425", title: "Capstone: Integrated Case Strategy", units: 2 }
         ]
       }
     ]

@@ -61,21 +61,23 @@ export const generateGeneralLegalAdvice = async (prompt: string): Promise<string
 
 export const generateJDModuleContent = async (subjectCode: string, subjectTitle: string): Promise<string> => {
   const prompt = `
-    Act as a **Senior Law Professor** at a top Philippine Law School.
-    Generate a **Rigorously Tailored Study Module** for the JD Subject: "${subjectCode} - ${subjectTitle}".
+    Act as an **Integrated Law Professor** representing the best of the UP, Ateneo, and San Beda traditions.
+    Generate a **Comprehensive Study Module** for: "${subjectCode} - ${subjectTitle}".
     
-    The content must be professional, authoritative, and exhaustive.
-    
+    **PEDAGOGICAL PHILOSOPHY:**
+    - UP Aspect: Heavy jurisprudential grounding, policy analysis, and "Ratio Legis".
+    - Ateneo Aspect: Holistic, ethical, and outcomes-based practice readiness.
+    - San Beda Aspect: Disciplined doctrinal mastery, procedural dominance, and Bar-readiness.
+
     **STRICT STRUCTURE (HTML):**
     1. <h1>[Subject Title]</h1>
-    2. <h3>Module Overview</h3>
-    3. <h3>I. Foundational Principles & Rationale</h3>
-    4. <h3>II. Key Codal Provisions</h3> (Use <div class="statute-box"> for verbatim law)
-    5. <h3>III. Landmark PH Jurisprudence</h3> (Cite Case Names & G.R. Nos.)
-    6. <h3>IV. Critical Analysis & Elements</h3>
-    7. <h3>V. Suggested Readings</h3> (Cite authoritative PH authors: e.g., Tolentino, Paras, Pineda, Justice Leonen, etc.)
+    2. <h3>SYLLABUS OVERVIEW & PHILOSOPHY</h3>
+    3. <h3>I. BLACK-LETTER LAW</h3> (Use <div class="statute-box"> for verbatim law)
+    4. <h3>II. JURISPRUDENTIAL EVOLUTION</h3> (UP Style deep-dive into landmark rulings)
+    5. <h3>III. PRACTICAL APPLICATION & ADVOCACY</h3> (Ateneo Style skills/ethics scenarios)
+    6. <h3>IV. BAR INTEGRATION & DOCTRINAL RECALL</h3> (San Beda Style high-yield summary)
+    7. <h3>V. SUGGESTED FURTHER READINGS</h3> (Cite Tolentino, Paras, Pineda, Justice Leonen, etc.)
     
-    Target Length: Extensive, detailed chapter.
     Output HTML ONLY.
   `;
   return generateGeneralLegalAdvice(prompt);

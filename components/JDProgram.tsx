@@ -139,8 +139,8 @@ export const JDProgram: React.FC = () => {
           {isLoading ? (
             <div className="h-full flex flex-col items-center justify-center opacity-70">
               <Loader2 className="animate-spin text-amber-600 mb-6" size={64} />
-              <p className="font-serif text-2xl font-bold italic animate-pulse">Professor is drafting the module...</p>
-              <p className="text-sm mt-2">Consulting UP Law Syllabi & Recent Jurisprudence</p>
+              <p className="font-serif text-2xl font-bold italic animate-pulse">Consulting Integrated Curricula...</p>
+              <p className="text-sm mt-2 text-slate-500">Synthesizing UP-Ateneo-Beda Pedagogies</p>
             </div>
           ) : moduleContent ? (
             <div 
@@ -160,20 +160,20 @@ export const JDProgram: React.FC = () => {
         <div>
           <h2 className="text-3xl font-serif font-bold text-slate-900 flex items-center gap-3">
             <GraduationCap className="text-amber-600" size={32} />
-            Juris Doctor Program
+            Integrated JD Program
           </h2>
-          <p className="text-slate-500 mt-2">Modeled after the University of the Philippines JD Curriculum.</p>
+          <p className="text-slate-500 mt-2">The Optimized Study Guide: Synthesizing the strengths of UP, Ateneo, and San Beda Law.</p>
         </div>
         <div className="text-right">
-           <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Total Progress</div>
+           <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Curriculum Mastery</div>
            <div className="flex items-center gap-3">
               <div className="w-32 h-2 bg-slate-200 rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-amber-600 transition-all duration-1000" 
-                  style={{ width: `${(completedSubjects.size / 45) * 100}%` }}
+                  style={{ width: `${(completedSubjects.size / 40) * 100}%` }}
                 />
               </div>
-              <span className="font-bold text-slate-700">{completedSubjects.size} / 45 Subjects</span>
+              <span className="font-bold text-slate-700">{completedSubjects.size} / 40 Subjects</span>
            </div>
         </div>
       </div>
@@ -186,7 +186,7 @@ export const JDProgram: React.FC = () => {
                 {year.year}
               </div>
               <h3 className="text-xl font-serif font-bold text-slate-800">
-                {year.year === 1 ? 'First' : year.year === 2 ? 'Second' : year.year === 3 ? 'Third' : 'Fourth'} Year
+                {year.year === 1 ? 'Year I: Foundations' : year.year === 2 ? 'Year II: Procedural Mastery' : year.year === 3 ? 'Year III: Strategy & Strategy' : 'Year IV: Advanced Practice'}
               </h3>
             </div>
 
@@ -194,10 +194,9 @@ export const JDProgram: React.FC = () => {
               {year.semesters.map(sem => (
                 <div key={sem.name} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                   <div className="bg-slate-50 px-4 py-3 border-b flex justify-between items-center">
-                    <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">{sem.name}</span>
-                    <span className="text-[10px] font-bold text-amber-600">Day Section Section (133 Units)</span>
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{sem.name}</span>
                   </div>
-                  <div className="p-2 grid grid-cols-1 md:grid-cols-2 gap-2">
+                  <div className="p-2 grid grid-cols-1 gap-1.5">
                     {sem.subjects.map(sub => (
                       <button
                         key={sub.code}
@@ -205,17 +204,17 @@ export const JDProgram: React.FC = () => {
                         className={`group p-3 text-left rounded-lg transition-all border ${completedSubjects.has(sub.code) ? 'bg-green-50 border-green-100' : 'hover:bg-amber-50 hover:border-amber-200 border-transparent'}`}
                       >
                         <div className="flex justify-between items-start">
-                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${completedSubjects.has(sub.code) ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'}`}>
+                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${completedSubjects.has(sub.code) ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'}`}>
                             {sub.code}
                           </span>
-                          <span className="text-[10px] font-mono text-slate-400">{sub.units} Units</span>
+                          <span className="text-[9px] font-mono text-slate-400">{sub.units} Units</span>
                         </div>
-                        <h4 className={`text-sm font-serif font-bold mt-2 leading-tight ${completedSubjects.has(sub.code) ? 'text-green-900' : 'text-slate-800 group-hover:text-amber-800'}`}>
+                        <h4 className={`text-sm font-serif font-bold mt-1.5 leading-tight ${completedSubjects.has(sub.code) ? 'text-green-900' : 'text-slate-800 group-hover:text-amber-800'}`}>
                           {sub.title}
                         </h4>
                         <div className="mt-2 flex items-center justify-between">
                            <span className="text-[10px] text-slate-400 group-hover:text-amber-600 flex items-center gap-1">
-                              {completedSubjects.has(sub.code) ? <><CheckCircle2 size={10}/> Completed</> : <><Bookmark size={10}/> Study Now</>}
+                              {completedSubjects.has(sub.code) ? <><CheckCircle2 size={10}/> Complete</> : <><Bookmark size={10}/> Begin Study</>}
                            </span>
                            <ChevronRight size={12} className="text-slate-300 group-hover:translate-x-1 transition-transform" />
                         </div>
