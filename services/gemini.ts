@@ -82,13 +82,13 @@ export const generateJDModuleContent = async (subjectCode: string, subjectTitle:
 };
 
 export const fetchLegalNews = async (): Promise<string> => {
-  const prompt = `Perform a Google Search for latest SC announcements and Republic Acts. Output HTML list.`;
+  const prompt = `Perform a Google Search for the latest 5 Supreme Court announcements and Republic Acts. Output as a clean HTML list using only <li> tags for each news item. Each <li> should contain a short headline in <strong> and a 1-sentence summary.`;
   return withErrorHandling(async (ai) => {
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
       contents: prompt,
       config: {
-        systemInstruction: "Aggregator. HTML only.",
+        systemInstruction: "You are a legal news aggregator. Output only the <li> items. No <ul> tags.",
         tools: [{ googleSearch: {} }],
       }
     });

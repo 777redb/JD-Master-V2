@@ -29,29 +29,45 @@ import {
   Newspaper,
   ExternalLink,
   RefreshCw,
-  GraduationCap
+  GraduationCap,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 
 const LegalNews = () => {
-  const [news, setNews] = useState('');
+  const [newsItems, setNewsItems] = useState<string[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     handleRefresh();
   }, []);
 
+  useEffect(() => {
+    if (newsItems.length <= 1) return;
+    
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % newsItems.length);
+    }, 7000);
+    
+    return () => clearInterval(interval);
+  }, [newsItems]);
+
   const handleRefresh = async () => {
     setLoading(true);
     const updates = await fetchLegalNews();
-    setNews(updates);
+    // Parse the <li> items from the string
+    const items = updates.match(/<li>(.*?)<\/li>/gs)?.map(item => item.replace(/<\/?li>/g, '')) || [];
+    setNewsItems(items);
+    setCurrentIndex(0);
     setLoading(false);
   };
 
   const sources = [
     { name: "Supreme Court", url: "https://sc.judiciary.gov.ph/", desc: "Official portal. Announcements.", icon: Scale, color: "bg-red-50 text-red-700" },
-    { name: "SC e-Court", url: "https://sc.judiciary.gov.ph/ecourt-ph/", desc: "Digital court services.", icon: Monitor, color: "bg-blue-50 text-blue-700" },
+    { name: "SC E-Library", url: "https://elibrary.judiciary.gov.ph/", desc: "Primary source of PH legal info.", icon: BookOpen, color: "bg-blue-50 text-blue-700" },
     { name: "Official Gazette", url: "https://www.officialgazette.gov.ph/", desc: "Executive Orders & Laws.", icon: Newspaper, color: "bg-slate-50 text-slate-700" },
-    { name: "Lawphil", url: "https://lawphil.net/", desc: "Laws and jurisprudence archive.", icon: BookOpen, color: "bg-amber-50 text-amber-700" }
+    { name: "Lawphil", url: "https://lawphil.net/", desc: "Laws and jurisprudence archive.", icon: Gavel, color: "bg-amber-50 text-amber-700" }
   ];
 
   return (
@@ -87,24 +103,78 @@ const LegalNews = () => {
                </div>
             </div>
         </div>
-        <div className="flex flex-col h-[600px]">
+        
+        {/* Latest Highlights News Panel */}
+        <div className="flex flex-col h-[380px]">
            <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Latest Highlights</span>
-              <button onClick={handleRefresh} disabled={loading} className="text-slate-400 hover:text-amber-600 transition-colors flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide">
-                <RefreshCw size={12} className={loading ? "animate-spin" : ""} /> Refresh
-              </button>
+              <div className="flex items-center gap-3">
+                {newsItems.length > 0 && !loading && (
+                  <div className="flex items-center gap-1">
+                    <button 
+                      onClick={() => setCurrentIndex((prev) => (prev - 1 + newsItems.length) % newsItems.length)}
+                      className="p-1 hover:bg-slate-100 rounded text-slate-400 transition-colors"
+                    >
+                      <ChevronLeft size={14} />
+                    </button>
+                    <span className="text-[10px] font-mono text-slate-400">{currentIndex + 1}/{newsItems.length}</span>
+                    <button 
+                      onClick={() => setCurrentIndex((prev) => (prev + 1) % newsItems.length)}
+                      className="p-1 hover:bg-slate-100 rounded text-slate-400 transition-colors"
+                    >
+                      <ChevronRight size={14} />
+                    </button>
+                  </div>
+                )}
+                <button onClick={handleRefresh} disabled={loading} className="text-slate-400 hover:text-amber-600 transition-colors flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide border-l border-slate-200 pl-3">
+                  <RefreshCw size={12} className={loading ? "animate-spin" : ""} /> Refresh
+                </button>
+              </div>
            </div>
-           <div className="flex-1 bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col h-full overflow-hidden">
-               <div className="flex-1 overflow-y-auto pr-2">
-                  {loading ? (
-                     <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-2 py-12">
-                        <RefreshCw className="animate-spin text-amber-500" size={24} />
-                        <span className="text-xs font-medium">Fetching updates...</span>
-                     </div>
-                  ) : (
-                     <div className="text-sm" dangerouslySetInnerHTML={{ __html: news || '<li>No updates found.</li>' }} />
-                  )}
-               </div>
+           
+           <div className="flex-1 bg-white rounded-xl border border-slate-200 shadow-sm p-8 flex flex-col justify-center relative overflow-hidden group">
+               {/* Background Glow */}
+               <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 blur-3xl -mr-16 -mt-16"></div>
+               
+               {loading ? (
+                  <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-2">
+                     <RefreshCw className="animate-spin text-amber-500" size={32} />
+                     <span className="text-sm font-medium animate-pulse">Syncing with SC Bulletins...</span>
+                  </div>
+               ) : newsItems.length > 0 ? (
+                  <div key={currentIndex} className="animate-in fade-in slide-in-from-right-4 duration-700">
+                    <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-red-100 text-red-700 text-[10px] font-bold uppercase tracking-widest mb-6">
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse"></span>
+                      Breaking Legal Update
+                    </div>
+                    <div className="text-sm space-y-4">
+                       <div 
+                         className="news-headline font-serif text-2xl font-bold text-slate-900 leading-tight"
+                         dangerouslySetInnerHTML={{ __html: newsItems[currentIndex].split('</strong>')[0] + '</strong>' }} 
+                       />
+                       <div 
+                         className="news-summary text-slate-600 text-lg leading-relaxed font-medium"
+                         dangerouslySetInnerHTML={{ __html: newsItems[currentIndex].split('</strong>')[1] || '' }} 
+                       />
+                    </div>
+                    
+                    <div className="mt-8 pt-6 border-t border-slate-100 flex justify-between items-center">
+                       <span className="text-xs text-slate-400 font-medium">Source: Official SC RSS</span>
+                       <div className="flex gap-1.5">
+                          {newsItems.map((_, idx) => (
+                             <div 
+                               key={idx} 
+                               className={`h-1 rounded-full transition-all duration-500 ${idx === currentIndex ? 'w-6 bg-amber-500' : 'w-1.5 bg-slate-200'}`}
+                             />
+                          ))}
+                       </div>
+                    </div>
+                  </div>
+               ) : (
+                  <div className="text-center text-slate-400 font-serif italic py-12">
+                     No recent announcements detected. Check back later.
+                  </div>
+               )}
            </div>
         </div>
       </div>
