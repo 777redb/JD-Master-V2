@@ -3,10 +3,11 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { MockBarQuestion } from "../types";
 
 /**
- * FIX: Initializing GoogleGenAI with named parameter apiKey from process.env.API_KEY
+ * FIX: Initializing GoogleGenAI with named parameter apiKey from process.env.API_KEY directly.
+ * Follows guideline: Always use const ai = new GoogleGenAI({apiKey: process.env.API_KEY});
  */
 const getAi = () => {
-  return new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+  return new GoogleGenAI({ apiKey: process.env.API_KEY as string });
 };
 
 async function withErrorHandling<T>(

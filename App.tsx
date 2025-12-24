@@ -31,7 +31,8 @@ import {
   RefreshCw,
   GraduationCap,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Library
 } from 'lucide-react';
 
 const LegalNews = () => {
@@ -67,7 +68,8 @@ const LegalNews = () => {
     { name: "Supreme Court", url: "https://sc.judiciary.gov.ph/", desc: "Official portal. Announcements.", icon: Scale, color: "bg-red-50 text-red-700" },
     { name: "SC E-Library", url: "https://elibrary.judiciary.gov.ph/", desc: "Primary source of PH legal info.", icon: BookOpen, color: "bg-blue-50 text-blue-700" },
     { name: "Official Gazette", url: "https://www.officialgazette.gov.ph/", desc: "Executive Orders & Laws.", icon: Newspaper, color: "bg-slate-50 text-slate-700" },
-    { name: "Lawphil", url: "https://lawphil.net/", desc: "Laws and jurisprudence archive.", icon: Gavel, color: "bg-amber-50 text-amber-700" }
+    { name: "Lawphil", url: "https://lawphil.net/", desc: "Laws and jurisprudence archive.", icon: Gavel, color: "bg-amber-50 text-amber-700" },
+    { name: "PHILJA", url: "https://philja.judiciary.gov.ph/", desc: "Philippine Judicial Academy portal.", icon: Library, color: "bg-emerald-50 text-emerald-700" }
   ];
 
   return (
@@ -82,18 +84,18 @@ const LegalNews = () => {
             </div>
             <div className="flex-1">
                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 block">Official Portals</span>
-               <div className="grid grid-cols-1 gap-3">
+               <div className="grid grid-cols-1 gap-2.5">
                 {sources.map((source, idx) => (
-                   <a key={idx} href={source.url} target="_blank" rel="noopener noreferrer" className="group flex items-center gap-4 p-4 rounded-xl border border-slate-200 hover:border-amber-300 bg-white hover:bg-amber-50/30 transition-all shadow-sm">
+                   <a key={idx} href={source.url} target="_blank" rel="noopener noreferrer" className="group flex items-center gap-4 p-3.5 rounded-xl border border-slate-200 hover:border-amber-300 bg-white hover:bg-amber-50/30 transition-all shadow-sm">
                       <div className={`p-2.5 rounded-lg shrink-0 ${source.color} group-hover:scale-105 transition-transform`}>
-                         <source.icon size={20} />
+                         <source.icon size={18} />
                       </div>
                       <div className="flex-1 min-w-0">
                          <div className="flex items-center gap-2">
                             <h3 className="font-bold text-sm text-slate-900 truncate group-hover:text-amber-700 transition-colors">{source.name}</h3>
                             <ExternalLink size={12} className="text-slate-400 opacity-0 group-hover:opacity-100" />
                          </div>
-                         <p className="text-xs text-slate-500 truncate">{source.desc}</p>
+                         <p className="text-[11px] text-slate-500 truncate">{source.desc}</p>
                       </div>
                       <div className="text-slate-300 group-hover:text-amber-500 opacity-0 group-hover:opacity-100 transition-all">
                           <ArrowRight size={16} />
@@ -105,7 +107,7 @@ const LegalNews = () => {
         </div>
         
         {/* Latest Highlights News Panel */}
-        <div className="flex flex-col h-[380px]">
+        <div className="flex flex-col h-full lg:min-h-[460px]">
            <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Latest Highlights</span>
               <div className="flex items-center gap-3">

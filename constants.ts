@@ -152,156 +152,159 @@ export const CODAL_CATEGORIES: LawCategory[] = [
   'Special Laws'
 ];
 
+// FIX: Added PHILIPPINE_CODALS export which was missing but referenced in CodalLibrary.tsx
 export const PHILIPPINE_CODALS: LawCode[] = [
-  // ... rest of file remains unchanged
-  { 
-    id: '1987_CONSTI', 
-    name: '1987 Constitution', 
-    description: 'The fundamental law of the land.', 
+  {
+    id: 'CONST_1987',
+    name: '1987 Constitution',
+    description: 'The supreme law of the Republic of the Philippines.',
     category: 'Political and Public International Law',
-    subcategory: 'Political Law',
     structure: [
-      { title: 'Preamble', query: '1987 Constitution Preamble verbatim' },
-      { title: 'Article I', subtitle: 'National Territory', query: '1987 Constitution Article I verbatim' },
-      { title: 'Article II', subtitle: 'Declaration of Principles and State Policies', query: '1987 Constitution Article II verbatim' },
-      { title: 'Article III', subtitle: 'Bill of Rights', query: '1987 Constitution Article III verbatim' },
-      { title: 'Article IV', subtitle: 'Citizenship', query: '1987 Constitution Article IV verbatim' },
-      { title: 'Article V', subtitle: 'Suffrage', query: '1987 Constitution Article V verbatim' },
-      { 
-        title: 'Article VI', 
-        subtitle: 'The Legislative Department', 
-        query: '1987 Constitution Article VI',
-        children: [
-            { title: 'Sections 1-16', subtitle: 'Composition, Qualifications, and Terms', query: '1987 Constitution Article VI Sections 1-16 verbatim' },
-            { title: 'Sections 17-23', subtitle: 'Electoral Tribunals and Commission on Appointments', query: '1987 Constitution Article VI Sections 17-23 verbatim' },
-            { title: 'Sections 24-32', subtitle: 'Legislative Powers, Bills, and Procedures', query: '1987 Constitution Article VI Sections 24-32 verbatim' },
-        ]
-      },
-      { 
-        title: 'Article VII', 
-        subtitle: 'The Executive Department', 
-        query: '1987 Constitution Article VII',
-        children: [
-            { title: 'Sections 1-12', subtitle: 'President and Vice-President', query: '1987 Constitution Article VII Sections 1-12 verbatim' },
-            { title: 'Sections 13-23', subtitle: 'Powers and Functions of the President', query: '1987 Constitution Article VII Sections 13-23 verbatim' },
-        ]
-      },
-      { 
-        title: 'Article VIII', 
-        subtitle: 'The Judicial Department', 
-        query: '1987 Constitution Article VIII',
-        children: [
-            { title: 'Sections 1-5', subtitle: 'Judicial Power and the Supreme Court', query: '1987 Constitution Article VIII Sections 1-5 verbatim' },
-            { title: 'Sections 6-16', subtitle: 'Powers, JBC, and Lower Courts', query: '1987 Constitution Article VIII Sections 6-16 verbatim' },
-        ]
-      },
-      { 
-        title: 'Article IX', 
-        subtitle: 'Constitutional Commissions', 
-        query: '1987 Constitution Article IX',
-        children: [
-            { title: 'A. Common Provisions', subtitle: 'General Provisions', query: '1987 Constitution Article IX-A verbatim' },
-            { title: 'B. Civil Service Commission', subtitle: 'Scope and Powers', query: '1987 Constitution Article IX-B verbatim' },
-            { title: 'C. Commission on Elections', subtitle: 'Scope and Powers', query: '1987 Constitution Article IX-C verbatim' },
-            { title: 'D. Commission on Audit', subtitle: 'Scope and Powers', query: '1987 Constitution Article IX-D verbatim' },
-        ]
-      },
-      { 
-        title: 'Article X', 
-        subtitle: 'Local Government', 
-        query: '1987 Constitution Article X',
-        children: [
-            { title: 'General Provisions', subtitle: 'Sections 1-14', query: '1987 Constitution Article X Sections 1-14 verbatim' },
-            { title: 'Autonomous Regions', subtitle: 'Sections 15-21', query: '1987 Constitution Article X Sections 15-21 verbatim' },
-        ]
-      },
-      { title: 'Article XI', subtitle: 'Accountability of Public Officers', query: '1987 Constitution Article XI verbatim' },
-      { 
-        title: 'Article XII', 
-        subtitle: 'National Economy and Patrimony', 
-        query: '1987 Constitution Article XII',
-        children: [
-             { title: 'Sections 1-9', subtitle: 'Goals, Lands, and Natural Resources', query: '1987 Constitution Article XII Sections 1-9 verbatim' },
-             { title: 'Sections 10-22', subtitle: 'Investment, Franchises, and Regulation', query: '1987 Constitution Article XII Sections 10-22 verbatim' },
-        ]
-      },
-      { 
-        title: 'Article XIII', 
-        subtitle: 'Social Justice and Human Rights', 
-        query: '1987 Constitution Article XIII',
-        children: [
-            { title: 'Sections 1-10', subtitle: 'Labor, Agrarian Reform, Urban Land', query: '1987 Constitution Article XIII Sections 1-10 verbatim' },
-            { title: 'Sections 11-19', subtitle: 'Health, Women, People\'s Orgs, Human Rights', query: '1987 Constitution Article XIII Sections 11-19 verbatim' },
-        ]
-      },
-      { 
-        title: 'Article XIV', 
-        subtitle: 'Education, Sci-Tech, Arts, Culture & Sports', 
-        query: '1987 Constitution Article XIV',
-        children: [
-            { title: 'Sections 1-9', subtitle: 'Education and Language', query: '1987 Constitution Article XIV Sections 1-9 verbatim' },
-            { title: 'Sections 10-19', subtitle: 'Science, Arts, Culture, and Sports', query: '1987 Constitution Article XIV Sections 10-19 verbatim' },
-        ]
-      },
-      { title: 'Article XV', subtitle: 'The Family', query: '1987 Constitution Article XV verbatim' },
-      { title: 'Article XVI', subtitle: 'General Provisions', query: '1987 Constitution Article XVI verbatim' },
-      { title: 'Article XVII', subtitle: 'Amendments or Revisions', query: '1987 Constitution Article XVII verbatim' },
-      { 
-        title: 'Article XVIII', 
-        subtitle: 'Transitory Provisions', 
-        query: '1987 Constitution Article XVIII',
-        children: [
-            { title: 'Sections 1-4', subtitle: 'Elections and Existing Laws', query: '1987 Constitution Article XVIII Sections 1-4 verbatim' },
-            { title: 'Sections 5-8', subtitle: 'Incumbent Officials', query: '1987 Constitution Article XVIII Sections 5-8 verbatim' },
-            { title: 'Sections 9-14', subtitle: 'Judiciary and Legal System', query: '1987 Constitution Article XVIII Sections 9-14 verbatim' },
-            { title: 'Sections 15-18', subtitle: 'Civil Service and Salaries', query: '1987 Constitution Article XVIII Sections 15-18 verbatim' },
-            { title: 'Sections 19-21', subtitle: 'Properties and Assets', query: '1987 Constitution Article XVIII Sections 19-21 verbatim' },
-            { title: 'Sections 22-24', subtitle: 'Land and Private Armies', query: '1987 Constitution Article XVIII Sections 22-24 verbatim' },
-            { title: 'Sections 25-27', subtitle: 'Military Bases, Sequestration, Effectivity', query: '1987 Constitution Article XVIII Sections 25-27 verbatim' },
-        ]
-      },
+      { title: 'Preamble', query: 'Preamble of the 1987 Philippine Constitution' },
+      { title: 'Article I', subtitle: 'National Territory', query: 'Article I 1987 Philippine Constitution' },
+      { title: 'Article II', subtitle: 'Declaration of Principles and State Policies', query: 'Article II 1987 Philippine Constitution' },
+      { title: 'Article III', subtitle: 'Bill of Rights', query: 'Article III 1987 Philippine Constitution' },
+      { title: 'Article IV', subtitle: 'Citizenship', query: 'Article IV 1987 Philippine Constitution' },
+      { title: 'Article V', subtitle: 'Suffrage', query: 'Article V 1987 Philippine Constitution' },
+      { title: 'Article VI', subtitle: 'Legislative Department', query: 'Article VI 1987 Philippine Constitution' },
+      { title: 'Article VII', subtitle: 'Executive Department', query: 'Article VII 1987 Philippine Constitution' },
+      { title: 'Article VIII', subtitle: 'Judicial Department', query: 'Article VIII 1987 Philippine Constitution' }
     ]
   },
-  // ... and so on ...
+  {
+    id: 'CIVIL_CODE',
+    name: 'Civil Code',
+    description: 'Republic Act No. 386',
+    category: 'Civil Law',
+    structure: [
+      { title: 'Book I', subtitle: 'Persons and Family Relations', query: 'Civil Code of the Philippines Book I' },
+      { title: 'Book II', subtitle: 'Property, Ownership, and its Modifications', query: 'Civil Code of the Philippines Book II' },
+      { title: 'Book III', subtitle: 'Different Modes of Acquiring Ownership', query: 'Civil Code of the Philippines Book III' },
+      { title: 'Book IV', subtitle: 'Obligations and Contracts', query: 'Civil Code of the Philippines Book IV' }
+    ]
+  },
+  {
+    id: 'REVISED_PENAL_CODE',
+    name: 'Revised Penal Code',
+    description: 'Act No. 3815',
+    category: 'Criminal Law',
+    structure: [
+      { title: 'Book I', subtitle: 'General Provisions', query: 'Revised Penal Code Book I' },
+      { title: 'Book II', subtitle: 'Crimes and Penalties', query: 'Revised Penal Code Book II' }
+    ]
+  },
+  {
+    id: 'LABOR_CODE',
+    name: 'Labor Code',
+    description: 'Presidential Decree No. 442',
+    category: 'Labor Law and Social Legislation',
+    structure: [
+      { title: 'Book I', subtitle: 'Pre-Employment', query: 'Labor Code of the Philippines Book I' },
+      { title: 'Book II', subtitle: 'Human Resources Development Program', query: 'Labor Code of the Philippines Book II' },
+      { title: 'Book III', subtitle: 'Conditions of Employment', query: 'Labor Code of the Philippines Book III' }
+    ]
+  }
 ];
 
-/**
- * FIX: Exporting JURISPRUDENCE_TOPICS to satisfy import in Jurisprudence.tsx
- */
 export const JURISPRUDENCE_TOPICS = [
   {
-    category: 'Political Law',
+    category: 'Political & Public International Law',
     topics: [
-      { title: 'Judicial Power', query: 'Supreme Court Doctrine on Judicial Power and Section 1 Article VIII' },
-      { title: 'Due Process', query: 'Landmark Philippine cases on Procedural and Substantive Due Process' },
-      { title: 'Equal Protection', query: 'Supreme Court rulings on the Equal Protection Clause' },
-      { title: 'Search and Seizure', query: 'Warrantless searches and seizures jurisprudence in the Philippines' },
-      { title: 'Freedom of Expression', query: 'Prior restraint and subsequent punishment doctrines in PH law' }
+      { title: 'Judicial Power & Review', query: 'Philippine Judicial Power and the power of Judicial Review Article VIII Section 1' },
+      { title: 'Separation of Powers', query: 'Doctrine of Separation of Powers and Checks and Balances in the Philippines' },
+      { title: 'Delegation of Powers', query: 'Non-delegability of legislative power and the Completeness & Sufficient Standard Tests' },
+      { title: 'State Immunity', query: 'Doctrine of State Immunity from Suit and the exceptions under Philippine law' },
+      { title: 'Due Process of Law', query: 'Procedural vs Substantive Due Process landmark Philippine cases' },
+      { title: 'Equal Protection', query: 'Equal Protection Clause and valid classification requisites in PH law' },
+      { title: 'Search & Seizure', query: 'Article III Section 2: Requisites of a valid warrant and warrantless searches' },
+      { title: 'Freedom of Expression', query: 'Prior Restraint, Subsequent Punishment, and Content-based vs Content-neutral regulations' },
+      { title: 'Eminent Domain', query: 'Requisites for the exercise of the Power of Eminent Domain by the State' },
+      { title: 'Citizenship & Naturalization', query: 'Jus Sanguinis principle and Judicial Naturalization in the Philippines' },
+      { title: 'Local Government Autonomy', query: 'Decentralization of Administration vs Decentralization of Power in LGUs' },
+      { title: 'Public International Law', query: 'Doctrine of Incorporation vs Transformation and International Law Sources' }
     ]
   },
   {
     category: 'Civil Law',
     topics: [
-      { title: 'Psychological Incapacity', query: 'Article 36 Family Code landmark cases and the Tan-Andal ruling' },
-      { title: 'Obligations and Contracts', query: 'Doctrines on Fortuitous Events and Breach of Contract' },
-      { title: 'Property & Ownership', query: 'Jurisprudence on Builders in Good Faith vs Bad Faith' },
-      { title: 'Succession', query: 'Landmark rulings on Preterition and Reserval Troncal' }
+      { title: 'Psychological Incapacity', query: 'Article 36 Family Code and the evolution of the Tan-Andal Doctrine' },
+      { title: 'Property & Ownership', query: 'Landmark rulings on Builder in Good Faith vs Builder in Bad Faith' },
+      { title: 'Obligations & Contracts', query: 'Principle of Relativity, Mutuality, and Autonomy of Contracts' },
+      { title: 'Succession & Wills', query: 'Doctrines on Preterition, Reserval Troncal, and Disinheritance' },
+      { title: 'Torts & Damages', query: 'Vicarious Liability and the Res Ipsa Loquitur doctrine in PH law' },
+      { title: 'Sales & Lease', query: 'Right of First Refusal vs Option Contract in Philippine Sales Law' },
+      { title: 'Credit Transactions', query: 'Distinction between Mutuum and Commodatum with relevant jurisprudence' },
+      { title: 'Conflict of Laws', query: 'Lex Loci Celebrationis vs Lex Rei Sitae vs Mobilia Sequuntur Personam' }
     ]
   },
   {
     category: 'Criminal Law',
     topics: [
-      { title: 'Self-Defense', query: 'Requisites of Self-Defense in Philippine Criminal Jurisprudence' },
-      { title: 'Conspiracy', query: 'The "Act of One is Act of All" doctrine in PH law' },
-      { title: 'Probable Cause', query: 'Jurisprudence on Probable Cause for Warrant of Arrest vs Preliminary Investigation' }
+      { title: 'Self-Defense', query: 'Requisites of Justifying Circumstances under Article 11 RPC' },
+      { title: 'Conspiracy', query: 'Doctrine of Conspiracy: The act of one is the act of all' },
+      { title: 'Mala in Se vs Mala Prohibita', query: 'Distinction between Crimes under RPC and Special Penal Laws' },
+      { title: 'Impossible Crime', query: 'Requisites of an Impossible Crime under the Revised Penal Code' },
+      { title: 'Complex Crimes', query: 'Article 48 RPC: Compound Crimes vs Complex Crimes Proper' },
+      { title: 'Stages of Execution', query: 'Attempted, Frustrated, and Consummated stages of felonies' },
+      { title: 'Pro Reo Principle', query: 'The In Dubio Pro Reo rule in Philippine Criminal Jurisprudence' },
+      { title: 'Battered Woman Syndrome', query: 'RA 9262 and the Battered Woman Syndrome as a defense' }
     ]
   },
   {
     category: 'Remedial Law',
     topics: [
-      { title: 'Certiorari', query: 'Rule 65: Grave Abuse of Discretion amounting to lack or excess of jurisdiction' },
-      { title: 'Hearsay Rule', query: 'Exceptions to the Hearsay Rule in Philippine Evidence Law' },
-      { title: 'Execution of Judgment', query: 'Rules and jurisprudence on the Ministerial Duty to Execute' }
+      { title: 'Hierarchy of Courts', query: 'Doctrine of Hierarchy of Courts and the exceptions for direct recourse' },
+      { title: 'Res Judicata', query: 'Requisites of Res Judicata: Bar by Prior Judgment vs Conclusiveness of Judgment' },
+      { title: 'Forum Shopping', query: 'Test to determine Forum Shopping and the consequences of its violation' },
+      { title: 'Rule 65: Certiorari', query: 'Grave Abuse of Discretion amounting to lack or excess of jurisdiction' },
+      { title: 'Evidence: Hearsay Rule', query: 'Exceptions to the Hearsay Rule in the Revised Rules on Evidence' },
+      { title: 'Writ of Amparo', query: 'Nature, coverage, and the "substantial evidence" requirement in Amparo' },
+      { title: 'Chain of Custody', query: 'Section 21 of RA 9165 and the effect of its non-compliance' },
+      { title: 'Fresh Period Rule', query: 'Neypes Doctrine: The fresh 15-day period to file an appeal' }
+    ]
+  },
+  {
+    category: 'Commercial Law',
+    topics: [
+      { title: 'Business Judgment Rule', query: 'Doctrine of Business Judgment Rule in Philippine Corporation Law' },
+      { title: 'Piercing the Corporate Veil', query: 'When to disregard the separate juridical personality of a corporation' },
+      { title: 'Trust Fund Doctrine', query: 'Protection of creditors under the Trust Fund Doctrine' },
+      { title: 'Insurance: Insurable Interest', query: 'Insurable Interest in Life vs Property under the Insurance Code' },
+      { title: 'Negotiable Instruments', query: 'Holder in Due Course requisites and the Shelter Rule' },
+      { title: 'Intellectual Property', query: 'Holistic Test vs Dominancy Test in Trademark Infringement' },
+      { title: 'Banking: Secrecy Laws', query: 'Exceptions to the Law on Secrecy of Bank Deposits' },
+      { title: 'Financial Rehabilitation', query: 'Concepts of Insolvency and Liquidation under FRIA' }
+    ]
+  },
+  {
+    category: 'Labor Law & Social Legislation',
+    topics: [
+      { title: 'Employer-Employee Relationship', query: 'The Four-Fold Test and the Economic Reality Test' },
+      { title: 'Security of Tenure', query: 'Substantial and Procedural Due Process in termination cases' },
+      { title: 'Labor Standards: Wages', query: 'Principle of "A Fair Day\'s Wage for a Fair Day\'s Labor"' },
+      { title: 'Unionism & Collective Bargaining', query: 'Duty to bargain collectively and Unfair Labor Practices' },
+      { title: 'Managerial vs Rank-and-File', query: 'Distinction of employees under the Labor Code and their rights' },
+      { title: 'Social Security', query: 'SSS and GSIS benefits and the Social Justice principle' }
+    ]
+  },
+  {
+    category: 'Taxation Law',
+    topics: [
+      { title: 'Lifeblood Doctrine', query: 'Taxes are the lifeblood of the government: Lifeblood Doctrine cases' },
+      { title: 'Tax Exemption', query: 'Strictissimi Juris: Strict construction of tax exemptions' },
+      { title: 'Double Taxation', query: 'Direct Duplicate vs Indirect Duplicate Taxation in the Philippines' },
+      { title: 'Tax Remedies', query: 'Assessment and Collection remedies under the NIRC' },
+      { title: 'Local Government Taxation', query: 'Fundamental principles of local taxation under the LGC' }
+    ]
+  },
+  {
+    category: 'Legal & Judicial Ethics',
+    topics: [
+      { title: 'CPRA: Fidelity', query: 'Canon III of the Code of Professional Responsibility and Accountability' },
+      { title: 'Conflict of Interest', query: 'Prohibitions on lawyers representing conflicting interests' },
+      { title: 'Attorney-Client Privilege', query: 'The sanctity and duration of the Attorney-Client relationship' },
+      { title: 'Judicial Conduct', query: 'New Code of Judicial Conduct and the principle of Impartiality' },
+      { title: 'Integrated Bar (IBP)', query: 'Nature of the Integrated Bar and the power of the SC over the legal profession' }
     ]
   }
 ];
