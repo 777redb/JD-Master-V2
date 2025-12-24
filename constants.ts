@@ -347,20 +347,129 @@ export const PHILIPPINE_CODALS: LawCode[] = [
   { id: 'UDHA', name: 'Urban Development and Housing', description: 'RA 7279', category: 'Special Laws' }
 ];
 
-export const JURISPRUDENCE_TOPICS = [
+export const LEGAL_DOCTRINES_ARCHIVE = [
   {
-    category: 'Political & Public International Law',
+    category: 'Constitutional & Political Law',
     topics: [
-      { title: 'Judicial Power & Review', query: 'Philippine Judicial Power and the power of Judicial Review Article VIII Section 1' },
-      { title: 'Separation of Powers', query: 'Doctrine of Separation of Powers and Checks and Balances in the Philippines' },
-      { title: 'State Immunity', query: 'Doctrine of State Immunity from Suit and the exceptions under Philippine law' }
+      { title: 'Judicial Review Doctrine', query: 'Philippine Judicial Review Doctrine: The Supreme Court power to declare executive or legislative acts unconstitutional' },
+      { title: 'Separation of Powers Doctrine', query: 'Separation of Powers Doctrine: Each branch of government must respect the functions and limits of the others' },
+      { title: 'Political Question Doctrine', query: 'Political Question Doctrine: Issues non-justiciable because they are entrusted to other branches' },
+      { title: 'Due Process Doctrine', query: 'Due Process Doctrine: Fair procedures and substantive fairness before deprivation of life, liberty, or property' },
+      { title: 'Equal Protection Doctrine', query: 'Equal Protection Doctrine: Treating similarly situated persons alike absent valid classification' },
+      { title: 'Police Power Doctrine', query: 'Police Power Doctrine: State regulation for public welfare with reasonableness' },
+      { title: 'Takings / Eminent Domain Doctrine', query: 'Eminent Domain Doctrine: Expropriation of private property for public use with just compensation' },
+      { title: 'Freedom of Speech & Expression', query: 'Freedom of Speech and Expression Doctrine: Regulation must satisfy strict scrutiny' },
+      { title: 'Freedom of Religion Doctrine', query: 'Freedom of Religion Doctrine: Non-establishment and free exercise clauses' },
+      { title: 'Freedom of the Press Doctrine', query: 'Freedom of the Press Doctrine: Unconstitutionality of prior restraints' },
+      { title: 'Suffrage Doctrine', query: 'Suffrage Doctrine: The right to vote and reasonable qualifications' },
+      { title: 'Party-List Doctrine', query: 'Party-List Doctrine: Proportional representation reflecting marginalized sectors' },
+      { title: 'Anti-Graft Doctrine', query: 'Anti-Graft Doctrine: Avoiding conflicts of interest and prohibited corrupt practices' },
+      { title: 'Civil Service Doctrine', query: 'Civil Service Doctrine: Merit and fitness in appointments' }
+    ]
+  },
+  {
+    category: 'Public International Law',
+    topics: [
+      { title: 'Self-Executing Treaty Doctrine', query: 'Self-Executing Treaty Doctrine: Domestic legal effect without implementing legislation' },
+      { title: 'Customary International Law', query: 'Customary International Law Doctrine: Binding norms absent conflicting domestic law' },
+      { title: 'Treaty Supremacy Doctrine', query: 'Treaty Supremacy Doctrine: Treaties as part of the law of the land once ratified' }
+    ]
+  },
+  {
+    category: 'Civil Law',
+    topics: [
+      { title: 'Personhood Doctrine', query: 'Personhood Doctrine: Legal personality at birth and rights of the conceived' },
+      { title: 'Marriage Doctrine', query: 'Marriage Doctrine: Special contract giving rise to family obligations' },
+      { title: 'Property Relations spouses', query: 'Property Relations of Spouses Doctrine: Conjugal partnership of gains' },
+      { title: 'Meeting of the Minds Doctrine', query: 'Meeting of the Minds Doctrine: Mutual consent in contracts' },
+      { title: 'Consideration Doctrine', query: 'Consideration Doctrine: Requirement for contracts unless excepted' },
+      { title: 'Mistake Doctrine', query: 'Mistake Doctrine: Voidability of contracts for mistake of fact' },
+      { title: 'Estoppel Doctrine', query: 'Estoppel Doctrine: Barring assertions inconsistent with prior conduct' },
+      { title: 'Ownership Doctrine', query: 'Ownership Doctrine: Rights to enjoy and dispose of property' },
+      { title: 'Co-ownership Doctrine', query: 'Co-ownership Doctrine: Undivided interests and mutual management' },
+      { title: 'Testate Succession Doctrine', query: 'Testate Succession Doctrine: Effectiveness of wills and probate' },
+      { title: 'Damages Doctrine', query: 'Damages Doctrine: Proven with reasonable certainty and compensatory nature' },
+      { title: 'Specific Performance Doctrine', query: 'Specific Performance Doctrine: Equitable remedy when monetary damages are inadequate' }
     ]
   },
   {
     category: 'Criminal Law',
     topics: [
-      { title: 'Self-Defense', query: 'Requisites of Justifying Circumstances under Article 11 RPC' },
-      { title: 'Conspiracy', query: 'Doctrine of Conspiracy: The act of one is the act of all' }
+      { title: 'Criminal Liability Doctrine', query: 'Criminal Liability Doctrine: Act, omission, and criminal intent/negligence' },
+      { title: 'Concurrence Doctrine', query: 'Concurrence Doctrine: Concurrence of criminal act and intent' },
+      { title: 'Circumstantial Evidence Doctrine', query: 'Circumstantial Evidence Doctrine: Conviction excluding reasonable doubt' },
+      { title: 'Presumption of Innocence', query: 'Presumption of Innocence Doctrine: Innocent until proven guilty' },
+      { title: 'Justifying Circumstances', query: 'Justifying Circumstances Doctrine: Acts like self-defense that are not criminal' },
+      { title: 'Mitigating Circumstances', query: 'Mitigating Circumstances Doctrine: Reducing penalties without absolving guilt' },
+      { title: 'Aggravating Circumstances', query: 'Aggravating Circumstances Doctrine: Circumstances increasing penalties' },
+      { title: 'Dangerous Drugs Doctrine', query: 'Dangerous Drugs Doctrine: Possession thresholds and implied trafficking' },
+      { title: 'Human Trafficking Doctrine', query: 'Human Trafficking Doctrine: Immateriality of consent where fraud or coercion exists' },
+      { title: 'Cybercrime Doctrine', query: 'Cybercrime Doctrine: Unauthorized access and punishable cyber offenses' }
+    ]
+  },
+  {
+    category: 'Remedial Law',
+    topics: [
+      { title: 'Jurisdiction Doctrine', query: 'Jurisdiction Doctrine: Requirement for subject-matter and personal jurisdiction' },
+      { title: 'Forum Doctrine', query: 'Forum Doctrine: Forum non conveniens and proper venue' },
+      { title: 'Res Judicata Doctrine', query: 'Res Judicata Doctrine: Final and conclusive judgment on the merits' },
+      { title: 'Collaterally Estoppel Doctrine', query: 'Collaterally Estoppel Doctrine: No relitigation of issues already litigated' },
+      { title: 'Search & Seizure Doctrine', query: 'Search and Seizure Doctrine: Validity and exceptions for warrantless search' },
+      { title: 'Bail Doctrine', query: 'Bail Doctrine: Right for bailable offenses vs statutory criteria' },
+      { title: 'Best Evidence Doctrine', query: 'Best Evidence Doctrine: Preference for original documents' },
+      { title: 'Chain of Custody Doctrine', query: 'Chain of Custody Doctrine: Integrity of evidence from seizure to presentation' },
+      { title: 'Hearsay Doctrine', query: 'Hearsay Doctrine: Inadmissibility and defined exceptions' },
+      { title: 'Certiorari Doctrine', query: 'Certiorari Doctrine: Correcting errors of jurisdiction or grave abuse' },
+      { title: 'Prohibition Doctrine', query: 'Prohibition Doctrine: Preventing tribunals from exceeding jurisdiction' },
+      { title: 'Mandamus Doctrine', query: 'Mandamus Doctrine: Compelling performance of ministerial duty' }
+    ]
+  },
+  {
+    category: 'Commercial Law',
+    topics: [
+      { title: 'Holder in Due Course', query: 'Holder in Due Course Doctrine: Taking free of many defenses' },
+      { title: 'Presumption of Consideration', query: 'Presumption of Consideration Doctrine: Instrument issued for value' },
+      { title: 'Separate Legal Personality', query: 'Separate Legal Personality Doctrine: Distinction between corp and shareholders' },
+      { title: 'Piercing the Corporate Veil', query: 'Piercing the Corporate Veil Doctrine: Disregarding entity to prevent fraud' },
+      { title: 'Registration Doctrine', query: 'Registration Doctrine: Securities before public offering' }
+    ]
+  },
+  {
+    category: 'Labor Law',
+    topics: [
+      { title: 'Employer-Employee Relationship', query: 'Employer-Employee Relationship Doctrine: Control and economic reality tests' },
+      { title: 'Regularization Doctrine', query: 'Regularization Doctrine: Probationary period and regular status' },
+      { title: 'Union Rights Doctrine', query: 'Union Rights Doctrine: Self-organization and collective bargaining' }
+    ]
+  },
+  {
+    category: 'Taxation Law',
+    topics: [
+      { title: 'Taxability Doctrine', query: 'Taxability Doctrine: Statutory authority and ambiguity resolution' },
+      { title: 'Substance Over Form Doctrine', query: 'Substance Over Form Doctrine: Liability determined by economic substance' }
+    ]
+  },
+  {
+    category: 'Legal & Judicial Ethics',
+    topics: [
+      { title: 'Conflict of Interest Doctrine', query: 'Conflict of Interest Doctrine: Avoiding conflicts and limited dual representation' },
+      { title: 'Candor to Tribunal Doctrine', query: 'Candor to Tribunal Doctrine: Not misleading the court' },
+      { title: 'Judicial Impartiality Doctrine', query: 'Judicial Impartiality Doctrine: Performance of duties impartially' }
+    ]
+  },
+  {
+    category: 'Environmental Law',
+    topics: [
+      { title: 'Precautionary Principle', query: 'Precautionary Principle Doctrine: Scientific uncertainty not preventing protective measures' },
+      { title: 'Public Trust Doctrine', query: 'Public Trust Doctrine: Resources held by state for public use' }
+    ]
+  },
+  {
+    category: 'Special & Modern Law',
+    topics: [
+      { title: 'Consent (Data Privacy)', query: 'Consent Doctrine in Data Privacy: Lawful processing and safeguards' },
+      { title: 'Covered Transaction (AML)', query: 'Covered Transaction Doctrine: Thresholds for reporting and compliance' },
+      { title: 'Idea Expression (IP)', query: 'Idea Expression Doctrine: Expression vs Idea protection in IP law' }
     ]
   }
 ];

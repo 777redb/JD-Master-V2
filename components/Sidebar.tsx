@@ -11,7 +11,8 @@ import {
   Layout, 
   FileEdit,
   ScrollText,
-  GraduationCap
+  GraduationCap,
+  Library
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -73,7 +74,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, isM
             <NavItem view={AppView.DASHBOARD} icon={Layout} label="Dashboard" active={currentView === AppView.DASHBOARD} onClick={() => handleNav(AppView.DASHBOARD)} />
             <NavItem view={AppView.JD_PROGRAM} icon={GraduationCap} label="JD Program" active={currentView === AppView.JD_PROGRAM} onClick={() => handleNav(AppView.JD_PROGRAM)} />
             <NavItem view={AppView.CODAL_LIBRARY} icon={BookOpen} label="Codal Library" active={currentView === AppView.CODAL_LIBRARY} onClick={() => handleNav(AppView.CODAL_LIBRARY)} />
-            <NavItem view={AppView.JURISPRUDENCE} icon={Scale} label="Jurisprudence" active={currentView === AppView.JURISPRUDENCE} onClick={() => handleNav(AppView.JURISPRUDENCE)} />
+            <NavItem view={AppView.LEGAL_DOCTRINES} icon={Library} label="Legal Doctrines" active={currentView === AppView.LEGAL_DOCTRINES} onClick={() => handleNav(AppView.LEGAL_DOCTRINES)} />
             <NavItem view={AppView.CASE_DIGEST} icon={FileText} label="Case Digest" active={currentView === AppView.CASE_DIGEST} onClick={() => handleNav(AppView.CASE_DIGEST)} />
             <NavItem view={AppView.LAW_REVIEW} icon={ScrollText} label="Law Review" active={currentView === AppView.LAW_REVIEW} onClick={() => handleNav(AppView.LAW_REVIEW)} />
           </div>

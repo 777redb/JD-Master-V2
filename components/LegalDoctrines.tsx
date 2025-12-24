@@ -1,9 +1,7 @@
 
 import React, { useState, useRef, useMemo } from 'react';
 import { generateGeneralLegalAdvice } from '../services/gemini';
-// FIX: Changed JURISPRUDENCE_TOPICS to LEGAL_DOCTRINES_ARCHIVE as it is the correct export from constants.
 import { LEGAL_DOCTRINES_ARCHIVE } from '../constants';
-/* FIX: Added AlignLeft and AlignJustify to imports to resolve missing name errors. */
 import { 
   Scale, 
   Search, 
@@ -22,14 +20,10 @@ import {
   Edit3,
   X,
   Filter,
-  Sparkles,
   FileText,
   Copy,
   History,
   Bookmark,
-  Share2,
-  Maximize2,
-  ExternalLink,
   Library,
   AlignLeft,
   AlignJustify
@@ -52,16 +46,22 @@ const FONT_OPTIONS: { label: string, value: LegalFont, desc: string }[] = [
   { label: 'JetBrains Mono', value: 'font-mono', desc: 'Technical' },
 ];
 
-export const Jurisprudence: React.FC = () => {
+export const LegalDoctrines: React.FC = () => {
   const [query, setQuery] = useState('');
   const [result, setResult] = useState('');
   const [activeTopicTitle, setActiveTopicTitle] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
   // Navigation State
-  // FIX: Using LEGAL_DOCTRINES_ARCHIVE instead of JURISPRUDENCE_TOPICS.
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>(() => {
-    return { [LEGAL_DOCTRINES_ARCHIVE[0].category]: true };
+    const initial: Record<string, boolean> = {};
+    LEGAL_DOCTRINES_ARCHIVE.forEach(c => {
+        initial[c.category] = false;
+    });
+    if (LEGAL_DOCTRINES_ARCHIVE.length > 0) {
+        initial[LEGAL_DOCTRINES_ARCHIVE[0].category] = true;
+    }
+    return initial;
   });
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [sidebarSearch, setSidebarSearch] = useState('');
@@ -79,7 +79,6 @@ export const Jurisprudence: React.FC = () => {
   const effectiveFontSize = Math.round(18 * (zoomLevel / 100));
 
   const filteredTopics = useMemo(() => {
-    // FIX: Using LEGAL_DOCTRINES_ARCHIVE and fixed typo JURISPRPRUDENCE_TOPICS.
     if (!sidebarSearch) return LEGAL_DOCTRINES_ARCHIVE;
     const search = sidebarSearch.toLowerCase();
     return LEGAL_DOCTRINES_ARCHIVE.map(cat => ({
@@ -89,10 +88,7 @@ export const Jurisprudence: React.FC = () => {
   }, [sidebarSearch]);
 
   const toggleCategory = (category: string) => {
-    setExpandedCategories(prev => ({
-      ...prev,
-      [category]: !prev[category]
-    }));
+    setExpandedCategories(prev => ({ ...prev, [category]: !prev[category] }));
   };
 
   const handleSearch = async (searchQuery: string, topicTitle?: string) => {
@@ -105,13 +101,13 @@ export const Jurisprudence: React.FC = () => {
     try {
       const prompt = `
       Act as an elite **Supreme Court Reporter and Legal Treatise Author** for a premium legal database like Westlaw. 
-      Generate a definitive **Jurisprudential Treatise** on: "${searchQuery}".
+      Generate a definitive **Legal Doctrinal Treatise** on: "${searchQuery}".
       
       **OUTPUT STRUCTURE (SEMANTIC HTML):**
       
       <div class="legal-header">
         <h1>${(topicTitle || searchQuery).toUpperCase()}</h1>
-        <div class="citation-block">Cite as: [Standard Citation Placeholder]</div>
+        <div class="citation-block">Cite as: LegalPH Doctrines (2024 Edition)</div>
       </div>
       
       <div class="headnote">
@@ -138,7 +134,7 @@ export const Jurisprudence: React.FC = () => {
       </div>
       
       <h3>III. JURISPRUDENTIAL EVOLUTION</h3>
-      <p>[Discuss landmark cases from the past leading up to the modern interpretation. Cite lead authorities like Gaviola, Molina, or Oposa.]</p>
+      <p>[Discuss landmark cases from the past leading up to the modern interpretation.]</p>
       
       <hr />
       
@@ -147,17 +143,17 @@ export const Jurisprudence: React.FC = () => {
       
       <div class="commentary">
         <h4>RESEARCHER COMMENTARY</h4>
-        <p>[Add a critical analysis of current Court trends (e.g., Leonen Court vs Bersamin Court interpretation if relevant).]</p>
+        <p>[Add a critical analysis of current Court trends and Bar-readiness tips.]</p>
       </div>
 
-      <div class="end-marker">*** END OF DOCUMENT ***</div>
+      <div class="end-marker">*** END OF RESEARCH DOCUMENT ***</div>
       `;
       
       const res = await generateGeneralLegalAdvice(prompt);
       setResult(res);
       if (contentRef.current) contentRef.current.scrollTop = 0;
     } catch (err) {
-      setResult("<p>Error retrieving jurisprudence. System timeout or quota reached.</p>");
+      setResult("<p>Error retrieving legal doctrine. System timeout or quota reached.</p>");
     } finally {
       setIsLoading(false);
     }
@@ -174,13 +170,13 @@ export const Jurisprudence: React.FC = () => {
     const range = selection.getRangeAt(0);
     const span = document.createElement('span');
     span.className = "bg-blue-100 text-blue-900 border-b border-blue-300 px-0.5 rounded";
-    try { range.surroundContents(span); selection.removeAllRanges(); } catch (e) { console.warn("Complex highlight failed."); }
+    try { range.surroundContents(span); selection.removeAllRanges(); } catch (e) { console.warn("Highlight failed."); }
   };
 
   const handlePrint = () => window.print();
 
   const handleCopyCitation = () => {
-    const citation = `${activeTopicTitle}, LegalPH Jurisprudential Database (2024 Edition)`;
+    const citation = `${activeTopicTitle}, LegalPH Doctrinal Archive (2024 Edition)`;
     navigator.clipboard.writeText(citation);
     alert('Citation copied to clipboard');
   };
@@ -215,11 +211,11 @@ export const Jurisprudence: React.FC = () => {
       <div className="h-14 border-b border-slate-200 flex items-center justify-between px-6 bg-white z-40 shadow-sm shrink-0 no-print">
         <div className="flex items-center gap-3">
            <div className="w-8 h-8 bg-blue-900 rounded flex items-center justify-center text-white shadow-sm">
-              <Scale size={18} />
+              <Library size={18} />
            </div>
            <div>
-              <h2 className="text-xs font-black text-blue-900 uppercase tracking-widest leading-none">Jurisprudence</h2>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">LegalPH Research Network</p>
+              <h2 className="text-xs font-black text-blue-900 uppercase tracking-widest leading-none">Legal Doctrines</h2>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">Premium Research Center</p>
            </div>
         </div>
         
@@ -228,7 +224,7 @@ export const Jurisprudence: React.FC = () => {
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search by case title, G.R. number, or legal doctrine..."
+              placeholder="Search Philippine Legal Doctrines..."
               className="w-full pl-10 pr-4 py-1.5 bg-slate-50 border border-slate-200 focus:bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-100 rounded-md text-sm transition-all outline-none font-medium"
             />
             <Search className="absolute left-3 top-2.5 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={14} />
@@ -256,7 +252,7 @@ export const Jurisprudence: React.FC = () => {
            ${isSidebarOpen ? 'w-80 translate-x-0' : 'w-0 -translate-x-full lg:w-0 lg:translate-x-0 overflow-hidden opacity-0 lg:opacity-100'}
         `}>
            <div className="p-3 border-b border-slate-100 flex items-center justify-between">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Navigation Tree</span>
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Research Archive</span>
               <button className="p-1 hover:bg-slate-100 rounded text-slate-400"><History size={14}/></button>
            </div>
 
@@ -264,7 +260,7 @@ export const Jurisprudence: React.FC = () => {
               <div className="relative">
                 <input 
                   type="text"
-                  placeholder="Filter doctrines..."
+                  placeholder="Filter subjects..."
                   value={sidebarSearch}
                   onChange={(e) => setSidebarSearch(e.target.value)}
                   className="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-200 focus:border-blue-400 rounded text-xs outline-none transition-all shadow-sm"
@@ -346,12 +342,12 @@ export const Jurisprudence: React.FC = () => {
               {showAppearance && (
                 <div className="absolute right-6 top-4 w-80 bg-white rounded-xl shadow-2xl border border-slate-200 p-6 z-50 text-slate-900 animate-in fade-in slide-in-from-top-4 no-print">
                   <div className="flex justify-between items-center mb-6">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Reading Settings</span>
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Visual Controls</span>
                     <button onClick={() => setShowAppearance(false)} className="text-slate-400 hover:text-slate-600"><X size={16}/></button>
                   </div>
                   <div className="space-y-6">
                     <div>
-                      <span className="text-xs font-bold text-slate-700 block mb-3">Font Face</span>
+                      <span className="text-xs font-bold text-slate-700 block mb-3">Font Selection</span>
                       <div className="grid grid-cols-2 gap-2">
                         {FONT_OPTIONS.map(font => (
                           <button key={font.value} onClick={() => setFontFamily(font.value)} className={`p-2.5 text-left border rounded-lg transition-all ${fontFamily === font.value ? 'bg-blue-50 border-blue-500 ring-1 ring-blue-500' : 'bg-white border-slate-200'}`}>
@@ -368,7 +364,7 @@ export const Jurisprudence: React.FC = () => {
                       </div>
                     </div>
                     <div>
-                       <span className="text-xs font-bold text-slate-700 block mb-3">Paper Theme</span>
+                       <span className="text-xs font-bold text-slate-700 block mb-3">Research Environment</span>
                        <div className="grid grid-cols-4 gap-2">
                           {Object.keys(THEMES).map((t) => (
                              <button key={t} onClick={() => setTheme(t as Theme)} className={`h-8 rounded-lg border-2 ${THEMES[t as Theme].bg} ${theme === t ? 'border-blue-600 ring-2 ring-blue-600' : 'border-slate-200'}`} title={t} />
@@ -383,10 +379,10 @@ export const Jurisprudence: React.FC = () => {
                   <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/60 z-10 backdrop-blur-md">
                       <div className="relative">
                          <Loader2 className="animate-spin text-blue-800 mb-4" size={64} />
-                         <Scale size={24} className="absolute inset-0 m-auto text-blue-900" />
+                         <Library size={24} className="absolute inset-0 m-auto text-blue-900" />
                       </div>
-                      <p className={`font-serif text-2xl font-black tracking-tight text-slate-900`}>Accessing Doctrinal Archive...</p>
-                      <p className="text-[11px] font-bold text-slate-500 uppercase tracking-[0.3em] mt-3 animate-pulse">Syllabus-Aligned Research in Progress</p>
+                      <p className={`font-serif text-2xl font-black tracking-tight text-slate-900`}>Analyzing Doctrinal History...</p>
+                      <p className="text-[11px] font-bold text-slate-500 uppercase tracking-[0.3em] mt-3 animate-pulse">Consulting Supreme Court Archive</p>
                   </div>
               ) : result ? (
                  <div 
@@ -405,22 +401,22 @@ export const Jurisprudence: React.FC = () => {
                     <div className="relative mb-10">
                        <Library size={120} className="text-slate-100" />
                        <div className="absolute inset-0 flex items-center justify-center">
-                          <Gavel size={64} className="text-blue-900/10" />
+                          <Scale size={64} className="text-blue-900/10" />
                        </div>
                     </div>
-                    <h3 className="text-4xl font-serif font-bold text-slate-900 mb-4">Supreme Court Doctrinal Explorer</h3>
+                    <h3 className="text-4xl font-serif font-bold text-slate-900 mb-4">Legal Doctrinal Library</h3>
                     <p className="text-center max-w-sm font-sans text-sm leading-relaxed text-slate-500">
-                       Navigate the complete landscape of Philippine Jurisprudence. Select a landmark subject or use the global research bar to synthesize doctrines.
+                       Access the definitive repository of Philippine Legal Doctrines. Select a category from the archive or use the global research bar to synthesize precedents.
                     </p>
                     
                     <div className="mt-16 grid grid-cols-3 gap-12 max-w-2xl w-full">
                        <div className="flex flex-col items-center gap-3">
                           <div className="w-14 h-14 bg-white rounded-2xl shadow-sm border border-slate-100 flex items-center justify-center text-blue-900/40"><FileText size={28}/></div>
-                          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Treatises</span>
+                          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Landmark Cases</span>
                        </div>
                        <div className="flex flex-col items-center gap-3">
                           <div className="w-14 h-14 bg-white rounded-2xl shadow-sm border border-slate-100 flex items-center justify-center text-blue-900/40"><Scale size={28}/></div>
-                          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Ratio Decidendi</span>
+                          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Ratio Legis</span>
                        </div>
                        <div className="flex flex-col items-center gap-3">
                           <div className="w-14 h-14 bg-white rounded-2xl shadow-sm border border-slate-100 flex items-center justify-center text-blue-900/40"><History size={28}/></div>

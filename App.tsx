@@ -6,7 +6,7 @@ import { CaseDigest } from './components/CaseDigest';
 import { MockBar } from './components/MockBar';
 import { LegalPad } from './components/LegalPad';
 import { LawReview } from './components/LawReview';
-import { Jurisprudence } from './components/Jurisprudence';
+import { LegalDoctrines } from './components/LegalDoctrines';
 import { ContractDrafting } from './components/ContractDrafting';
 import { JDProgram } from './components/JDProgram';
 import { AppView } from './types';
@@ -190,7 +190,7 @@ const Dashboard = ({ onChangeView }: { onChangeView: (v: AppView) => void }) => 
   const features = [
     { title: "JD Program", desc: "Systematic self-study curriculum modeled after top PH law schools.", icon: GraduationCap, view: AppView.JD_PROGRAM, color: "bg-slate-50 text-slate-900", accent: "group-hover:text-slate-900", border: "hover:border-slate-900" },
     { title: "Codal Library", desc: "Full text of PH laws updated with AI annotations and easy navigation.", icon: BookOpen, view: AppView.CODAL_LIBRARY, color: "bg-blue-50 text-blue-600", accent: "group-hover:text-blue-600", border: "hover:border-blue-200" },
-    { title: "Jurisprudence", desc: "Search Supreme Court decisions, doctrines, and legal precedents.", icon: Scale, view: AppView.JURISPRUDENCE, color: "bg-indigo-50 text-indigo-600", accent: "group-hover:text-indigo-600", border: "hover:border-indigo-200" },
+    { title: "Legal Doctrines", desc: "Search Supreme Court decisions, doctrines, and legal precedents.", icon: Library, view: AppView.LEGAL_DOCTRINES, color: "bg-indigo-50 text-indigo-600", accent: "group-hover:text-indigo-600", border: "hover:border-indigo-200" },
     { title: "Case Digest AI", desc: "Instant summaries: Facts, Issues, Ruling. Strict format adherence.", icon: FileEdit, view: AppView.CASE_DIGEST, color: "bg-emerald-50 text-emerald-600", accent: "group-hover:text-emerald-600", border: "hover:border-emerald-200" },
     { title: "Mock Bar Exams", desc: "Adaptive quizzes and essay questions tailored to your level.", icon: Award, view: AppView.MOCK_BAR, color: "bg-amber-50 text-amber-600", accent: "group-hover:text-amber-600", border: "hover:border-amber-200" },
     { title: "Legal Research", desc: "Build cases with comprehensive AI analysis and argumentation.", icon: Briefcase, view: AppView.CASE_BUILD, color: "bg-violet-50 text-violet-600", accent: "group-hover:text-violet-600", border: "hover:border-violet-200" }
@@ -296,7 +296,7 @@ export default function App() {
       case AppView.LEGAL_PAD: return <LegalPad />;
       case AppView.CASE_BUILD: return <CaseBuild />;
       case AppView.CONTRACT_DRAFTING: return <ContractDrafting />;
-      case AppView.JURISPRUDENCE: return <Jurisprudence />;
+      case AppView.LEGAL_DOCTRINES: return <LegalDoctrines />;
       case AppView.LAW_REVIEW: return <LawReview />;
       default: return <Dashboard onChangeView={setView} />;
     }
