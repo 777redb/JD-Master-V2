@@ -311,7 +311,7 @@ export const PHILIPPINE_CODALS: LawCode[] = [
   { id: 'PHILHEALTH_LAW', name: 'PhilHealth Law', description: 'RA 11223', category: 'Labor Law and Social Legislation' },
   { id: 'EMP_COMP_LAW', name: 'Employees Compensation Law', description: 'Labor Code', category: 'Labor Law and Social Legislation' },
   { id: 'KASAMBAHAY_LAW', name: 'Kasambahay Law', description: 'RA 10361', category: 'Labor Law and Social Legislation' },
-  { id: 'MIGRANT_WORKERS_ACT', name: 'Migrant Workers Act', description: 'RA 8042', category: 'Labor Law and Social Legislation' },
+  { id: 'MIGRANT_WORKERS_ACT', name: 'MIGRANT WORKERS ACT', description: 'RA 8042', category: 'Labor Law and Social Legislation' },
   { id: 'OSH_LAW', name: 'OSH Law', description: 'RA 11058', category: 'Labor Law and Social Legislation' },
 
   // --- VII. TAXATION LAW ---
@@ -474,12 +474,172 @@ export const LEGAL_DOCTRINES_ARCHIVE = [
   }
 ];
 
-export const CONTRACT_TEMPLATES: ContractTemplate[] = [
+export interface CategorizedTemplates {
+  category: string;
+  templates: ContractTemplate[];
+}
+
+export const CONTRACT_TEMPLATES: CategorizedTemplates[] = [
   {
-    id: 'DEED_SALE',
-    name: 'Deed of Absolute Sale',
-    description: 'Transfer ownership of real or personal property.',
-    fields: ['Seller Name', 'Buyer Name', 'Property Description (TCT No.)', 'Purchase Price', 'Location']
+    category: 'Sales & Property',
+    templates: [
+      {
+        id: 'DEED_SALE_REAL',
+        name: 'Deed of Absolute Sale (Real Property)',
+        description: 'Permanent transfer of real estate ownership.',
+        fields: ['Seller Name', 'Buyer Name', 'TCT No.', 'Tax Declaration No.', 'Purchase Price', 'Location Description']
+      },
+      {
+        id: 'DEED_SALE_VEHICLE',
+        name: 'Deed of Absolute Sale (Motor Vehicle)',
+        description: 'Permanent transfer of vehicle ownership.',
+        fields: ['Seller Name', 'Buyer Name', 'Make/Model', 'Engine No.', 'Chassis No.', 'Plate No.', 'Purchase Price']
+      },
+      {
+        id: 'CONTRACT_TO_SELL',
+        name: 'Contract to Sell',
+        description: 'Agreement to transfer ownership upon full payment.',
+        fields: ['Seller Name', 'Buyer Name', 'Total Price', 'Downpayment Amount', 'Installment Terms', 'Property Details']
+      },
+      {
+        id: 'DEED_DONATION',
+        name: 'Deed of Donation (Inter Vivos)',
+        description: 'Gratuitous transfer of property during life.',
+        fields: ['Donor Name', 'Donee Name', 'Relationship', 'Property Description', 'Conditions (if any)']
+      }
+    ]
+  },
+  {
+    category: 'Leases & Tenancy',
+    templates: [
+      {
+        id: 'LEASE_RESIDENTIAL',
+        name: 'Residential Lease Agreement',
+        description: 'Standard house or condo rental contract.',
+        fields: ['Lessor Name', 'Lessee Name', 'Address of Property', 'Monthly Rent', 'Security Deposit', 'Advance Rent', 'Term Duration']
+      },
+      {
+        id: 'LEASE_COMMERCIAL',
+        name: 'Commercial Lease Agreement',
+        description: 'Contract for office, retail, or warehouse space.',
+        fields: ['Lessor Name', 'Lessee Name', 'Business Name', 'Property Description', 'Monthly Rent', 'Security Deposit', 'Escalation Clause %']
+      }
+    ]
+  },
+  {
+    category: 'Labor & Employment',
+    templates: [
+      {
+        id: 'EMPLOYMENT_REGULAR',
+        name: 'Regular Employment Contract',
+        description: 'Standard full-time employment with benefits.',
+        fields: ['Employer Name', 'Employee Name', 'Position Title', 'Monthly Basic Salary', 'Effective Date', 'Job Description Summary']
+      },
+      {
+        id: 'EMPLOYMENT_PROBATIONARY',
+        name: 'Probationary Employment Contract',
+        description: 'Contract for a trial period (max 6 months).',
+        fields: ['Employer Name', 'Employee Name', 'Position', 'Salary', 'Probation Period (months)', 'Performance Standards']
+      },
+      {
+        id: 'INDEPENDENT_CONTRACTOR',
+        name: 'Service Agreement (Independent Contractor)',
+        description: 'Engagement for specific services/projects.',
+        fields: ['Client Name', 'Contractor Name', 'Scope of Work', 'Project Fee', 'Duration', 'Deliverables']
+      },
+      {
+        id: 'NDA_AGREEMENT',
+        name: 'Non-Disclosure Agreement (NDA)',
+        description: 'Confidentiality agreement for sensitive info.',
+        fields: ['Disclosing Party', 'Receiving Party', 'Purpose of Disclosure', 'Duration of Confidentiality']
+      }
+    ]
+  },
+  {
+    category: 'Business & Corporate',
+    templates: [
+      {
+        id: 'SEC_CERT',
+        name: "Secretary's Certificate",
+        description: 'Official certification of board actions.',
+        fields: ['Corporation Name', 'Corporate Secretary Name', 'Board Meeting Date', 'Resolution Details']
+      },
+      {
+        id: 'MOA_GEN',
+        name: 'Memorandum of Agreement (MOA)',
+        description: 'General cooperation agreement between parties.',
+        fields: ['First Party', 'Second Party', 'Purpose', 'Responsibilities of Party A', 'Responsibilities of Party B', 'Effective Date']
+      },
+      {
+        id: 'PARTNERSHIP_ARTICLES',
+        name: 'Articles of Partnership',
+        description: 'Founding document for a general partnership.',
+        fields: ['Partnership Name', 'Partner Names', 'Principal Office', 'Capital Contribution', 'Purpose']
+      }
+    ]
+  },
+  {
+    category: 'Powers of Attorney',
+    templates: [
+      {
+        id: 'SPA_GEN',
+        name: 'Special Power of Attorney (SPA)',
+        description: 'Authority for specific, limited acts.',
+        fields: ['Principal Name', 'Attorney-in-Fact Name', 'Specific Acts Authorized', 'Date of Execution']
+      },
+      {
+        id: 'GPA_GEN',
+        name: 'General Power of Attorney (GPA)',
+        description: 'Broad authority for general management.',
+        fields: ['Principal Name', 'Attorney-in-Fact Name', 'Extent of Authority', 'Duration']
+      }
+    ]
+  },
+  {
+    category: 'Loans & Security',
+    templates: [
+      {
+        id: 'PROMISSORY_NOTE',
+        name: 'Promissory Note',
+        description: 'Written promise to repay a loan.',
+        fields: ['Borrower Name', 'Lender Name', 'Principal Amount', 'Interest Rate %', 'Payment Schedule', 'Due Date']
+      },
+      {
+        id: 'REAL_ESTATE_MORTGAGE',
+        name: 'Real Estate Mortgage',
+        description: 'Security for loan using real property.',
+        fields: ['Mortgagor Name', 'Mortgagee Name', 'Loan Amount', 'Property Description (TCT)', 'Default Terms']
+      },
+      {
+        id: 'CHATTEL_MORTGAGE',
+        name: 'Chattel Mortgage',
+        description: 'Security for loan using personal property (e.g. car).',
+        fields: ['Mortgagor Name', 'Mortgagee Name', 'Loan Amount', 'Property Description', 'Serial/Engine Numbers']
+      }
+    ]
+  },
+  {
+    category: 'Special Agreements',
+    templates: [
+      {
+        id: 'COMPROMISE_AGREEMENT',
+        name: 'Compromise Agreement',
+        description: 'Settlement to end a dispute/litigation.',
+        fields: ['Plaintiff/Party A', 'Defendant/Party B', 'Dispute Case No. (if any)', 'Terms of Settlement', 'Withdrawal of Claims']
+      },
+      {
+        id: 'QUITCLAIM',
+        name: 'Release, Waiver, and Quitclaim',
+        description: 'Release of liability/claims (often for labor).',
+        fields: ['Releasor Name', 'Releasee Name', 'Consideration/Amount', 'Scope of Release']
+      },
+      {
+        id: 'AFFIDAVIT_LOSS',
+        name: 'Affidavit of Loss',
+        description: 'Sworn statement regarding lost items.',
+        fields: ['Affiant Name', 'Item Lost', 'Circumstances of Loss', 'Date of Loss']
+      }
+    ]
   }
 ];
 
