@@ -1,15 +1,10 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Save, 
   Trash2, 
   FilePlus, 
   FolderPlus, 
-  Folder, 
-  FolderOpen, 
-  Tag, 
-  Palette, 
-  GripVertical, 
   Search, 
   Settings2, 
   X, 
@@ -21,9 +16,28 @@ import {
   Edit2,
   ArrowUp,
   ArrowDown,
-  MoreVertical,
-  FileText
+  FileText,
+  Clock,
+  Star,
+  LayoutGrid,
+  List,
+  Type,
+  Maximize2,
+  Sparkles,
+  Zap,
+  MoreHorizontal,
+  History,
+  Tag,
+  Palette,
+  Timer,
+  BookOpen,
+  SplitSquareVertical,
+  MousePointer2,
+  Pen
 } from 'lucide-react';
+import { GoogleGenAI } from "@google/genai";
+
+type PaperStyle = 'legal-ruled' | 'cornell' | 'dot-grid' | 'graph' | 'blank' | 'yellow-legal';
 
 interface Note {
   id: string;
@@ -31,44 +45,58 @@ interface Note {
   content: string;
   updatedAt: number;
   tags: string[];
-  color: string; // Tailwind bg class
+  color: string;
+  isFavorite: boolean;
+  paperStyle: PaperStyle;
+  billableMinutes: number;
 }
 
-interface Folder {
+interface Notebook {
   id: string;
   name: string;
   notes: Note[];
   isExpanded: boolean;
 }
 
+const PAPER_TEMPLATES: { id: PaperStyle; name: string; desc: string }[] = [
+  { id: 'yellow-legal', name: 'Yellow Legal Pad', desc: '1.25" Margin, Lined' },
+  { id: 'legal-ruled', name: 'White Legal Pad', desc: 'Standard Ruled' },
+  { id: 'cornell', name: 'Cornell Method', desc: 'Structured Study' },
+  { id: 'dot-grid', name: 'Dot Grid', desc: 'Flexible Bulleting' },
+  { id: 'graph', name: 'Graph Paper', desc: 'Precision Charting' },
+  { id: 'blank', name: 'Clean Slate', desc: 'No Distractions' },
+];
+
 const COLORS = [
-  { name: 'Default', class: 'bg-white' },
-  { name: 'Red', class: 'bg-red-50' },
-  { name: 'Amber', class: 'bg-amber-50' },
-  { name: 'Green', class: 'bg-green-50' },
-  { name: 'Blue', class: 'bg-blue-50' },
-  { name: 'Purple', class: 'bg-purple-50' },
+  { name: 'Pure White', class: 'bg-white' },
+  { name: 'Legal Yellow', class: 'bg-amber-50' },
+  { name: 'Soft Blue', class: 'bg-blue-50' },
+  { name: 'Pale Green', class: 'bg-emerald-50' },
+  { name: 'Lavender', class: 'bg-purple-50' },
 ];
 
 const DEFAULT_NOTE: Note = {
   id: 'welcome-note',
-  title: 'Welcome to LegalPad',
-  content: 'This is your advanced legal workspace. Create folders, tag documents, and organize your research.\n\nUse the sidebar controls to manage your files. You can rename folders and notes, move them up or down to set priority, and delete them when they are no longer needed.',
+  title: 'My First Case Memo',
+  content: 'WELCOME TO LEGALPH LEGAL PAD\n\nThis workspace is inspired by Goodnotes 6, designed specifically for legal practitioners and law students in the Philippines.\n\nFEATURES:\n1. 1.25" Margin: Essential for case annotations and court filings.\n2. Paper Templates: Choose from Cornell, Legal Ruled, or Graph paper.\n3. Billable Timer: Track your time spent on research directly in the pad.\n4. AI Summarizer: Click the Sparkles icon to synthesize your long notes.\n5. Organization: Drag and drop notes between notebooks.',
   updatedAt: Date.now(),
-  tags: ['Welcome'],
-  color: 'bg-white'
+  tags: ['Onboarding', 'Tutorial'],
+  color: 'bg-amber-50',
+  isFavorite: true,
+  paperStyle: 'yellow-legal',
+  billableMinutes: 0
 };
 
-const DEFAULT_FOLDER: Folder = {
+const DEFAULT_FOLDER: Notebook = {
   id: 'default',
-  name: 'General Notes',
+  name: 'Main Repository',
   notes: [DEFAULT_NOTE],
   isExpanded: true
 };
 
 export const LegalPad: React.FC = () => {
-  const [folders, setFolders] = useState<Folder[]>(() => {
-    const saved = localStorage.getItem('legalph_folders');
+  const [notebooks, setNotebooks] = useState<Notebook[]>(() => {
+    const saved = localStorage.getItem('legalph_notebooks');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -80,502 +108,417 @@ export const LegalPad: React.FC = () => {
     return [DEFAULT_FOLDER];
   });
 
-  const [activeNoteId, setActiveNoteId] = useState<string | null>(folders[0]?.notes[0]?.id || null);
-  const [activeFolderId, setActiveFolderId] = useState<string | null>(folders[0]?.id || null);
-  const [draggedItem, setDraggedItem] = useState<{ type: 'note' | 'folder', id: string, sourceFolderId?: string, index?: number } | null>(null);
-  
-  // Management State
+  const [activeNoteId, setActiveNoteId] = useState<string | null>(notebooks[0]?.notes[0]?.id || null);
+  const [activeNotebookId, setActiveNotebookId] = useState<string | null>(notebooks[0]?.id || null);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [searchTerm, setSearchTerm] = useState('');
   const [isDeleteMode, setIsDeleteMode] = useState(false);
-  const [showSettingsPopover, setShowSettingsPopover] = useState(false);
+  const [isTimerRunning, setIsTimerRunning] = useState(false);
+  const [timerSeconds, setTimerSeconds] = useState(0);
+  const [aiLoading, setAiLoading] = useState(false);
 
   // Sync to localStorage
   useEffect(() => {
-    localStorage.setItem('legalph_folders', JSON.stringify(folders));
-  }, [folders]);
+    localStorage.setItem('legalph_notebooks', JSON.stringify(notebooks));
+  }, [notebooks]);
 
-  // Filtering Logic
-  const filteredFolders = useMemo(() => {
-    if (!searchTerm) return folders;
+  // Billable Timer logic
+  useEffect(() => {
+    let interval: any;
+    if (isTimerRunning) {
+      interval = setInterval(() => {
+        setTimerSeconds(s => s + 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isTimerRunning]);
+
+  const formatTimer = (totalSeconds: number) => {
+    const hrs = Math.floor(totalSeconds / 3600);
+    const mins = Math.floor((totalSeconds % 3600) / 60);
+    const secs = totalSeconds % 60;
+    return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const saveTimerToNote = () => {
+    if (!activeNoteId || !activeNotebookId) return;
+    const additionalMinutes = Math.round(timerSeconds / 60);
+    updateActiveNote('billableMinutes', (activeNote?.billableMinutes || 0) + additionalMinutes);
+    setTimerSeconds(0);
+    setIsTimerRunning(false);
+    alert(`Added ${additionalMinutes} minutes to billable time.`);
+  };
+
+  const handleAiSummary = async () => {
+    if (!activeNote?.content) return;
+    setAiLoading(true);
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+      const response = await ai.models.generateContent({
+        model: 'gemini-3-flash-preview',
+        contents: `Summarize this legal note and format it with clear bullet points. Keep it professional. Content: ${activeNote.content}`
+      });
+      const summary = response.text || "Could not generate summary.";
+      updateActiveNote('content', `${activeNote.content}\n\n--- AI SUMMARY ---\n${summary}`);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const filteredNotebooks = useMemo(() => {
+    if (!searchTerm) return notebooks;
     const term = searchTerm.toLowerCase();
-    return folders.map(folder => {
-      const filteredNotes = folder.notes.filter(note => 
-        note.title.toLowerCase().includes(term) || 
-        note.content.toLowerCase().includes(term) ||
-        note.tags.some(t => t.toLowerCase().includes(term))
+    return notebooks.map(nb => {
+      const filteredNotes = nb.notes.filter(n => 
+        n.title.toLowerCase().includes(term) || 
+        n.content.toLowerCase().includes(term) ||
+        n.tags.some(t => t.toLowerCase().includes(term))
       );
-      
-      const folderMatches = folder.name.toLowerCase().includes(term);
-      
-      if (folderMatches || filteredNotes.length > 0) {
-        return { 
-          ...folder, 
-          notes: folderMatches ? folder.notes : filteredNotes,
-          isExpanded: true 
-        };
+      if (nb.name.toLowerCase().includes(term) || filteredNotes.length > 0) {
+        return { ...nb, notes: filteredNotes, isExpanded: true };
       }
       return null;
-    }).filter((f): f is Folder => f !== null);
-  }, [folders, searchTerm]);
+    }).filter((nb): nb is Notebook => nb !== null);
+  }, [notebooks, searchTerm]);
 
-  const createFolder = () => {
-    const name = prompt("Enter folder name:", "New Project");
+  const createNotebook = () => {
+    const name = prompt("Enter Notebook/Folder Name:");
     if (!name) return;
-    const newFolder: Folder = {
-      id: Date.now().toString(),
-      name,
-      notes: [],
-      isExpanded: true
-    };
-    setFolders([...folders, newFolder]);
-    setActiveFolderId(newFolder.id);
+    const newNb: Notebook = { id: Date.now().toString(), name, notes: [], isExpanded: true };
+    setNotebooks([...notebooks, newNb]);
+    setActiveNotebookId(newNb.id);
+  };
+
+  const deleteNotebook = (id: string) => {
+    if (!confirm("Are you sure you want to delete this notebook and all its notes? This action cannot be undone.")) return;
+    const updated = notebooks.filter(nb => nb.id !== id);
+    setNotebooks(updated);
+    if (activeNotebookId === id) {
+      setActiveNotebookId(updated[0]?.id || null);
+      setActiveNoteId(updated[0]?.notes[0]?.id || null);
+    }
   };
 
   const createNote = () => {
-    if (!activeFolderId) return;
+    if (!activeNotebookId) {
+      alert("Please select or create a notebook first.");
+      return;
+    }
     const newNote: Note = {
       id: Date.now().toString(),
-      title: 'Untitled Note',
+      title: 'New Memo',
       content: '',
       updatedAt: Date.now(),
       tags: [],
-      color: 'bg-white'
+      color: 'bg-white',
+      isFavorite: false,
+      paperStyle: 'legal-ruled',
+      billableMinutes: 0
     };
-    
-    setFolders(folders.map(f => {
-      if (f.id === activeFolderId) {
-        return { ...f, notes: [newNote, ...f.notes] };
-      }
-      return f;
-    }));
+    setNotebooks(notebooks.map(nb => nb.id === activeNotebookId ? { ...nb, notes: [newNote, ...nb.notes] } : nb));
     setActiveNoteId(newNote.id);
-    setIsDeleteMode(false);
   };
 
-  const deleteNote = (noteId: string, folderId: string) => {
-    if (!confirm('Permanently delete this note?')) return;
-    setFolders(folders.map(f => {
-      if (f.id === folderId) {
-        return { ...f, notes: f.notes.filter(n => n.id !== noteId) };
+  const deleteNote = (nbId: string, noteId: string) => {
+    if (!confirm("Are you sure you want to delete this memo?")) return;
+    const updated = notebooks.map(nb => {
+      if (nb.id === nbId) {
+        return { ...nb, notes: nb.notes.filter(n => n.id !== noteId) };
       }
-      return f;
-    }));
-    if (activeNoteId === noteId) setActiveNoteId(null);
-  };
-
-  const deleteFolder = (folderId: string) => {
-    if (!confirm('Delete this folder and all its notes? This cannot be undone.')) return;
-    setFolders(folders.filter(f => f.id !== folderId));
-    if (activeFolderId === folderId) {
-      setActiveFolderId(null);
-      setActiveNoteId(null);
+      return nb;
+    });
+    setNotebooks(updated);
+    if (activeNoteId === noteId) {
+      const currentNb = updated.find(nb => nb.id === nbId);
+      setActiveNoteId(currentNb?.notes[0]?.id || null);
     }
-  };
-
-  const renameFolder = (folderId: string, currentName: string) => {
-    const newName = prompt("Rename folder:", currentName);
-    if (!newName || newName === currentName) return;
-    setFolders(folders.map(f => f.id === folderId ? { ...f, name: newName } : f));
-  };
-
-  const renameNote = (folderId: string, noteId: string, currentTitle: string) => {
-    const newTitle = prompt("Rename note:", currentTitle);
-    if (!newTitle || newTitle === currentTitle) return;
-    setFolders(folders.map(f => {
-      if (f.id === folderId) {
-        return {
-          ...f,
-          notes: f.notes.map(n => n.id === noteId ? { ...n, title: newTitle } : n)
-        };
-      }
-      return f;
-    }));
-  };
-
-  const moveFolder = (index: number, direction: 'up' | 'down') => {
-    if (direction === 'up' && index === 0) return;
-    if (direction === 'down' && index === folders.length - 1) return;
-    
-    const newFolders = [...folders];
-    const targetIndex = direction === 'up' ? index - 1 : index + 1;
-    [newFolders[index], newFolders[targetIndex]] = [newFolders[targetIndex], newFolders[index]];
-    setFolders(newFolders);
   };
 
   const updateActiveNote = (key: keyof Note, value: any) => {
-    if (!activeNoteId || !activeFolderId) return;
-    setFolders(folders.map(f => {
-      if (f.id === activeFolderId) {
-        return {
-          ...f,
-          notes: f.notes.map(n => n.id === activeNoteId ? { ...n, [key]: value, updatedAt: Date.now() } : n)
-        };
-      }
-      return f;
-    }));
+    if (!activeNoteId || !activeNotebookId) return;
+    setNotebooks(notebooks.map(nb => nb.id === activeNotebookId ? {
+      ...nb,
+      notes: nb.notes.map(n => n.id === activeNoteId ? { ...n, [key]: value, updatedAt: Date.now() } : n)
+    } : nb));
   };
 
-  const toggleFolder = (id: string) => {
-    setFolders(folders.map(f => f.id === id ? { ...f, isExpanded: !f.isExpanded } : f));
-  };
-
-  const handleNoteDragStart = (e: React.DragEvent, noteId: string, folderId: string) => {
-    if (isDeleteMode) return; 
-    e.stopPropagation();
-    setDraggedItem({ type: 'note', id: noteId, sourceFolderId: folderId });
-    e.dataTransfer.setData('type', 'note');
-  };
-
-  const handleFolderDragStart = (e: React.DragEvent, folderIndex: number) => {
-    if (isDeleteMode) return;
-    setDraggedItem({ type: 'folder', id: folders[folderIndex].id, index: folderIndex });
-    e.dataTransfer.setData('type', 'folder');
-  };
-
-  const handleDropOnFolder = (e: React.DragEvent, targetFolderId: string, targetFolderIndex: number) => {
-    e.preventDefault();
-    if (!draggedItem) return;
-
-    if (draggedItem.type === 'note') {
-      const { id: noteId, sourceFolderId } = draggedItem;
-      if (!sourceFolderId || sourceFolderId === targetFolderId) return;
-
-      const sourceFolder = folders.find(f => f.id === sourceFolderId);
-      const noteToMove = sourceFolder?.notes.find(n => n.id === noteId);
-
-      if (noteToMove) {
-        setFolders(folders.map(f => {
-          if (f.id === sourceFolderId) {
-            return { ...f, notes: f.notes.filter(n => n.id !== noteId) };
-          }
-          if (f.id === targetFolderId) {
-            return { ...f, notes: [noteToMove, ...f.notes] };
-          }
-          return f;
-        }));
-        if (activeNoteId === noteId) setActiveFolderId(targetFolderId);
-      }
-    } 
-    else if (draggedItem.type === 'folder') {
-      const { index: sourceIndex } = draggedItem;
-      if (sourceIndex === undefined || sourceIndex === targetFolderIndex) return;
-
-      const newFolders = [...folders];
-      const [movedFolder] = newFolders.splice(sourceIndex, 1);
-      newFolders.splice(targetFolderIndex, 0, movedFolder);
-      setFolders(newFolders);
-    }
-    
-    setDraggedItem(null);
-  };
-
-  const activeFolder = folders.find(f => f.id === activeFolderId);
-  const activeNote = activeFolder?.notes.find(n => n.id === activeNoteId);
+  const activeNotebook = notebooks.find(nb => nb.id === activeNotebookId);
+  const activeNote = activeNotebook?.notes.find(n => n.id === activeNoteId);
 
   return (
-    <div className="h-full flex flex-col md:flex-row gap-6">
-      {/* Sidebar Management */}
-      <div className="w-full md:w-80 flex flex-col gap-4">
-        <div className="flex justify-between items-center mb-2">
-          <h2 className="text-2xl font-serif font-bold text-slate-900">Legal Pad</h2>
-          <div className="flex gap-2">
-            <div className="relative">
-              <button 
-                onClick={() => setShowSettingsPopover(!showSettingsPopover)}
-                className={`p-2.5 rounded-lg transition-all ${showSettingsPopover ? 'bg-amber-600 text-white shadow-lg' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
-                title="Sidebar Settings"
-              >
-                <Settings2 size={18} />
-              </button>
-              
-              {showSettingsPopover && (
-                <div className="absolute right-0 top-full mt-2 w-64 bg-white border border-slate-200 rounded-xl shadow-2xl p-4 z-50 animate-in fade-in slide-in-from-top-2">
-                   <div className="flex justify-between items-center mb-3">
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Workspace Management</span>
-                      <button onClick={() => setShowSettingsPopover(false)}><X size={14} className="text-slate-400" /></button>
-                   </div>
-                   
-                   <div className="space-y-3">
-                      <button 
-                        onClick={() => { setIsDeleteMode(!isDeleteMode); setShowSettingsPopover(false); }}
-                        className={`w-full flex items-center justify-between p-2.5 rounded-lg text-xs font-bold transition-all
-                          ${isDeleteMode ? 'bg-red-600 text-white border border-red-700' : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border border-transparent'}
-                        `}
-                      >
-                         <div className="flex items-center gap-2">
-                            <ShieldAlert size={14} />
-                            <span>{isDeleteMode ? 'Deactivate Delete' : 'Activate Delete'}</span>
-                         </div>
-                         <div className={`w-8 h-4 rounded-full relative transition-colors ${isDeleteMode ? 'bg-white/20' : 'bg-slate-300'}`}>
-                            <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${isDeleteMode ? 'right-0.5' : 'left-0.5'}`} />
-                         </div>
-                      </button>
-                      
-                      <button 
-                        onClick={() => { 
-                          if(confirm('Wipe all Legal Pad data and reset to welcome note?')) { 
-                            setFolders([DEFAULT_FOLDER]); 
-                            setActiveFolderId('default');
-                            setActiveNoteId('welcome-note');
-                          } 
-                          setShowSettingsPopover(false); 
-                        }}
-                        className="w-full flex items-center gap-2 p-2.5 rounded-lg text-xs font-bold text-red-600 hover:bg-red-50 transition-all border border-transparent hover:border-red-100"
-                      >
-                         <Trash size={14} />
-                         <span>Reset Workspace</span>
-                      </button>
-                   </div>
-                </div>
-              )}
-            </div>
-            <button onClick={createFolder} className="p-2.5 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200" title="New Folder">
-              <FolderPlus size={18} />
-            </button>
-            <button onClick={createNote} disabled={!activeFolderId} className="p-2.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-50 shadow-sm" title="New Note">
-              <FilePlus size={18} />
-            </button>
-          </div>
+    <div className="h-full flex flex-col md:flex-row gap-0 bg-[#f8f9fa] overflow-hidden rounded-3xl border border-slate-200 shadow-2xl">
+      
+      {/* Goodnotes Sidebar - The Shelf */}
+      <div className="w-full md:w-72 bg-white border-r border-slate-200 flex flex-col shrink-0">
+        <div className="p-6 border-b border-slate-50">
+           <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-black text-slate-800 tracking-tight">Workspace</h2>
+              <div className="flex gap-1">
+                 <button onClick={createNotebook} className="p-1.5 hover:bg-slate-100 rounded text-slate-500" title="New Notebook / Folder"><FolderPlus size={18}/></button>
+                 <button onClick={createNote} disabled={!activeNotebookId} className="p-1.5 hover:bg-slate-100 rounded text-amber-600 disabled:opacity-30" title="New Page / Memo"><FilePlus size={18}/></button>
+              </div>
+           </div>
+           <div className="relative">
+              <Search className="absolute left-3 top-2.5 text-slate-400" size={14} />
+              <input 
+                type="text" 
+                placeholder="Search workspace..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 bg-slate-50 border-none rounded-lg text-xs outline-none focus:ring-2 focus:ring-amber-500/20"
+              />
+           </div>
         </div>
 
-        {/* Filter & List Area */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-full min-h-0">
-          <div className="p-3 bg-slate-50/50 border-b border-slate-100">
-             <div className="relative group">
-                <input 
-                  type="text" 
-                  placeholder="Search notes or tags..." 
-                  value={searchTerm} 
-                  onChange={(e) => setSearchTerm(e.target.value)} 
-                  className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all shadow-inner"
-                />
-                <Search className="absolute left-3 top-2.5 text-slate-400 group-focus-within:text-amber-600 transition-colors" size={14} />
-             </div>
-          </div>
+        <div className="flex-1 overflow-y-auto p-4 custom-scrollbar space-y-4">
+           {/* Favorites Section */}
+           <div>
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2 mb-2 block">Quick Access</span>
+              <button className="w-full flex items-center gap-3 px-3 py-2 hover:bg-slate-50 rounded-lg text-sm font-medium text-slate-700 transition-colors">
+                 <Star size={16} className="text-amber-500 fill-amber-500" />
+                 <span>Starred Pages</span>
+              </button>
+              <button className="w-full flex items-center gap-3 px-3 py-2 hover:bg-slate-50 rounded-lg text-sm font-medium text-slate-700 transition-colors">
+                 <History size={16} className="text-blue-500" />
+                 <span>Recently Modified</span>
+              </button>
+           </div>
 
-          <div className="flex-1 overflow-y-auto space-y-1 p-2 custom-scrollbar">
-            {isDeleteMode && (
-              <div className="mx-1 mb-2 px-3 py-2 bg-red-50 text-red-700 rounded-lg border border-red-100 text-[10px] font-bold uppercase tracking-widest flex items-center justify-between">
-                 <div className="flex items-center gap-2">
-                    <ShieldAlert size={12} className="animate-pulse" />
-                    Delete Mode Active
-                 </div>
-                 <button onClick={() => setIsDeleteMode(false)} className="hover:underline">Exit</button>
+           <div>
+              <div className="flex items-center justify-between px-2 mb-2">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Notebooks</span>
+                <button onClick={createNotebook} className="text-slate-400 hover:text-amber-600 transition-colors">
+                  <PlusSquareVertical size={12} />
+                </button>
               </div>
-            )}
-            
-            {filteredFolders.length === 0 && (
-              <div className="text-center py-12 px-4">
-                 <Filter size={32} className="mx-auto text-slate-200 mb-3" />
-                 <p className="text-slate-400 text-xs font-serif italic">No entries found.</p>
-                 {searchTerm && <button onClick={() => setSearchTerm('')} className="mt-2 text-amber-600 font-bold text-[10px] uppercase hover:underline">Show All</button>}
-              </div>
-            )}
-
-            {filteredFolders.map((folder, folderIdx) => (
-              <div 
-                key={folder.id} 
-                draggable={!isDeleteMode}
-                onDragStart={(e) => handleFolderDragStart(e, folderIdx)}
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => handleDropOnFolder(e, folder.id, folderIdx)}
-                className={`rounded-lg border border-slate-100 mb-1 overflow-hidden transition-all ${!isDeleteMode ? 'cursor-grab active:cursor-grabbing' : ''}`}
-              >
-                {/* Folder Header */}
-                <div className={`p-2.5 flex items-center justify-between group transition-colors ${activeFolderId === folder.id ? 'bg-amber-50/70' : 'bg-slate-50 hover:bg-slate-100'}`}>
-                  <div 
-                    className="flex items-center gap-2.5 cursor-pointer flex-1 min-w-0"
-                    onClick={() => {
-                      setActiveFolderId(folder.id);
-                      toggleFolder(folder.id);
-                    }}
-                  >
-                    {!isDeleteMode && <GripVertical size={12} className="text-slate-300 shrink-0" />}
-                    {folder.isExpanded ? <ChevronDown size={14} className="text-amber-600 shrink-0"/> : <ChevronRight size={14} className="text-slate-400 shrink-0"/>}
-                    <span className={`font-serif font-bold text-xs truncate ${activeFolderId === folder.id ? 'text-amber-900' : 'text-slate-700'}`}>{folder.name}</span>
-                  </div>
-                  
-                  {/* Folder Management Controls */}
-                  <div className="flex items-center gap-0.5">
-                    {isDeleteMode ? (
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); deleteFolder(folder.id); }} 
-                        className="p-1.5 text-red-500 hover:text-white hover:bg-red-600 rounded transition-all shadow-sm" 
-                        title="Delete Folder"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    ) : (
-                      <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+              
+              {filteredNotebooks.map((nb) => (
+                <div key={nb.id} className="mb-1 group">
+                   <div 
+                     className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-bold transition-all cursor-pointer ${activeNotebookId === nb.id ? 'bg-amber-50 text-amber-900' : 'text-slate-600 hover:bg-slate-50'}`}
+                     onClick={() => setActiveNotebookId(nb.id)}
+                   >
+                     <div className="flex items-center gap-2 truncate">
+                        {activeNotebookId === nb.id ? <BookOpen size={16}/> : <FileText size={16} className="opacity-40" />}
+                        <span className="truncate">{nb.name}</span>
+                     </div>
+                     <div className="flex items-center gap-1.5">
+                        {isDeleteMode ? (
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); deleteNotebook(nb.id); }}
+                            className="p-1 text-red-500 hover:bg-red-50 rounded"
+                            title="Delete Notebook"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        ) : (
+                          <span className="text-[10px] opacity-40 font-mono group-hover:hidden">{nb.notes.length}</span>
+                        )}
                         <button 
-                          onClick={(e) => { e.stopPropagation(); moveFolder(folderIdx, 'up'); }} 
-                          disabled={folderIdx === 0}
-                          className="p-1 text-slate-400 hover:text-blue-600 disabled:opacity-30" 
-                          title="Move Priority Up"
+                          onClick={(e) => { e.stopPropagation(); deleteNotebook(nb.id); }}
+                          className="hidden group-hover:block p-1 text-slate-400 hover:text-red-500 rounded"
+                          title="Delete Notebook"
                         >
-                          <ArrowUp size={12} />
+                          <Trash2 size={12} />
                         </button>
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); moveFolder(folderIdx, 'down'); }} 
-                          disabled={folderIdx === folders.length - 1}
-                          className="p-1 text-slate-400 hover:text-blue-600 disabled:opacity-30" 
-                          title="Move Priority Down"
-                        >
-                          <ArrowDown size={12} />
-                        </button>
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); renameFolder(folder.id, folder.name); }} 
-                          className="p-1 text-slate-400 hover:text-blue-600" 
-                          title="Rename Folder"
-                        >
-                          <Edit2 size={12} />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Collapsible Content: Notes */}
-                {folder.isExpanded && (
-                  <div className="bg-white border-t border-slate-50">
-                    {folder.notes.map(note => (
-                      <div
-                        key={note.id}
-                        draggable={!isDeleteMode}
-                        onDragStart={(e) => handleNoteDragStart(e, note.id, folder.id)}
-                        onClick={() => {
-                           setActiveFolderId(folder.id);
-                           setActiveNoteId(note.id);
-                        }}
-                        className={`p-3 pl-8 cursor-pointer border-l-4 transition-all flex justify-between group
-                          ${activeNoteId === note.id ? 'border-amber-500 bg-amber-50/30' : 'border-transparent hover:bg-slate-50'}
-                        `}
-                      >
-                        <div className="overflow-hidden flex-1">
-                          <div className={`text-[13px] font-serif ${activeNoteId === note.id ? 'font-bold text-slate-900' : 'text-slate-600'} truncate`}>{note.title || 'Untitled Note'}</div>
-                          {note.tags.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mt-1">
-                               {note.tags.slice(0, 1).map(t => <span key={t} className="text-[8px] bg-slate-100 text-slate-500 px-1 py-0 rounded font-bold uppercase tracking-tighter">{t}</span>)}
-                               {note.tags.length > 1 && <span className="text-[8px] text-slate-400 font-bold">+{note.tags.length - 1}</span>}
-                            </div>
-                          )}
-                        </div>
-                        
-                        {/* Note Management Controls */}
-                        <div className="flex items-center shrink-0 ml-2">
-                          <div className="flex items-center gap-1">
-                            {isDeleteMode ? (
-                              <button 
-                                onClick={(e) => { e.stopPropagation(); deleteNote(note.id, folder.id); }}
-                                className="p-1.5 text-red-400 hover:text-white hover:bg-red-500 rounded transition-all"
-                                title="Delete Note"
-                              >
-                                <Trash2 size={12} />
-                              </button>
-                            ) : (
-                              <>
-                                <button 
-                                  onClick={(e) => { e.stopPropagation(); renameNote(folder.id, note.id, note.title); }}
-                                  className="p-1 text-slate-300 hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                                  title="Rename Note"
-                                >
-                                  <Edit2 size={11} />
-                                </button>
-                                <button 
-                                  onClick={(e) => { e.stopPropagation(); deleteNote(note.id, folder.id); }}
-                                  className="p-1 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                                  title="Delete Note"
-                                >
-                                  <Trash2 size={11} />
-                                </button>
-                                <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${activeNoteId === note.id ? 'bg-amber-500 shadow-sm' : 'bg-transparent'}`} />
-                              </>
-                            )}
+                     </div>
+                   </div>
+                   
+                   {activeNotebookId === nb.id && (
+                     <div className="mt-1 ml-4 border-l border-slate-100 pl-2 space-y-1">
+                        {nb.notes.map(note => (
+                          <div 
+                            key={note.id}
+                            className={`w-full group/note flex items-center justify-between px-3 py-1.5 rounded-md text-[13px] transition-all cursor-pointer ${activeNoteId === note.id ? 'text-amber-600 font-bold bg-amber-50/50' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
+                            onClick={() => setActiveNoteId(note.id)}
+                          >
+                             <span className="truncate">{note.title || 'Untitled'}</span>
+                             <button 
+                               onClick={(e) => { e.stopPropagation(); deleteNote(nb.id, note.id); }}
+                               className="hidden group-note/hover:block p-1 text-slate-300 hover:text-red-500 rounded"
+                               title="Delete Memo"
+                             >
+                               <X size={10} />
+                             </button>
                           </div>
-                        </div>
-                      </div>
-                    ))}
-                    {folder.notes.length === 0 && (
-                      <div className="p-3 text-[10px] text-slate-400 italic text-center">Empty Folder</div>
-                    )}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
+                        ))}
+                     </div>
+                   )}
+                </div>
+              ))}
+           </div>
+        </div>
+
+        <div className="p-4 border-t border-slate-50 bg-slate-50/30">
+           <button onClick={() => setIsDeleteMode(!isDeleteMode)} className={`w-full flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all ${isDeleteMode ? 'bg-red-600 text-white' : 'text-slate-400 hover:text-slate-600'}`}>
+              <Trash2 size={14} />
+              {isDeleteMode ? 'Exit Selection Mode' : 'Manage Items'}
+           </button>
         </div>
       </div>
 
-      {/* Editor Area */}
-      <div className={`flex-1 rounded-2xl border shadow-sm flex flex-col p-8 md:p-12 relative transition-all duration-300 ${activeNote ? activeNote.color : 'bg-slate-50 border-slate-200'}`}>
+      {/* Editor Surface */}
+      <div className="flex-1 flex flex-col relative bg-slate-200 overflow-hidden">
         {activeNote ? (
           <>
-            <div className="flex justify-between items-start border-b border-black/10 pb-6 mb-8">
-              <input
-                type="text"
-                value={activeNote.title}
-                onChange={(e) => updateActiveNote('title', e.target.value)}
-                className="bg-transparent text-3xl font-serif font-bold text-slate-900 focus:outline-none w-full mr-6 placeholder-slate-300"
-                placeholder="Note Title"
-              />
-              <div className="flex items-center gap-4">
-                <div className="relative group">
-                  <button className="p-2.5 hover:bg-black/5 rounded-full transition-colors border border-transparent hover:border-black/5"><Palette size={20} className="text-slate-500"/></button>
-                  <div className="absolute right-0 top-full mt-2 bg-white border border-slate-200 rounded-xl shadow-2xl p-4 hidden group-hover:flex gap-2 z-10 animate-in fade-in slide-in-from-top-1">
-                    {COLORS.map(c => (
-                      <button 
-                        key={c.name} 
-                        className={`w-7 h-7 rounded-full border-2 ${c.class} hover:scale-110 transition-transform ${activeNote.color === c.class ? 'border-amber-500 ring-2 ring-amber-500/20' : 'border-slate-200'}`}
-                        onClick={() => updateActiveNote('color', c.class)}
-                        title={c.name}
-                      />
-                    ))}
-                  </div>
-                </div>
-                <div className="text-xs font-bold text-slate-400 flex items-center gap-1.5 bg-white/60 px-3 py-1.5 rounded-full uppercase tracking-widest shadow-sm">
-                  <Save size={14} className="text-green-600" /> Auto-Saved
-                </div>
+            {/* Context Toolbar */}
+            <div className="h-14 bg-white border-b border-slate-200 px-6 flex items-center justify-between shrink-0 shadow-sm z-30">
+              <div className="flex items-center gap-4 flex-1">
+                 <div className="p-2 bg-slate-100 rounded-lg text-slate-500">
+                    <Pen size={18} />
+                 </div>
+                 <input 
+                   type="text" 
+                   value={activeNote.title}
+                   onChange={(e) => updateActiveNote('title', e.target.value)}
+                   className="bg-transparent text-lg font-black text-slate-800 outline-none w-full max-w-md"
+                   placeholder="Document Title..."
+                 />
+              </div>
+
+              <div className="flex items-center gap-2">
+                 {/* Billable Timer Widget */}
+                 <div className="flex items-center gap-2 bg-slate-900 text-white px-3 py-1.5 rounded-full shadow-lg mr-2 transition-all hover:scale-105">
+                    <Clock size={14} className={isTimerRunning ? "animate-pulse text-green-400" : ""} />
+                    <span className="text-xs font-mono font-bold">{formatTimer(timerSeconds)}</span>
+                    <div className="flex gap-1 border-l border-white/20 pl-2">
+                       {!isTimerRunning ? (
+                         <button onClick={() => setIsTimerRunning(true)} className="hover:text-green-400"><Zap size={14}/></button>
+                       ) : (
+                         <button onClick={() => setIsTimerRunning(false)} className="hover:text-amber-400"><MoreHorizontal size={14}/></button>
+                       )}
+                       {timerSeconds > 0 && <button onClick={saveTimerToNote} title="Log Minutes"><Save size={14}/></button>}
+                    </div>
+                 </div>
+
+                 <div className="h-8 w-px bg-slate-200 mx-1"></div>
+
+                 <button 
+                   onClick={handleAiSummary}
+                   disabled={aiLoading}
+                   className="p-2 hover:bg-amber-50 text-amber-600 rounded-lg transition-colors disabled:opacity-50"
+                   title="AI Summarize"
+                 >
+                    {aiLoading ? <Loader2 className="animate-spin" size={20}/> : <Sparkles size={20}/>}
+                 </button>
+                 
+                 <div className="relative group">
+                    <button className="p-2 hover:bg-slate-100 text-slate-500 rounded-lg"><LayoutGrid size={20}/></button>
+                    <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-slate-200 rounded-xl shadow-2xl p-2 hidden group-hover:block z-50">
+                       <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2 mb-1 block">Paper Style</span>
+                       {PAPER_TEMPLATES.map(t => (
+                         <button 
+                           key={t.id}
+                           onClick={() => updateActiveNote('paperStyle', t.id)}
+                           className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors ${activeNote.paperStyle === t.id ? 'bg-amber-50 text-amber-700 font-bold' : 'hover:bg-slate-50 text-slate-600'}`}
+                         >
+                            {t.name}
+                         </button>
+                       ))}
+                    </div>
+                 </div>
               </div>
             </div>
 
-            <div className="flex items-center gap-3 mb-8 bg-black/5 p-3 rounded-xl border border-black/5 shadow-inner">
-              <Tag size={16} className="text-slate-500" />
-              <input 
-                type="text"
-                placeholder="Tags (separated by commas)..."
-                className="bg-transparent text-sm text-slate-700 focus:outline-none w-full font-bold placeholder-slate-400"
-                value={activeNote.tags.join(', ')}
-                onChange={(e) => updateActiveNote('tags', e.target.value.split(',').map(t => t.trim()).filter(Boolean))}
-              />
-            </div>
+            {/* Main Reading/Writing Area */}
+            <div className="flex-1 overflow-y-auto p-4 md:p-10 flex justify-center custom-scrollbar">
+               {/* THE PAGE */}
+               <div className={`
+                 w-full max-w-[8.5in] min-h-[11in] shadow-2xl rounded-sm transition-all duration-500 relative flex flex-col
+                 ${activeNote.paperStyle === 'yellow-legal' ? 'bg-[#fffae0]' : 'bg-white'}
+                 ${activeNote.paperStyle === 'cornell' ? 'paper-cornell' : ''}
+               `}>
+                  {/* CSS Patterns for paper styles */}
+                  <style>{`
+                    .paper-content {
+                      line-height: 2rem;
+                      font-size: 1.1rem;
+                      background-attachment: local;
+                      padding-top: 1rem;
+                    }
+                    /* Standard Legal Margin: 1.25 inch = ~120px */
+                    .margin-line {
+                      position: absolute;
+                      left: 120px;
+                      top: 0;
+                      bottom: 0;
+                      width: 2px;
+                      background-color: rgba(220, 38, 38, 0.4);
+                      z-index: 10;
+                    }
+                    .ruled-lines {
+                      background-image: linear-gradient(transparent 96%, rgba(59, 130, 246, 0.1) 96%);
+                      background-size: 100% 2rem;
+                    }
+                    .dot-grid {
+                      background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+                      background-size: 2rem 2rem;
+                    }
+                    .graph-paper {
+                      background-image: linear-gradient(rgba(59, 130, 246, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(59, 130, 246, 0.05) 1px, transparent 1px);
+                      background-size: 2rem 2rem;
+                    }
+                  `}</style>
 
-            <textarea
-              value={activeNote.content}
-              onChange={(e) => updateActiveNote('content', e.target.value)}
-              className="flex-1 bg-transparent resize-none focus:outline-none text-slate-900 leading-loose font-serif text-xl"
-              placeholder="Start drafting your legal memo or research notes here..."
-              style={{ 
-                backgroundImage: 'linear-gradient(transparent 96%, rgba(0,0,0,0.06) 96%)', 
-                backgroundSize: '100% 2.5rem', 
-                lineHeight: '2.5rem',
-                paddingTop: '0.25rem'
-              }}
-            />
+                  <div className="margin-line"></div>
+                  
+                  {/* Billable info footer on paper */}
+                  <div className="absolute top-4 right-6 text-[10px] font-mono text-slate-400 pointer-events-none uppercase">
+                     ID: {activeNote.id} | Billable: {activeNote.billableMinutes}m
+                  </div>
+
+                  <textarea 
+                    value={activeNote.content}
+                    onChange={(e) => updateActiveNote('content', e.target.value)}
+                    className={`
+                      flex-1 w-full p-10 pl-[140px] pr-10 outline-none resize-none bg-transparent font-serif text-slate-800 paper-content
+                      ${activeNote.paperStyle === 'legal-ruled' || activeNote.paperStyle === 'yellow-legal' ? 'ruled-lines' : ''}
+                      ${activeNote.paperStyle === 'dot-grid' ? 'dot-grid' : ''}
+                      ${activeNote.paperStyle === 'graph' ? 'graph-paper' : ''}
+                    `}
+                    placeholder="Commence legal drafting or research annotation..."
+                  />
+
+                  <div className="h-20 bg-transparent border-t border-slate-100/50 flex items-center justify-center pointer-events-none">
+                     <span className="text-[10px] text-slate-300 font-serif italic tracking-widest">*** End of Page ***</span>
+                  </div>
+               </div>
+            </div>
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center text-slate-400 flex-col animate-in fade-in duration-700">
-            <div className="relative mb-8">
-               <FolderOpen size={80} className="opacity-10" />
-               <Search size={32} className="absolute inset-0 m-auto text-amber-500/30" />
-            </div>
-            <h3 className="text-2xl font-serif font-bold text-slate-400 mb-2">Legal Repository Offline</h3>
-            <p className="max-w-xs text-center text-sm font-medium leading-relaxed">Select a research note from the repository or create a new case folder to begin your drafting session.</p>
-            <button onClick={createFolder} className="mt-8 px-6 py-3 bg-white border-2 border-slate-200 rounded-xl text-slate-600 font-bold hover:bg-slate-50 transition-colors flex items-center gap-2">
-               <FolderPlus size={18} /> Create Case Folder
-            </button>
+          <div className="h-full flex flex-col items-center justify-center text-slate-400 bg-white">
+             <div className="w-48 h-64 bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl flex items-center justify-center mb-8 relative">
+                <FileText size={64} className="opacity-10" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                   <div className="w-12 h-1 bg-amber-500 rounded-full animate-pulse" />
+                </div>
+             </div>
+             <h3 className="text-2xl font-serif font-black text-slate-800 mb-2">Workspace Empty</h3>
+             <p className="max-w-xs text-center text-sm font-medium leading-relaxed mb-8">
+               Select a notebook from the workspace shelf or create a new case memo to begin your session.
+             </p>
+             <button onClick={createNotebook} className="px-8 py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-all flex items-center gap-2 shadow-xl shadow-slate-900/10 active:scale-95">
+                <FolderPlus size={18} /> Open New Notebook
+             </button>
           </div>
         )}
       </div>
     </div>
   );
 };
+
+// Utility components/icons for new features
+const PlusSquareVertical = ({ size, className }: { size: number; className?: string }) => (
+  <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect width="18" height="18" x="3" y="3" rx="2" />
+    <path d="M12 8v8" /><path d="M8 12h8" />
+  </svg>
+);
+
+const Loader2 = ({ className, size }: { className?: string; size?: number }) => (
+  <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+  </svg>
+);
