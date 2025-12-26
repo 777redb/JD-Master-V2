@@ -3,9 +3,104 @@ import { GoogleGenAI, Type, GenerateContentParameters } from "@google/genai";
 import { MockBarQuestion } from "../types";
 
 /**
+ * INTERNAL ARCHITECTURAL LAYER: Orchestration Configuration
+ * Defines static routing policies and shadow execution mappings.
+ */
+const ORCHESTRATION_POLICY = {
+  routingMode: 'DETERMINISTIC_STATIC',
+  shadowEnabled: true,
+  fallbackThreshold: 'MANUAL_OPERATOR_ONLY',
+  shadowMappings: {
+    'gemini-3-pro-preview': ['gemini-3-flash-preview'] // Flash shadows Pro for performance benchmarking
+  }
+};
+
+/**
+ * INTERNAL ARCHITECTURAL LAYER: Model Registry
+ * Enhanced to support roles and orchestration metadata.
+ */
+const ModelRegistry: Record<string, { 
+  version: string, 
+  hash: string, 
+  status: 'active' | 'deprecated' | 'shadow',
+  role: 'primary' | 'fallback' | 'shadow'
+}> = {
+  'gemini-3-pro-preview': {
+    version: '3.0.0-pro-preview-stable',
+    hash: 'sha256:7f8e9d0a1b2c3d4e5f6g7h8i9j0k',
+    status: 'active',
+    role: 'primary'
+  },
+  'gemini-3-flash-preview': {
+    version: '3.0.0-flash-preview-stable',
+    hash: 'sha256:1a2b3c4d5e6f7g8h9i0j1k2l3m4n',
+    status: 'active',
+    role: 'primary'
+  }
+};
+
+/**
+ * INTERNAL ARCHITECTURAL LAYER: Model Orchestrator
+ * Resolves active models and manages shadow execution.
+ */
+const ModelOrchestrator = {
+  resolveActiveModel: (requestedModelId: string) => {
+    const entry = ModelRegistry[requestedModelId];
+    if (!entry || entry.status === 'deprecated') {
+      // Return primary default if requested is invalid
+      return { id: 'gemini-3-pro-preview', ...ModelRegistry['gemini-3-pro-preview'] };
+    }
+    return { id: requestedModelId, ...entry };
+  },
+
+  getShadowModels: (primaryModelId: string): string[] => {
+    if (!ORCHESTRATION_POLICY.shadowEnabled) return [];
+    return (ORCHESTRATION_POLICY.shadowMappings as any)[primaryModelId] || [];
+  },
+
+  /**
+   * SILENT SHADOW EXECUTION
+   * Fires a secondary request in parallel. Result is logged but never used.
+   */
+  executeShadow: async (requestId: string, modelId: string, contents: any, config: any) => {
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+      const startTime = performance.now();
+      const response = await ai.models.generateContent({
+        model: modelId,
+        contents,
+        config
+      });
+      const latency = Math.round(performance.now() - startTime);
+      
+      AuditLogger.record({
+        requestId,
+        timestamp: new Date().toISOString(),
+        eventType: 'SHADOW_EXECUTION_COMPLETE',
+        component: 'ShadowExecutionEngine',
+        metadata: {
+          model: modelId,
+          status: 'SUCCESS',
+          latencyMs: latency,
+          tokensIn: response.usageMetadata?.promptTokenCount,
+          tokensOut: response.usageMetadata?.candidatesTokenCount
+        }
+      });
+    } catch (e) {
+      AuditLogger.record({
+        requestId,
+        timestamp: new Date().toISOString(),
+        eventType: 'SHADOW_EXECUTION_COMPLETE',
+        component: 'ShadowExecutionEngine',
+        metadata: { model: modelId, status: 'ERROR' }
+      });
+    }
+  }
+};
+
+/**
  * INTERNAL ARCHITECTURAL LAYER: Cost Rate Registry
  * Defines estimated pricing per 1k tokens for FinOps observability.
- * Based on 2025 enterprise benchmarks for the Gemini 3 series.
  */
 const COST_RATE_REGISTRY: Record<string, { input: number, output: number }> = {
   'gemini-3-pro-preview': { input: 0.00125, output: 0.00375 },
@@ -14,17 +109,15 @@ const COST_RATE_REGISTRY: Record<string, { input: number, output: number }> = {
 
 /**
  * INTERNAL ARCHITECTURAL LAYER: Budget Policies
- * Defines thresholds for internal alerting and resource governance.
  */
 const BUDGET_POLICIES = {
   dailyAllowanceUSD: 10.00,
-  alertThresholds: [0.5, 0.8, 0.9, 1.0], // Percentages of allowance
+  alertThresholds: [0.5, 0.8, 0.9, 1.0],
   quotaGracePeriod: 'active'
 };
 
 /**
  * INTERNAL ARCHITECTURAL LAYER: FinOps Engine
- * Manages cost calculation, aggregation, and threshold monitoring.
  */
 const FinOpsEngine = {
   private_cumulativeSpend: 0,
@@ -66,7 +159,6 @@ const FinOpsEngine = {
 
 /**
  * INTERNAL ARCHITECTURAL LAYER: Doctrine Test Corpus
- * Canonical definitions of legal concepts used for regression testing.
  */
 const DOCTRINE_TEST_CORPUS = [
   {
@@ -238,36 +330,6 @@ const BASELINE_STATS = {
 };
 
 /**
- * INTERNAL ARCHITECTURAL LAYER: Model Registry
- */
-const ModelRegistry: Record<string, { version: string, hash: string, status: 'active' | 'deprecated' | 'shadow' }> = {
-  'gemini-3-pro-preview': {
-    version: '3.0.0-pro-preview-stable',
-    hash: 'sha256:7f8e9d0a1b2c3d4e5f6g7h8i9j0k',
-    status: 'active'
-  },
-  'gemini-3-flash-preview': {
-    version: '3.0.0-flash-preview-stable',
-    hash: 'sha256:1a2b3c4d5e6f7g8h9i0j1k2l3m4n',
-    status: 'active'
-  }
-};
-
-/**
- * INTERNAL COMPONENT: Model Version Router
- */
-const ModelRouter = {
-  resolve: (modelId: string) => {
-    const entry = ModelRegistry[modelId];
-    return {
-      name: modelId,
-      version: entry?.version || 'v.legacy',
-      hash: entry?.hash || 'unknown'
-    };
-  }
-};
-
-/**
  * INTERNAL COMPONENT: Request Correlator
  */
 const RequestCorrelator = {
@@ -336,7 +398,7 @@ const SchemaRegistry: Record<string, { requiredPatterns?: RegExp[], validator?: 
 interface AuditLogEntry {
   requestId: string;
   timestamp: string;
-  eventType: 'INFERENCE_START' | 'INFERENCE_COMPLETE' | 'INFERENCE_ERROR' | 'VALIDATION_FAILURE' | 'SCHEMA_VALIDATION_PASS' | 'SCHEMA_VALIDATION_FAIL' | 'DRIFT_ALERT' | 'HITL_ENQUEUED' | 'SECURITY_ANOMALY' | 'REGRESSION_ALERT' | 'COST_BUDGET_ALERT';
+  eventType: 'INFERENCE_START' | 'INFERENCE_COMPLETE' | 'INFERENCE_ERROR' | 'VALIDATION_FAILURE' | 'SCHEMA_VALIDATION_PASS' | 'SCHEMA_VALIDATION_FAIL' | 'DRIFT_ALERT' | 'HITL_ENQUEUED' | 'SECURITY_ANOMALY' | 'REGRESSION_ALERT' | 'COST_BUDGET_ALERT' | 'ORCHESTRATION_ROUTING' | 'SHADOW_EXECUTION_COMPLETE';
   component: string;
   metadata: {
     model?: string;
@@ -359,6 +421,8 @@ interface AuditLogEntry {
     hitlReason?: string;
     anomalyType?: string;
     securityContext?: string;
+    orchestrationRole?: string;
+    shadowModels?: string[];
   };
 }
 
@@ -462,6 +526,23 @@ class InferenceEngine {
     const promptHash = await computeIntegrityHash(promptString);
     const schema = params.schemaKey ? SchemaRegistry[params.schemaKey] : null;
 
+    // --- ORCHESTRATION: Model Resolution & Routing ---
+    const resolvedModel = ModelOrchestrator.resolveActiveModel(params.model);
+    const shadowModels = ModelOrchestrator.getShadowModels(resolvedModel.id);
+
+    AuditLogger.record({
+      requestId,
+      timestamp: new Date().toISOString(),
+      eventType: 'ORCHESTRATION_ROUTING',
+      component: 'ModelOrchestrator',
+      metadata: {
+        model: resolvedModel.id,
+        modelVersion: resolvedModel.version,
+        orchestrationRole: resolvedModel.role,
+        shadowModels
+      }
+    });
+
     // --- SECURITY HARDENING: Access Control & Rate Limiting ---
     if (SecurityGateway.isRateLimited('default_session')) {
        AuditLogger.record({
@@ -474,7 +555,7 @@ class InferenceEngine {
        throw new Error("Security Policy: Request frequency exceeds safety thresholds.");
     }
 
-    if (schema && !AccessController.checkPermission(params.model, schema.context)) {
+    if (schema && !AccessController.checkPermission(resolvedModel.id, schema.context)) {
        AuditLogger.record({
          requestId,
          timestamp: new Date().toISOString(),
@@ -485,15 +566,13 @@ class InferenceEngine {
        throw new Error("Security Policy: Unauthorized model access for the current context.");
     }
 
-    const resolvedModel = ModelRouter.resolve(params.model);
-
     AuditLogger.record({
       requestId,
       timestamp: new Date().toISOString(),
       eventType: 'INFERENCE_START',
       component: 'InferenceEngine',
       metadata: { 
-        model: resolvedModel.name, 
+        model: resolvedModel.id, 
         modelVersion: resolvedModel.version,
         modelHash: resolvedModel.hash,
         promptHash, 
@@ -512,10 +591,15 @@ class InferenceEngine {
       throw new Error("Security Validation Failed: Unauthorized prompt pattern detected.");
     }
 
+    // FIRE SHADOW EXECUTIONS (Non-blocking)
+    shadowModels.forEach(shadowId => {
+       ModelOrchestrator.executeShadow(requestId, shadowId, params.contents, params.config);
+    });
+
     try {
       const ai = this.getSecureClient();
       const response = await ai.models.generateContent({
-        model: resolvedModel.name,
+        model: resolvedModel.id,
         contents: params.contents,
         config: params.config
       });
@@ -528,7 +612,7 @@ class InferenceEngine {
       // --- COST OPTIMIZATION: FinOps Usage Tracking ---
       const tokensIn = response.usageMetadata?.promptTokenCount || 0;
       const tokensOut = response.usageMetadata?.candidatesTokenCount || 0;
-      const estimatedCost = FinOpsEngine.trackUsage(requestId, resolvedModel.name, tokensIn, tokensOut);
+      const estimatedCost = FinOpsEngine.trackUsage(requestId, resolvedModel.id, tokensIn, tokensOut);
 
       // Passive Drift Observation
       const driftScore = DriftDetector.observe(requestId, {
@@ -599,7 +683,7 @@ class InferenceEngine {
         component: 'InferenceEngine',
         metadata: {
           status: 'SUCCESS',
-          model: resolvedModel.name,
+          model: resolvedModel.id,
           modelVersion: resolvedModel.version,
           responseHash,
           latencyMs: latency,
@@ -618,7 +702,7 @@ class InferenceEngine {
         component: 'InferenceEngine',
         metadata: {
           status: 'ERROR',
-          model: resolvedModel.name,
+          model: resolvedModel.id,
           modelVersion: resolvedModel.version,
           errorType: error.constructor.name,
           latencyMs: Math.round(performance.now() - startTime)
