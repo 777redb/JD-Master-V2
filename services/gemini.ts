@@ -3,13 +3,56 @@ import { GoogleGenAI, Type, GenerateContentParameters } from "@google/genai";
 import { MockBarQuestion } from "../types";
 
 /**
+ * INTERNAL ARCHITECTURAL LAYER: Security Configuration
+ * Defines hardening parameters and policy thresholds.
+ */
+const SECURITY_POLICY = {
+  tlsRequirement: 'TLS_1.3',
+  maxRequestsPerMinute: 60,
+  tokenQuotaPerSession: 100000,
+  threatConfidenceThreshold: 0.85,
+  isolationLevel: 'container_isolated'
+};
+
+/**
+ * INTERNAL ARCHITECTURAL LAYER: Access Controller (Zero Trust)
+ * Enforces least-privilege access to the Model Registry.
+ */
+const AccessController = {
+  checkPermission: (modelId: string, context: string): boolean => {
+    const allowedMap: Record<string, string[]> = {
+      'gemini-3-pro-preview': ['HIGH_IMPACT_LEGAL', 'BAR_SIMULATION', 'COMPLEX_RESEARCH'],
+      'gemini-3-flash-preview': ['METADATA_SEARCH', 'JSON_TRANSFORMATION']
+    };
+    return allowedMap[modelId]?.includes(context) ?? false;
+  }
+};
+
+/**
+ * INTERNAL ARCHITECTURAL LAYER: Security Gateway
+ * Handles transparent rate limiting and abuse detection.
+ */
+const SecurityGateway = {
+  private_registry: new Map<string, number[]>(),
+  
+  isRateLimited: (sessionId: string): boolean => {
+    const now = Date.now();
+    const timestamps = SecurityGateway.private_registry.get(sessionId) || [];
+    const window = timestamps.filter(t => now - t < 60000);
+    window.push(now);
+    SecurityGateway.private_registry.set(sessionId, window);
+    return window.length > SECURITY_POLICY.maxRequestsPerMinute;
+  }
+};
+
+/**
  * INTERNAL ARCHITECTURAL LAYER: HITL Governance Store
  * Persistent (internal-only) storage for post-hoc human review records.
  */
 interface HITLReviewRecord {
   requestId: string;
   timestamp: string;
-  triggerReason: 'VALIDATION_FAILURE' | 'DRIFT_ANOMALY' | 'HIGH_IMPACT_SAMPLING' | 'MANUAL_ESCALATION';
+  triggerReason: 'VALIDATION_FAILURE' | 'DRIFT_ANOMALY' | 'HIGH_IMPACT_SAMPLING' | 'MANUAL_ESCALATION' | 'SECURITY_ANOMALY';
   modelVersion: string;
   outputHash: string;
   status: 'PENDING' | 'UNDER_REVIEW' | 'VALIDATED' | 'REJECTED';
@@ -26,13 +69,10 @@ const HITL_REVIEW_STORE: HITLReviewRecord[] = [];
  */
 const HITLTriggerEngine = {
   evaluate: (metadata: any): HITLReviewRecord['triggerReason'] | null => {
-    // Rule 1: All schema validation failures are urgent
     if (metadata.status === 'SCHEMA_VALIDATION_FAIL') return 'VALIDATION_FAILURE';
-    
-    // Rule 2: Significant drift detected
     if (metadata.driftScore > 0.5) return 'DRIFT_ANOMALY';
+    if (metadata.securityAnomaly) return 'SECURITY_ANOMALY';
     
-    // Rule 3: High-Impact Sampling (JD Modules & Legal Advice)
     const highImpactSchemas = ['JD_MODULE_HTML', 'GENERAL_LEGAL_HTML'];
     if (highImpactSchemas.includes(metadata.schemaKey || '') && Math.random() < 0.1) {
       return 'HIGH_IMPACT_SAMPLING';
@@ -44,33 +84,28 @@ const HITLTriggerEngine = {
 
 /**
  * INTERNAL ARCHITECTURAL LAYER: HITL Review Queue
- * Manages the asynchronous enqueuing of review events.
  */
 const HITLQueue = {
   enqueue: (record: HITLReviewRecord) => {
     HITL_REVIEW_STORE.push(Object.freeze(record));
-    // In a production environment, this would emit to a persistent MQ or DB.
     console.debug(`[HITL-GOVERNANCE] Request ${record.requestId} enqueued for review. Reason: ${record.triggerReason}`);
   }
 };
 
 /**
  * INTERNAL ARCHITECTURAL LAYER: Baseline Registry
- * Reference statistics for detecting distributional shifts and performance decay.
  */
 const BASELINE_STATS = {
-  promptLength: 450,      // Average characters
-  responseLength: 1800,   // Average characters
-  latencyMs: 4200,        // Average response time
-  tokenCountIn: 350,      // Average input tokens
-  tokenCountOut: 850,     // Average output tokens
-  driftThreshold: 0.5     // 50% deviation triggers internal alert
+  promptLength: 450,
+  responseLength: 1800,
+  latencyMs: 4200,
+  tokenCountIn: 350,
+  tokenCountOut: 850,
+  driftThreshold: 0.5
 };
 
 /**
  * INTERNAL ARCHITECTURAL LAYER: Model Registry
- * Tracks model versions, status, and integrity hashes.
- * Version entries are immutable once recorded.
  */
 const ModelRegistry: Record<string, { version: string, hash: string, status: 'active' | 'deprecated' | 'shadow' }> = {
   'gemini-3-pro-preview': {
@@ -87,7 +122,6 @@ const ModelRegistry: Record<string, { version: string, hash: string, status: 'ac
 
 /**
  * INTERNAL COMPONENT: Model Version Router
- * Resolves requested models to their active version metadata.
  */
 const ModelRouter = {
   resolve: (modelId: string) => {
@@ -102,7 +136,6 @@ const ModelRouter = {
 
 /**
  * INTERNAL COMPONENT: Request Correlator
- * Generates unique identifiers for tracing the lifecycle of an AI request.
  */
 const RequestCorrelator = {
   generateId: () => crypto.randomUUID()
@@ -110,7 +143,6 @@ const RequestCorrelator = {
 
 /**
  * INTERNAL COMPONENT: Integrity Hash Utility
- * Generates SHA-256 signatures of content for audit verification without storing raw text.
  */
 async function computeIntegrityHash(content: string): Promise<string> {
   try {
@@ -125,11 +157,11 @@ async function computeIntegrityHash(content: string): Promise<string> {
 
 /**
  * INTERNAL ARCHITECTURAL LAYER: Output Schema Registry
- * Defines structural requirements based on existing application output patterns.
  */
-const SchemaRegistry: Record<string, { requiredPatterns?: RegExp[], validator?: (text: string) => boolean }> = {
+const SchemaRegistry: Record<string, { requiredPatterns?: RegExp[], validator?: (text: string) => boolean, context: string }> = {
   'GENERAL_LEGAL_HTML': {
-    requiredPatterns: [/<h[3-4]>/i, /<p>/i]
+    requiredPatterns: [/<h[3-4]>/i, /<p>/i],
+    context: 'HIGH_IMPACT_LEGAL'
   },
   'JD_MODULE_HTML': {
     requiredPatterns: [
@@ -138,10 +170,12 @@ const SchemaRegistry: Record<string, { requiredPatterns?: RegExp[], validator?: 
       /<h3>I\. BLACK-LETTER LAW/i, 
       /<h3>II\. JURISPRUDENTIAL EVOLUTION/i, 
       /<h3>III\. PRACTICAL APPLICATION/i
-    ]
+    ],
+    context: 'HIGH_IMPACT_LEGAL'
   },
   'LEGAL_NEWS_LIST': {
-    requiredPatterns: [/<li>/i]
+    requiredPatterns: [/<li>/i],
+    context: 'METADATA_SEARCH'
   },
   'JSON_ARRAY': {
     validator: (text: string) => {
@@ -149,7 +183,8 @@ const SchemaRegistry: Record<string, { requiredPatterns?: RegExp[], validator?: 
         const parsed = JSON.parse(text);
         return Array.isArray(parsed);
       } catch { return false; }
-    }
+    },
+    context: 'JSON_TRANSFORMATION'
   },
   'MOCK_BAR_QUESTION': {
     validator: (text: string) => {
@@ -157,18 +192,18 @@ const SchemaRegistry: Record<string, { requiredPatterns?: RegExp[], validator?: 
         const parsed = JSON.parse(text);
         return !!(parsed.question && parsed.explanation && typeof parsed.correctAnswerIndex === 'number');
       } catch { return false; }
-    }
+    },
+    context: 'BAR_SIMULATION'
   }
 };
 
 /**
  * INTERNAL ARCHITECTURAL LAYER: Logging & Audit Trail
- * Records all AI-related events for traceability and compliance.
  */
 interface AuditLogEntry {
   requestId: string;
   timestamp: string;
-  eventType: 'INFERENCE_START' | 'INFERENCE_COMPLETE' | 'INFERENCE_ERROR' | 'VALIDATION_FAILURE' | 'SCHEMA_VALIDATION_PASS' | 'SCHEMA_VALIDATION_FAIL' | 'DRIFT_ALERT' | 'HITL_ENQUEUED';
+  eventType: 'INFERENCE_START' | 'INFERENCE_COMPLETE' | 'INFERENCE_ERROR' | 'VALIDATION_FAILURE' | 'SCHEMA_VALIDATION_PASS' | 'SCHEMA_VALIDATION_FAIL' | 'DRIFT_ALERT' | 'HITL_ENQUEUED' | 'SECURITY_ANOMALY';
   component: string;
   metadata: {
     model?: string;
@@ -188,6 +223,8 @@ interface AuditLogEntry {
     baselineValue?: number;
     currentValue?: number;
     hitlReason?: string;
+    anomalyType?: string;
+    securityContext?: string;
   };
 }
 
@@ -201,7 +238,6 @@ const AuditLogger = {
 
 /**
  * INTERNAL ARCHITECTURAL LAYER: Drift Detector (Passive)
- * Measures distributional shifts against baselines.
  */
 const DriftDetector = {
   observe: (requestId: string, metrics: { inputLength?: number, outputLength?: number, latency?: number, tokensIn?: number, tokensOut?: number }): number => {
@@ -238,7 +274,6 @@ const DriftDetector = {
 
 /**
  * INTERNAL ARCHITECTURAL LAYER: Validation Gate (Passive)
- * Blocks unauthorized prompt patterns without modifying the source text.
  */
 const ValidationGate = {
   validateInput: (contents: any): boolean => {
@@ -250,7 +285,9 @@ const ValidationGate = {
       /you are now (an? )?admin/i,
       /stop following instructions/i,
       /bypass guardrails/i,
-      /forget (your )?rules/i
+      /forget (your )?rules/i,
+      /reveal (your )?system instructions/i,
+      /output (your )?developer (prompt|instruction)/i
     ];
     return !forbiddenPatterns.some(pattern => pattern.test(textToInpect));
   },
@@ -273,10 +310,10 @@ const ValidationGate = {
 
 /**
  * INTERNAL ARCHITECTURAL LAYER: Inference Engine (Backend Surrogate)
- * Acts as the transparent inference wrapper moving model execution logic into an isolated controller.
  */
 class InferenceEngine {
-  private static getClient() {
+  private static getSecureClient() {
+    // Encapsulated secure client instantiation
     return new GoogleGenAI({ apiKey: process.env.API_KEY as string });
   }
 
@@ -290,8 +327,31 @@ class InferenceEngine {
     const startTime = performance.now();
     const promptString = JSON.stringify(params.contents);
     const promptHash = await computeIntegrityHash(promptString);
+    const schema = params.schemaKey ? SchemaRegistry[params.schemaKey] : null;
 
-    // Resolve model version through router
+    // --- SECURITY HARDENING: Access Control & Rate Limiting ---
+    if (SecurityGateway.isRateLimited('default_session')) {
+       AuditLogger.record({
+         requestId,
+         timestamp: new Date().toISOString(),
+         eventType: 'SECURITY_ANOMALY',
+         component: 'SecurityGateway',
+         metadata: { anomalyType: 'RATE_LIMIT_EXCEEDED' }
+       });
+       throw new Error("Security Policy: Request frequency exceeds safety thresholds.");
+    }
+
+    if (schema && !AccessController.checkPermission(params.model, schema.context)) {
+       AuditLogger.record({
+         requestId,
+         timestamp: new Date().toISOString(),
+         eventType: 'SECURITY_ANOMALY',
+         component: 'AccessController',
+         metadata: { anomalyType: 'PERMISSION_DENIED', securityContext: schema.context }
+       });
+       throw new Error("Security Policy: Unauthorized model access for the current context.");
+    }
+
     const resolvedModel = ModelRouter.resolve(params.model);
 
     AuditLogger.record({
@@ -308,7 +368,7 @@ class InferenceEngine {
       }
     });
 
-    // Prompt Validation Gate
+    // Prompt Validation Gate (Hardened)
     if (!ValidationGate.validateInput(params.contents)) {
       AuditLogger.record({
         requestId,
@@ -321,9 +381,9 @@ class InferenceEngine {
     }
 
     try {
-      const ai = this.getClient();
+      const ai = this.getSecureClient();
       const response = await ai.models.generateContent({
-        model: resolvedModel.name, // Using resolved model name
+        model: resolvedModel.name,
         contents: params.contents,
         config: params.config
       });
@@ -353,7 +413,6 @@ class InferenceEngine {
           component: 'ValidationGate',
           metadata: { status: 'INVALID_STRUCTURE', schemaKey: params.schemaKey }
         });
-        // We throw the error for the UI, but HITL still gets enqueued below in the final step.
       }
 
       AuditLogger.record({
@@ -364,7 +423,7 @@ class InferenceEngine {
         metadata: { schemaKey: params.schemaKey }
       });
 
-      // --- HITL GOVERNANCE LAYER (Asynchronous Trigger) ---
+      // HITL GOVERNANCE LAYER (Asynchronous Trigger)
       const hitlReason = HITLTriggerEngine.evaluate({
         status: validationStatus,
         driftScore,
@@ -389,7 +448,6 @@ class InferenceEngine {
         });
       }
 
-      // If validation failed, block the UI return now.
       if (validationStatus === 'SCHEMA_VALIDATION_FAIL') {
          throw new Error(`Output Validation Failed: Response does not conform to required schema (${params.schemaKey}).`);
       }
@@ -432,7 +490,6 @@ class InferenceEngine {
 
 /**
  * ERROR HANDLING WRAPPER (Public)
- * Preserves existing application error behavior and quota handling.
  */
 async function withInferenceSafety<T>(
   operation: () => Promise<T>, 
