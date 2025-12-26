@@ -3,6 +3,19 @@ import { GoogleGenAI, Type, GenerateContentParameters } from "@google/genai";
 import { MockBarQuestion } from "../types";
 
 /**
+ * INTERNAL ARCHITECTURAL LAYER: Baseline Registry
+ * Reference statistics for detecting distributional shifts and performance decay.
+ */
+const BASELINE_STATS = {
+  promptLength: 450,      // Average characters
+  responseLength: 1800,   // Average characters
+  latencyMs: 4200,        // Average response time
+  tokenCountIn: 350,      // Average input tokens
+  tokenCountOut: 850,     // Average output tokens
+  driftThreshold: 0.5     // 50% deviation triggers internal alert
+};
+
+/**
  * INTERNAL ARCHITECTURAL LAYER: Model Registry
  * Tracks model versions, status, and integrity hashes.
  * Version entries are immutable once recorded.
@@ -103,7 +116,7 @@ const SchemaRegistry: Record<string, { requiredPatterns?: RegExp[], validator?: 
 interface AuditLogEntry {
   requestId: string;
   timestamp: string;
-  eventType: 'INFERENCE_START' | 'INFERENCE_COMPLETE' | 'INFERENCE_ERROR' | 'VALIDATION_FAILURE' | 'SCHEMA_VALIDATION_PASS' | 'SCHEMA_VALIDATION_FAIL';
+  eventType: 'INFERENCE_START' | 'INFERENCE_COMPLETE' | 'INFERENCE_ERROR' | 'VALIDATION_FAILURE' | 'SCHEMA_VALIDATION_PASS' | 'SCHEMA_VALIDATION_FAIL' | 'DRIFT_ALERT';
   component: string;
   metadata: {
     model?: string;
@@ -117,6 +130,11 @@ interface AuditLogEntry {
     status?: string;
     errorType?: string;
     schemaKey?: string;
+    driftType?: 'INPUT' | 'OUTPUT' | 'PERFORMANCE';
+    driftScore?: number;
+    metricName?: string;
+    baselineValue?: number;
+    currentValue?: number;
   };
 }
 
@@ -125,6 +143,39 @@ const AUDIT_SINK: AuditLogEntry[] = [];
 const AuditLogger = {
   record: (entry: AuditLogEntry) => {
     AUDIT_SINK.push(Object.freeze(entry));
+  }
+};
+
+/**
+ * INTERNAL ARCHITECTURAL LAYER: Drift Detector (Passive)
+ * Measures distributional shifts against baselines.
+ */
+const DriftDetector = {
+  observe: (requestId: string, metrics: { inputLength?: number, outputLength?: number, latency?: number, tokensIn?: number, tokensOut?: number }) => {
+    const checkDrift = (current: number, baseline: number, type: 'INPUT' | 'OUTPUT' | 'PERFORMANCE', name: string) => {
+      const score = Math.abs(current - baseline) / baseline;
+      if (score > BASELINE_STATS.driftThreshold) {
+        AuditLogger.record({
+          requestId,
+          timestamp: new Date().toISOString(),
+          eventType: 'DRIFT_ALERT',
+          component: 'DriftDetector',
+          metadata: {
+            driftType: type,
+            metricName: name,
+            driftScore: Number(score.toFixed(4)),
+            baselineValue: baseline,
+            currentValue: current
+          }
+        });
+      }
+    };
+
+    if (metrics.inputLength) checkDrift(metrics.inputLength, BASELINE_STATS.promptLength, 'INPUT', 'prompt_length');
+    if (metrics.outputLength) checkDrift(metrics.outputLength, BASELINE_STATS.responseLength, 'OUTPUT', 'response_length');
+    if (metrics.latency) checkDrift(metrics.latency, BASELINE_STATS.latencyMs, 'PERFORMANCE', 'latency');
+    if (metrics.tokensIn) checkDrift(metrics.tokensIn, BASELINE_STATS.tokenCountIn, 'INPUT', 'token_count_in');
+    if (metrics.tokensOut) checkDrift(metrics.tokensOut, BASELINE_STATS.tokenCountOut, 'OUTPUT', 'token_count_out');
   }
 };
 
@@ -223,6 +274,16 @@ class InferenceEngine {
       const endTime = performance.now();
       const responseText = response.text || "";
       const responseHash = await computeIntegrityHash(responseText);
+      const latency = Math.round(endTime - startTime);
+
+      // Passive Drift Observation
+      DriftDetector.observe(requestId, {
+        inputLength: promptString.length,
+        outputLength: responseText.length,
+        latency: latency,
+        tokensIn: response.usageMetadata?.promptTokenCount,
+        tokensOut: response.usageMetadata?.candidatesTokenCount
+      });
 
       // Output Schema Enforcement
       if (!ValidationGate.validateOutput(responseText, params.schemaKey)) {
@@ -254,7 +315,7 @@ class InferenceEngine {
           model: resolvedModel.name,
           modelVersion: resolvedModel.version,
           responseHash,
-          latencyMs: Math.round(endTime - startTime),
+          latencyMs: latency,
           tokensIn: response.usageMetadata?.promptTokenCount,
           tokensOut: response.usageMetadata?.candidatesTokenCount
         }
