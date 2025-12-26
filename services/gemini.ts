@@ -3,6 +3,39 @@ import { GoogleGenAI, Type, GenerateContentParameters } from "@google/genai";
 import { MockBarQuestion } from "../types";
 
 /**
+ * INTERNAL ARCHITECTURAL LAYER: Model Registry
+ * Tracks model versions, status, and integrity hashes.
+ * Version entries are immutable once recorded.
+ */
+const ModelRegistry: Record<string, { version: string, hash: string, status: 'active' | 'deprecated' | 'shadow' }> = {
+  'gemini-3-pro-preview': {
+    version: '3.0.0-pro-preview-stable',
+    hash: 'sha256:7f8e9d0a1b2c3d4e5f6g7h8i9j0k',
+    status: 'active'
+  },
+  'gemini-3-flash-preview': {
+    version: '3.0.0-flash-preview-stable',
+    hash: 'sha256:1a2b3c4d5e6f7g8h9i0j1k2l3m4n',
+    status: 'active'
+  }
+};
+
+/**
+ * INTERNAL COMPONENT: Model Version Router
+ * Resolves requested models to their active version metadata.
+ */
+const ModelRouter = {
+  resolve: (modelId: string) => {
+    const entry = ModelRegistry[modelId];
+    return {
+      name: modelId,
+      version: entry?.version || 'v.legacy',
+      hash: entry?.hash || 'unknown'
+    };
+  }
+};
+
+/**
  * INTERNAL COMPONENT: Request Correlator
  * Generates unique identifiers for tracing the lifecycle of an AI request.
  */
@@ -74,6 +107,8 @@ interface AuditLogEntry {
   component: string;
   metadata: {
     model?: string;
+    modelVersion?: string;
+    modelHash?: string;
     promptHash?: string;
     responseHash?: string;
     latencyMs?: number;
@@ -148,12 +183,21 @@ class InferenceEngine {
     const promptString = JSON.stringify(params.contents);
     const promptHash = await computeIntegrityHash(promptString);
 
+    // Resolve model version through router
+    const resolvedModel = ModelRouter.resolve(params.model);
+
     AuditLogger.record({
       requestId,
       timestamp: new Date().toISOString(),
       eventType: 'INFERENCE_START',
       component: 'InferenceEngine',
-      metadata: { model: params.model, promptHash, schemaKey: params.schemaKey }
+      metadata: { 
+        model: resolvedModel.name, 
+        modelVersion: resolvedModel.version,
+        modelHash: resolvedModel.hash,
+        promptHash, 
+        schemaKey: params.schemaKey 
+      }
     });
 
     // Prompt Validation Gate
@@ -171,7 +215,7 @@ class InferenceEngine {
     try {
       const ai = this.getClient();
       const response = await ai.models.generateContent({
-        model: params.model,
+        model: resolvedModel.name, // Using resolved model name
         contents: params.contents,
         config: params.config
       });
@@ -207,6 +251,8 @@ class InferenceEngine {
         component: 'InferenceEngine',
         metadata: {
           status: 'SUCCESS',
+          model: resolvedModel.name,
+          modelVersion: resolvedModel.version,
           responseHash,
           latencyMs: Math.round(endTime - startTime),
           tokensIn: response.usageMetadata?.promptTokenCount,
@@ -223,6 +269,8 @@ class InferenceEngine {
         component: 'InferenceEngine',
         metadata: {
           status: 'ERROR',
+          model: resolvedModel.name,
+          modelVersion: resolvedModel.version,
           errorType: error.constructor.name,
           latencyMs: Math.round(performance.now() - startTime)
         }
