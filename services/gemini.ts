@@ -245,12 +245,13 @@ const SECURITY_POLICY = {
 
 /**
  * INTERNAL ARCHITECTURAL LAYER: Access Controller (Zero Trust)
+ * Enforces least-privilege access to the Model Registry.
  */
 const AccessController = {
   checkPermission: (modelId: string, context: string): boolean => {
     const allowedMap: Record<string, string[]> = {
-      'gemini-3-pro-preview': ['HIGH_IMPACT_LEGAL', 'BAR_SIMULATION', 'COMPLEX_RESEARCH'],
-      'gemini-3-flash-preview': ['METADATA_SEARCH', 'JSON_TRANSFORMATION']
+      'gemini-3-pro-preview': ['HIGH_IMPACT_LEGAL', 'BAR_SIMULATION', 'COMPLEX_RESEARCH', 'METADATA_SEARCH'],
+      'gemini-3-flash-preview': ['METADATA_SEARCH', 'JSON_TRANSFORMATION', 'HIGH_IMPACT_LEGAL']
     };
     return allowedMap[modelId]?.includes(context) ?? false;
   }
