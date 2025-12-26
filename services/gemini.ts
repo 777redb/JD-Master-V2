@@ -3,9 +3,70 @@ import { GoogleGenAI, Type, GenerateContentParameters } from "@google/genai";
 import { MockBarQuestion } from "../types";
 
 /**
+ * INTERNAL ARCHITECTURAL LAYER: Cost Rate Registry
+ * Defines estimated pricing per 1k tokens for FinOps observability.
+ * Based on 2025 enterprise benchmarks for the Gemini 3 series.
+ */
+const COST_RATE_REGISTRY: Record<string, { input: number, output: number }> = {
+  'gemini-3-pro-preview': { input: 0.00125, output: 0.00375 },
+  'gemini-3-flash-preview': { input: 0.000075, output: 0.0003 }
+};
+
+/**
+ * INTERNAL ARCHITECTURAL LAYER: Budget Policies
+ * Defines thresholds for internal alerting and resource governance.
+ */
+const BUDGET_POLICIES = {
+  dailyAllowanceUSD: 10.00,
+  alertThresholds: [0.5, 0.8, 0.9, 1.0], // Percentages of allowance
+  quotaGracePeriod: 'active'
+};
+
+/**
+ * INTERNAL ARCHITECTURAL LAYER: FinOps Engine
+ * Manages cost calculation, aggregation, and threshold monitoring.
+ */
+const FinOpsEngine = {
+  private_cumulativeSpend: 0,
+  private_alertedThresholds: new Set<number>(),
+
+  calculateCost: (modelId: string, tokensIn: number = 0, tokensOut: number = 0): number => {
+    const rate = COST_RATE_REGISTRY[modelId] || { input: 0, output: 0 };
+    return (tokensIn / 1000 * rate.input) + (tokensOut / 1000 * rate.output);
+  },
+
+  trackUsage: (requestId: string, modelId: string, tokensIn: number, tokensOut: number) => {
+    const cost = FinOpsEngine.calculateCost(modelId, tokensIn, tokensOut);
+    FinOpsEngine.private_cumulativeSpend += cost;
+
+    const currentUsageRatio = FinOpsEngine.private_cumulativeSpend / BUDGET_POLICIES.dailyAllowanceUSD;
+    
+    BUDGET_POLICIES.alertThresholds.forEach(threshold => {
+      if (currentUsageRatio >= threshold && !FinOpsEngine.private_alertedThresholds.has(threshold)) {
+        FinOpsEngine.private_alertedThresholds.add(threshold);
+        AuditLogger.record({
+          requestId,
+          timestamp: new Date().toISOString(),
+          eventType: 'COST_BUDGET_ALERT',
+          component: 'FinOpsEngine',
+          metadata: {
+            status: 'THRESHOLD_REACHED',
+            metricName: 'daily_spend_ratio',
+            currentValue: Number(currentUsageRatio.toFixed(4)),
+            baselineValue: threshold,
+            anomalyType: 'BUDGET_EXPOSURE'
+          }
+        });
+      }
+    });
+
+    return cost;
+  }
+};
+
+/**
  * INTERNAL ARCHITECTURAL LAYER: Doctrine Test Corpus
  * Canonical definitions of legal concepts used for regression testing.
- * These are "read-only" expectations for Concept Presence/Absence.
  */
 const DOCTRINE_TEST_CORPUS = [
   {
@@ -36,7 +97,6 @@ const DOCTRINE_TEST_CORPUS = [
 
 /**
  * INTERNAL ARCHITECTURAL LAYER: Regression Baseline Registry
- * Records historical doctrinal performance metrics.
  */
 const REGRESSION_BASELINE_REGISTRY: Record<string, { coverageThreshold: number, lastVerifiedScore: number }> = {
   'REQUISITES_SELF_DEFENSE': { coverageThreshold: 1.0, lastVerifiedScore: 1.0 },
@@ -46,14 +106,12 @@ const REGRESSION_BASELINE_REGISTRY: Record<string, { coverageThreshold: number, 
 
 /**
  * INTERNAL ARCHITECTURAL LAYER: Regression Engine (Passive)
- * Compares output concepts against the Doctrine Test Corpus.
  */
 const RegressionEngine = {
   observe: (requestId: string, text: string) => {
     const normalizedText = text.toLowerCase();
     
     DOCTRINE_TEST_CORPUS.forEach(testCase => {
-      // Check if the output seems to be discussing this doctrine
       const subjectMatch = normalizedText.includes(testCase.subject.toLowerCase()) || 
                            normalizedText.includes(testCase.description.toLowerCase().split(':')[0].toLowerCase());
       
@@ -84,7 +142,6 @@ const RegressionEngine = {
 
 /**
  * INTERNAL ARCHITECTURAL LAYER: Security Configuration
- * Defines hardening parameters and policy thresholds.
  */
 const SECURITY_POLICY = {
   tlsRequirement: 'TLS_1.3',
@@ -96,7 +153,6 @@ const SECURITY_POLICY = {
 
 /**
  * INTERNAL ARCHITECTURAL LAYER: Access Controller (Zero Trust)
- * Enforces least-privilege access to the Model Registry.
  */
 const AccessController = {
   checkPermission: (modelId: string, context: string): boolean => {
@@ -110,7 +166,6 @@ const AccessController = {
 
 /**
  * INTERNAL ARCHITECTURAL LAYER: Security Gateway
- * Handles transparent rate limiting and abuse detection.
  */
 const SecurityGateway = {
   private_registry: new Map<string, number[]>(),
@@ -127,7 +182,6 @@ const SecurityGateway = {
 
 /**
  * INTERNAL ARCHITECTURAL LAYER: HITL Governance Store
- * Persistent (internal-only) storage for post-hoc human review records.
  */
 interface HITLReviewRecord {
   requestId: string;
@@ -145,7 +199,6 @@ const HITL_REVIEW_STORE: HITLReviewRecord[] = [];
 
 /**
  * INTERNAL ARCHITECTURAL LAYER: HITL Trigger Engine
- * Determines if a request/response pair requires human oversight.
  */
 const HITLTriggerEngine = {
   evaluate: (metadata: any): HITLReviewRecord['triggerReason'] | null => {
@@ -283,7 +336,7 @@ const SchemaRegistry: Record<string, { requiredPatterns?: RegExp[], validator?: 
 interface AuditLogEntry {
   requestId: string;
   timestamp: string;
-  eventType: 'INFERENCE_START' | 'INFERENCE_COMPLETE' | 'INFERENCE_ERROR' | 'VALIDATION_FAILURE' | 'SCHEMA_VALIDATION_PASS' | 'SCHEMA_VALIDATION_FAIL' | 'DRIFT_ALERT' | 'HITL_ENQUEUED' | 'SECURITY_ANOMALY' | 'REGRESSION_ALERT';
+  eventType: 'INFERENCE_START' | 'INFERENCE_COMPLETE' | 'INFERENCE_ERROR' | 'VALIDATION_FAILURE' | 'SCHEMA_VALIDATION_PASS' | 'SCHEMA_VALIDATION_FAIL' | 'DRIFT_ALERT' | 'HITL_ENQUEUED' | 'SECURITY_ANOMALY' | 'REGRESSION_ALERT' | 'COST_BUDGET_ALERT';
   component: string;
   metadata: {
     model?: string;
@@ -294,6 +347,7 @@ interface AuditLogEntry {
     latencyMs?: number;
     tokensIn?: number;
     tokensOut?: number;
+    estimatedCost?: number;
     status?: string;
     errorType?: string;
     schemaKey?: string;
@@ -393,7 +447,6 @@ const ValidationGate = {
  */
 class InferenceEngine {
   private static getSecureClient() {
-    // Encapsulated secure client instantiation
     return new GoogleGenAI({ apiKey: process.env.API_KEY as string });
   }
 
@@ -448,7 +501,6 @@ class InferenceEngine {
       }
     });
 
-    // Prompt Validation Gate (Hardened)
     if (!ValidationGate.validateInput(params.contents)) {
       AuditLogger.record({
         requestId,
@@ -473,17 +525,21 @@ class InferenceEngine {
       const responseHash = await computeIntegrityHash(responseText);
       const latency = Math.round(endTime - startTime);
 
+      // --- COST OPTIMIZATION: FinOps Usage Tracking ---
+      const tokensIn = response.usageMetadata?.promptTokenCount || 0;
+      const tokensOut = response.usageMetadata?.candidatesTokenCount || 0;
+      const estimatedCost = FinOpsEngine.trackUsage(requestId, resolvedModel.name, tokensIn, tokensOut);
+
       // Passive Drift Observation
       const driftScore = DriftDetector.observe(requestId, {
         inputLength: promptString.length,
         outputLength: responseText.length,
         latency: latency,
-        tokensIn: response.usageMetadata?.promptTokenCount,
-        tokensOut: response.usageMetadata?.candidatesTokenCount
+        tokensIn,
+        tokensOut
       });
 
       // --- DOCTRINE REGRESSION TEST SUITE (Parallel/Observational) ---
-      // This call is intentionally observational and does not interfere with the return path.
       RegressionEngine.observe(requestId, responseText);
 
       // Output Schema Enforcement
@@ -547,8 +603,9 @@ class InferenceEngine {
           modelVersion: resolvedModel.version,
           responseHash,
           latencyMs: latency,
-          tokensIn: response.usageMetadata?.promptTokenCount,
-          tokensOut: response.usageMetadata?.candidatesTokenCount
+          tokensIn,
+          tokensOut,
+          estimatedCost
         }
       });
 
