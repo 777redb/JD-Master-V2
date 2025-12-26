@@ -3,6 +3,86 @@ import { GoogleGenAI, Type, GenerateContentParameters } from "@google/genai";
 import { MockBarQuestion } from "../types";
 
 /**
+ * INTERNAL ARCHITECTURAL LAYER: Doctrine Test Corpus
+ * Canonical definitions of legal concepts used for regression testing.
+ * These are "read-only" expectations for Concept Presence/Absence.
+ */
+const DOCTRINE_TEST_CORPUS = [
+  {
+    id: 'REQUISITES_SELF_DEFENSE',
+    subject: 'Criminal Law',
+    expectedElements: ['unlawful aggression', 'reasonable necessity', 'lack of sufficient provocation'],
+    description: 'Article 11, RPC: Justifying circumstances'
+  },
+  {
+    id: 'REQUISITES_MARRIAGE',
+    subject: 'Civil Law',
+    expectedElements: ['legal capacity', 'consent freely given', 'solemnizing officer', 'marriage license'],
+    description: 'Family Code: Essential and Formal Requisites'
+  },
+  {
+    id: 'EMPLOYER_EMPLOYEE_TEST',
+    subject: 'Labor Law',
+    expectedElements: ['selection and engagement', 'payment of wages', 'power of dismissal', 'power of control'],
+    description: 'Four-Fold Test of Employment'
+  },
+  {
+    id: 'PIERCING_CORP_VEIL',
+    subject: 'Commercial Law',
+    expectedElements: ['separate legal personality', 'alter ego', 'fraud', 'defeat public convenience'],
+    description: 'Doctrine of Separate Legal Entity'
+  }
+];
+
+/**
+ * INTERNAL ARCHITECTURAL LAYER: Regression Baseline Registry
+ * Records historical doctrinal performance metrics.
+ */
+const REGRESSION_BASELINE_REGISTRY: Record<string, { coverageThreshold: number, lastVerifiedScore: number }> = {
+  'REQUISITES_SELF_DEFENSE': { coverageThreshold: 1.0, lastVerifiedScore: 1.0 },
+  'REQUISITES_MARRIAGE': { coverageThreshold: 0.75, lastVerifiedScore: 1.0 },
+  'EMPLOYER_EMPLOYEE_TEST': { coverageThreshold: 1.0, lastVerifiedScore: 1.0 }
+};
+
+/**
+ * INTERNAL ARCHITECTURAL LAYER: Regression Engine (Passive)
+ * Compares output concepts against the Doctrine Test Corpus.
+ */
+const RegressionEngine = {
+  observe: (requestId: string, text: string) => {
+    const normalizedText = text.toLowerCase();
+    
+    DOCTRINE_TEST_CORPUS.forEach(testCase => {
+      // Check if the output seems to be discussing this doctrine
+      const subjectMatch = normalizedText.includes(testCase.subject.toLowerCase()) || 
+                           normalizedText.includes(testCase.description.toLowerCase().split(':')[0].toLowerCase());
+      
+      if (subjectMatch) {
+        const foundElements = testCase.expectedElements.filter(el => normalizedText.includes(el.toLowerCase()));
+        const score = foundElements.length / testCase.expectedElements.length;
+        const baseline = REGRESSION_BASELINE_REGISTRY[testCase.id];
+
+        if (baseline && score < baseline.coverageThreshold) {
+          AuditLogger.record({
+            requestId,
+            timestamp: new Date().toISOString(),
+            eventType: 'REGRESSION_ALERT',
+            component: 'RegressionEngine',
+            metadata: {
+              status: 'REGRESSION_DETECTED',
+              metricName: `doctrinal_coverage:${testCase.id}`,
+              currentValue: score,
+              baselineValue: baseline.coverageThreshold,
+              anomalyType: 'ACCURACY_DECAY'
+            }
+          });
+        }
+      }
+    });
+  }
+};
+
+/**
  * INTERNAL ARCHITECTURAL LAYER: Security Configuration
  * Defines hardening parameters and policy thresholds.
  */
@@ -203,7 +283,7 @@ const SchemaRegistry: Record<string, { requiredPatterns?: RegExp[], validator?: 
 interface AuditLogEntry {
   requestId: string;
   timestamp: string;
-  eventType: 'INFERENCE_START' | 'INFERENCE_COMPLETE' | 'INFERENCE_ERROR' | 'VALIDATION_FAILURE' | 'SCHEMA_VALIDATION_PASS' | 'SCHEMA_VALIDATION_FAIL' | 'DRIFT_ALERT' | 'HITL_ENQUEUED' | 'SECURITY_ANOMALY';
+  eventType: 'INFERENCE_START' | 'INFERENCE_COMPLETE' | 'INFERENCE_ERROR' | 'VALIDATION_FAILURE' | 'SCHEMA_VALIDATION_PASS' | 'SCHEMA_VALIDATION_FAIL' | 'DRIFT_ALERT' | 'HITL_ENQUEUED' | 'SECURITY_ANOMALY' | 'REGRESSION_ALERT';
   component: string;
   metadata: {
     model?: string;
@@ -401,6 +481,10 @@ class InferenceEngine {
         tokensIn: response.usageMetadata?.promptTokenCount,
         tokensOut: response.usageMetadata?.candidatesTokenCount
       });
+
+      // --- DOCTRINE REGRESSION TEST SUITE (Parallel/Observational) ---
+      // This call is intentionally observational and does not interfere with the return path.
+      RegressionEngine.observe(requestId, responseText);
 
       // Output Schema Enforcement
       let validationStatus = 'SCHEMA_VALIDATION_PASS';
