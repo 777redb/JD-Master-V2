@@ -3,6 +3,58 @@ import { GoogleGenAI, Type, GenerateContentParameters } from "@google/genai";
 import { MockBarQuestion } from "../types";
 
 /**
+ * INTERNAL ARCHITECTURAL LAYER: HITL Governance Store
+ * Persistent (internal-only) storage for post-hoc human review records.
+ */
+interface HITLReviewRecord {
+  requestId: string;
+  timestamp: string;
+  triggerReason: 'VALIDATION_FAILURE' | 'DRIFT_ANOMALY' | 'HIGH_IMPACT_SAMPLING' | 'MANUAL_ESCALATION';
+  modelVersion: string;
+  outputHash: string;
+  status: 'PENDING' | 'UNDER_REVIEW' | 'VALIDATED' | 'REJECTED';
+  reviewerId?: string;
+  reviewOutcome?: string;
+  severity?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+}
+
+const HITL_REVIEW_STORE: HITLReviewRecord[] = [];
+
+/**
+ * INTERNAL ARCHITECTURAL LAYER: HITL Trigger Engine
+ * Determines if a request/response pair requires human oversight.
+ */
+const HITLTriggerEngine = {
+  evaluate: (metadata: any): HITLReviewRecord['triggerReason'] | null => {
+    // Rule 1: All schema validation failures are urgent
+    if (metadata.status === 'SCHEMA_VALIDATION_FAIL') return 'VALIDATION_FAILURE';
+    
+    // Rule 2: Significant drift detected
+    if (metadata.driftScore > 0.5) return 'DRIFT_ANOMALY';
+    
+    // Rule 3: High-Impact Sampling (JD Modules & Legal Advice)
+    const highImpactSchemas = ['JD_MODULE_HTML', 'GENERAL_LEGAL_HTML'];
+    if (highImpactSchemas.includes(metadata.schemaKey || '') && Math.random() < 0.1) {
+      return 'HIGH_IMPACT_SAMPLING';
+    }
+
+    return null;
+  }
+};
+
+/**
+ * INTERNAL ARCHITECTURAL LAYER: HITL Review Queue
+ * Manages the asynchronous enqueuing of review events.
+ */
+const HITLQueue = {
+  enqueue: (record: HITLReviewRecord) => {
+    HITL_REVIEW_STORE.push(Object.freeze(record));
+    // In a production environment, this would emit to a persistent MQ or DB.
+    console.debug(`[HITL-GOVERNANCE] Request ${record.requestId} enqueued for review. Reason: ${record.triggerReason}`);
+  }
+};
+
+/**
  * INTERNAL ARCHITECTURAL LAYER: Baseline Registry
  * Reference statistics for detecting distributional shifts and performance decay.
  */
@@ -116,7 +168,7 @@ const SchemaRegistry: Record<string, { requiredPatterns?: RegExp[], validator?: 
 interface AuditLogEntry {
   requestId: string;
   timestamp: string;
-  eventType: 'INFERENCE_START' | 'INFERENCE_COMPLETE' | 'INFERENCE_ERROR' | 'VALIDATION_FAILURE' | 'SCHEMA_VALIDATION_PASS' | 'SCHEMA_VALIDATION_FAIL' | 'DRIFT_ALERT';
+  eventType: 'INFERENCE_START' | 'INFERENCE_COMPLETE' | 'INFERENCE_ERROR' | 'VALIDATION_FAILURE' | 'SCHEMA_VALIDATION_PASS' | 'SCHEMA_VALIDATION_FAIL' | 'DRIFT_ALERT' | 'HITL_ENQUEUED';
   component: string;
   metadata: {
     model?: string;
@@ -135,6 +187,7 @@ interface AuditLogEntry {
     metricName?: string;
     baselineValue?: number;
     currentValue?: number;
+    hitlReason?: string;
   };
 }
 
@@ -151,9 +204,11 @@ const AuditLogger = {
  * Measures distributional shifts against baselines.
  */
 const DriftDetector = {
-  observe: (requestId: string, metrics: { inputLength?: number, outputLength?: number, latency?: number, tokensIn?: number, tokensOut?: number }) => {
+  observe: (requestId: string, metrics: { inputLength?: number, outputLength?: number, latency?: number, tokensIn?: number, tokensOut?: number }): number => {
+    let maxDriftScore = 0;
     const checkDrift = (current: number, baseline: number, type: 'INPUT' | 'OUTPUT' | 'PERFORMANCE', name: string) => {
       const score = Math.abs(current - baseline) / baseline;
+      if (score > maxDriftScore) maxDriftScore = score;
       if (score > BASELINE_STATS.driftThreshold) {
         AuditLogger.record({
           requestId,
@@ -176,6 +231,8 @@ const DriftDetector = {
     if (metrics.latency) checkDrift(metrics.latency, BASELINE_STATS.latencyMs, 'PERFORMANCE', 'latency');
     if (metrics.tokensIn) checkDrift(metrics.tokensIn, BASELINE_STATS.tokenCountIn, 'INPUT', 'token_count_in');
     if (metrics.tokensOut) checkDrift(metrics.tokensOut, BASELINE_STATS.tokenCountOut, 'OUTPUT', 'token_count_out');
+
+    return maxDriftScore;
   }
 };
 
@@ -277,7 +334,7 @@ class InferenceEngine {
       const latency = Math.round(endTime - startTime);
 
       // Passive Drift Observation
-      DriftDetector.observe(requestId, {
+      const driftScore = DriftDetector.observe(requestId, {
         inputLength: promptString.length,
         outputLength: responseText.length,
         latency: latency,
@@ -286,7 +343,9 @@ class InferenceEngine {
       });
 
       // Output Schema Enforcement
+      let validationStatus = 'SCHEMA_VALIDATION_PASS';
       if (!ValidationGate.validateOutput(responseText, params.schemaKey)) {
+        validationStatus = 'SCHEMA_VALIDATION_FAIL';
         AuditLogger.record({
           requestId,
           timestamp: new Date().toISOString(),
@@ -294,16 +353,46 @@ class InferenceEngine {
           component: 'ValidationGate',
           metadata: { status: 'INVALID_STRUCTURE', schemaKey: params.schemaKey }
         });
-        throw new Error(`Output Validation Failed: Response does not conform to required schema (${params.schemaKey}).`);
+        // We throw the error for the UI, but HITL still gets enqueued below in the final step.
       }
 
       AuditLogger.record({
         requestId,
         timestamp: new Date().toISOString(),
-        eventType: 'SCHEMA_VALIDATION_PASS',
+        eventType: validationStatus as any,
         component: 'ValidationGate',
         metadata: { schemaKey: params.schemaKey }
       });
+
+      // --- HITL GOVERNANCE LAYER (Asynchronous Trigger) ---
+      const hitlReason = HITLTriggerEngine.evaluate({
+        status: validationStatus,
+        driftScore,
+        schemaKey: params.schemaKey
+      });
+
+      if (hitlReason) {
+        HITLQueue.enqueue({
+          requestId,
+          timestamp: new Date().toISOString(),
+          triggerReason: hitlReason,
+          modelVersion: resolvedModel.version,
+          outputHash: responseHash,
+          status: 'PENDING'
+        });
+        AuditLogger.record({
+          requestId,
+          timestamp: new Date().toISOString(),
+          eventType: 'HITL_ENQUEUED',
+          component: 'HITLQueue',
+          metadata: { hitlReason }
+        });
+      }
+
+      // If validation failed, block the UI return now.
+      if (validationStatus === 'SCHEMA_VALIDATION_FAIL') {
+         throw new Error(`Output Validation Failed: Response does not conform to required schema (${params.schemaKey}).`);
+      }
 
       AuditLogger.record({
         requestId,
