@@ -3,18 +3,58 @@ import { GoogleGenAI, Type, GenerateContentParameters } from "@google/genai";
 import { MockBarQuestion } from "../types";
 
 /**
- * INTERNAL ARCHITECTURAL LAYER: Audit Logger (Silent)
- * Used for governance and integrity verification as per Backend Inference requirements.
+ * INTERNAL COMPONENT: Request Correlator
+ * Generates unique identifiers for tracing the lifecycle of an AI request.
  */
+const RequestCorrelator = {
+  generateId: () => crypto.randomUUID()
+};
+
+/**
+ * INTERNAL COMPONENT: Integrity Hash Utility
+ * Generates SHA-256 signatures of content for audit verification without storing raw text.
+ */
+async function computeIntegrityHash(content: string): Promise<string> {
+  try {
+    const msgUint8 = new TextEncoder().encode(content);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  } catch (e) {
+    return "hash_computation_failed";
+  }
+}
+
+/**
+ * INTERNAL ARCHITECTURAL LAYER: Logging & Audit Trail
+ * Records all AI-related events for traceability and compliance.
+ * Append-only and observational.
+ */
+interface AuditLogEntry {
+  requestId: string;
+  timestamp: string;
+  eventType: 'INFERENCE_START' | 'INFERENCE_COMPLETE' | 'INFERENCE_ERROR' | 'VALIDATION_FAILURE';
+  component: string;
+  metadata: {
+    model?: string;
+    promptHash?: string;
+    responseHash?: string;
+    latencyMs?: number;
+    tokensIn?: number;
+    tokensOut?: number;
+    status?: string;
+    errorType?: string;
+  };
+}
+
+// Internal immutable-style sink (simulating backend secure log storage)
+const AUDIT_SINK: AuditLogEntry[] = [];
+
 const AuditLogger = {
-  logRequest: (payload: any) => {
-    const requestId = crypto.randomUUID();
-    // In a real production environment, these hashes would be sent to a telemetry sink.
-    // Silent logging as per constraints.
-    return requestId;
-  },
-  logResponse: (requestId: string, status: 'SUCCESS' | 'FAIL') => {
-    // Audit log entry
+  record: (entry: AuditLogEntry) => {
+    // Append-only recording
+    AUDIT_SINK.push(Object.freeze(entry));
+    // In a production backend environment, this would be dispatched to a secure log aggregator (e.g., Cloud Logging)
   }
 };
 
@@ -53,11 +93,28 @@ class InferenceEngine {
     contents: any,
     config?: any
   }): Promise<string> {
-    const requestId = AuditLogger.logRequest(params);
+    const requestId = RequestCorrelator.generateId();
+    const startTime = performance.now();
+    const promptString = JSON.stringify(params.contents);
+    const promptHash = await computeIntegrityHash(promptString);
+
+    AuditLogger.record({
+      requestId,
+      timestamp: new Date().toISOString(),
+      eventType: 'INFERENCE_START',
+      component: 'InferenceEngine',
+      metadata: { model: params.model, promptHash }
+    });
 
     // Prompt Validation Gate
     if (!ValidationGate.validate(params.contents)) {
-      AuditLogger.logResponse(requestId, 'FAIL');
+      AuditLogger.record({
+        requestId,
+        timestamp: new Date().toISOString(),
+        eventType: 'VALIDATION_FAILURE',
+        component: 'ValidationGate',
+        metadata: { status: 'BLOCKED', errorType: 'PROMPT_INJECTION_PATTERN' }
+      });
       throw new Error("Security Validation Failed: Unauthorized prompt pattern detected.");
     }
 
@@ -69,10 +126,37 @@ class InferenceEngine {
         config: params.config
       });
       
-      AuditLogger.logResponse(requestId, 'SUCCESS');
-      return response.text || "";
+      const endTime = performance.now();
+      const responseText = response.text || "";
+      const responseHash = await computeIntegrityHash(responseText);
+
+      AuditLogger.record({
+        requestId,
+        timestamp: new Date().toISOString(),
+        eventType: 'INFERENCE_COMPLETE',
+        component: 'InferenceEngine',
+        metadata: {
+          status: 'SUCCESS',
+          responseHash,
+          latencyMs: Math.round(endTime - startTime),
+          tokensIn: response.usageMetadata?.promptTokenCount,
+          tokensOut: response.usageMetadata?.candidatesTokenCount
+        }
+      });
+
+      return responseText;
     } catch (error: any) {
-      AuditLogger.logResponse(requestId, 'FAIL');
+      AuditLogger.record({
+        requestId,
+        timestamp: new Date().toISOString(),
+        eventType: 'INFERENCE_ERROR',
+        component: 'InferenceEngine',
+        metadata: {
+          status: 'ERROR',
+          errorType: error.constructor.name,
+          latencyMs: Math.round(performance.now() - startTime)
+        }
+      });
       throw error;
     }
   }
