@@ -3,6 +3,78 @@ import { GoogleGenAI, Type, GenerateContentParameters } from "@google/genai";
 import { MockBarQuestion } from "../types";
 
 /**
+ * INTERNAL ARCHITECTURAL LAYER: Jurisdiction Scope Registry
+ * Defines authorized legal boundaries and statutory corpora per jurisdiction.
+ * This registry is used for internal scoping and passive detection.
+ */
+const JURISDICTION_SCOPE_REGISTRY: Record<string, { 
+  id: string, 
+  name: string, 
+  authorizedStatutoryScope: string[], 
+  forbiddenCitations: RegExp[] 
+}> = {
+  'PH': {
+    id: 'PH',
+    name: 'Philippines',
+    authorizedStatutoryScope: ['1987 Constitution', 'Revised Penal Code', 'Civil Code', 'Rules of Court'],
+    forbiddenCitations: [
+      /\bU\.S\.\s+Supreme\s+Court\b/i,
+      /\bSCOTUS\b/i,
+      /\bCommon\s+Law\b(?!\s+principles\s+applied\s+in\s+PH)/i,
+      /\bU\.K\.\b/i,
+      /\bFederal\s+Rules\s+of\s+Evidence\b/i
+    ]
+  }
+};
+
+/**
+ * INTERNAL ARCHITECTURAL LAYER: Jurisdiction Resolver
+ * Deterministically resolves the active jurisdiction based on environment signals.
+ */
+const JurisdictionResolver = {
+  resolve: (): string => {
+    // Default to PH based on current application footprint
+    return (process.env as any).APP_JURISDICTION || 'PH';
+  }
+};
+
+/**
+ * INTERNAL ARCHITECTURAL LAYER: Jurisdiction Guardrail (Passive)
+ * Detects jurisdictional bleed-through or incompatible citations post-inference.
+ */
+const JurisdictionGuardrail = {
+  observe: (requestId: string, jurisdictionId: string, text: string) => {
+    const scope = JURISDICTION_SCOPE_REGISTRY[jurisdictionId];
+    if (!scope) return;
+
+    let violationDetected = false;
+    const detectedForbidden: string[] = [];
+
+    scope.forbiddenCitations.forEach(pattern => {
+      if (pattern.test(text)) {
+        violationDetected = true;
+        detectedForbidden.push(pattern.toString());
+      }
+    });
+
+    if (violationDetected) {
+      AuditLogger.record({
+        requestId,
+        timestamp: new Date().toISOString(),
+        eventType: 'JURISDICTION_SCOPE_VIOLATION',
+        component: 'JurisdictionGuardrail',
+        metadata: {
+          status: 'BLEED_DETECTED',
+          jurisdictionId,
+          anomalyType: 'FOREIGN_LAW_BLEED',
+          securityContext: detectedForbidden.join(', ')
+        }
+      });
+    }
+  }
+};
+
+/**
  * INTERNAL ARCHITECTURAL LAYER: Orchestration Configuration
  * Defines static routing policies and shadow execution mappings.
  */
@@ -17,7 +89,6 @@ const ORCHESTRATION_POLICY = {
 
 /**
  * INTERNAL ARCHITECTURAL LAYER: Model Registry
- * Enhanced to support roles and orchestration metadata.
  */
 const ModelRegistry: Record<string, { 
   version: string, 
@@ -41,13 +112,11 @@ const ModelRegistry: Record<string, {
 
 /**
  * INTERNAL ARCHITECTURAL LAYER: Model Orchestrator
- * Resolves active models and manages shadow execution.
  */
 const ModelOrchestrator = {
   resolveActiveModel: (requestedModelId: string) => {
     const entry = ModelRegistry[requestedModelId];
     if (!entry || entry.status === 'deprecated') {
-      // Return primary default if requested is invalid
       return { id: 'gemini-3-pro-preview', ...ModelRegistry['gemini-3-pro-preview'] };
     }
     return { id: requestedModelId, ...entry };
@@ -58,10 +127,6 @@ const ModelOrchestrator = {
     return (ORCHESTRATION_POLICY.shadowMappings as any)[primaryModelId] || [];
   },
 
-  /**
-   * SILENT SHADOW EXECUTION
-   * Fires a secondary request in parallel. Result is logged but never used.
-   */
   executeShadow: async (requestId: string, modelId: string, contents: any, config: any) => {
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
@@ -100,7 +165,6 @@ const ModelOrchestrator = {
 
 /**
  * INTERNAL ARCHITECTURAL LAYER: Cost Rate Registry
- * Defines estimated pricing per 1k tokens for FinOps observability.
  */
 const COST_RATE_REGISTRY: Record<string, { input: number, output: number }> = {
   'gemini-3-pro-preview': { input: 0.00125, output: 0.00375 },
@@ -245,7 +309,6 @@ const SECURITY_POLICY = {
 
 /**
  * INTERNAL ARCHITECTURAL LAYER: Access Controller (Zero Trust)
- * Enforces least-privilege access to the Model Registry.
  */
 const AccessController = {
   checkPermission: (modelId: string, context: string): boolean => {
@@ -399,7 +462,7 @@ const SchemaRegistry: Record<string, { requiredPatterns?: RegExp[], validator?: 
 interface AuditLogEntry {
   requestId: string;
   timestamp: string;
-  eventType: 'INFERENCE_START' | 'INFERENCE_COMPLETE' | 'INFERENCE_ERROR' | 'VALIDATION_FAILURE' | 'SCHEMA_VALIDATION_PASS' | 'SCHEMA_VALIDATION_FAIL' | 'DRIFT_ALERT' | 'HITL_ENQUEUED' | 'SECURITY_ANOMALY' | 'REGRESSION_ALERT' | 'COST_BUDGET_ALERT' | 'ORCHESTRATION_ROUTING' | 'SHADOW_EXECUTION_COMPLETE';
+  eventType: 'INFERENCE_START' | 'INFERENCE_COMPLETE' | 'INFERENCE_ERROR' | 'VALIDATION_FAILURE' | 'SCHEMA_VALIDATION_PASS' | 'SCHEMA_VALIDATION_FAIL' | 'DRIFT_ALERT' | 'HITL_ENQUEUED' | 'SECURITY_ANOMALY' | 'REGRESSION_ALERT' | 'COST_BUDGET_ALERT' | 'ORCHESTRATION_ROUTING' | 'SHADOW_EXECUTION_COMPLETE' | 'JURISDICTION_RESOLVED' | 'JURISDICTION_SCOPE_VIOLATION';
   component: string;
   metadata: {
     model?: string;
@@ -424,6 +487,7 @@ interface AuditLogEntry {
     securityContext?: string;
     orchestrationRole?: string;
     shadowModels?: string[];
+    jurisdictionId?: string;
   };
 }
 
@@ -527,6 +591,16 @@ class InferenceEngine {
     const promptHash = await computeIntegrityHash(promptString);
     const schema = params.schemaKey ? SchemaRegistry[params.schemaKey] : null;
 
+    // --- JURISDICTION: Context Resolution ---
+    const activeJurisdictionId = JurisdictionResolver.resolve();
+    AuditLogger.record({
+      requestId,
+      timestamp: new Date().toISOString(),
+      eventType: 'JURISDICTION_RESOLVED',
+      component: 'JurisdictionResolver',
+      metadata: { jurisdictionId: activeJurisdictionId }
+    });
+
     // --- ORCHESTRATION: Model Resolution & Routing ---
     const resolvedModel = ModelOrchestrator.resolveActiveModel(params.model);
     const shadowModels = ModelOrchestrator.getShadowModels(resolvedModel.id);
@@ -577,7 +651,8 @@ class InferenceEngine {
         modelVersion: resolvedModel.version,
         modelHash: resolvedModel.hash,
         promptHash, 
-        schemaKey: params.schemaKey 
+        schemaKey: params.schemaKey,
+        jurisdictionId: activeJurisdictionId
       }
     });
 
@@ -592,7 +667,6 @@ class InferenceEngine {
       throw new Error("Security Validation Failed: Unauthorized prompt pattern detected.");
     }
 
-    // FIRE SHADOW EXECUTIONS (Non-blocking)
     shadowModels.forEach(shadowId => {
        ModelOrchestrator.executeShadow(requestId, shadowId, params.contents, params.config);
     });
@@ -609,6 +683,9 @@ class InferenceEngine {
       const responseText = response.text || "";
       const responseHash = await computeIntegrityHash(responseText);
       const latency = Math.round(endTime - startTime);
+
+      // --- JURISDICTION: Guardrail Observation (Passive) ---
+      JurisdictionGuardrail.observe(requestId, activeJurisdictionId, responseText);
 
       // --- COST OPTIMIZATION: FinOps Usage Tracking ---
       const tokensIn = response.usageMetadata?.promptTokenCount || 0;
@@ -648,7 +725,7 @@ class InferenceEngine {
         metadata: { schemaKey: params.schemaKey }
       });
 
-      // HITL GOVERNANCE LAYER (Asynchronous Trigger)
+      // HITL GOVERNANCE LAYER
       const hitlReason = HITLTriggerEngine.evaluate({
         status: validationStatus,
         driftScore,
@@ -690,7 +767,8 @@ class InferenceEngine {
           latencyMs: latency,
           tokensIn,
           tokensOut,
-          estimatedCost
+          estimatedCost,
+          jurisdictionId: activeJurisdictionId
         }
       });
 
