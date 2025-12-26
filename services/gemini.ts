@@ -26,14 +26,51 @@ async function computeIntegrityHash(content: string): Promise<string> {
 }
 
 /**
+ * INTERNAL ARCHITECTURAL LAYER: Output Schema Registry
+ * Defines structural requirements based on existing application output patterns.
+ */
+const SchemaRegistry: Record<string, { requiredPatterns?: RegExp[], validator?: (text: string) => boolean }> = {
+  'GENERAL_LEGAL_HTML': {
+    requiredPatterns: [/<h[3-4]>/i, /<p>/i]
+  },
+  'JD_MODULE_HTML': {
+    requiredPatterns: [
+      /<h1>/i, 
+      /<h3>SYLLABUS OVERVIEW/i, 
+      /<h3>I\. BLACK-LETTER LAW/i, 
+      /<h3>II\. JURISPRUDENTIAL EVOLUTION/i, 
+      /<h3>III\. PRACTICAL APPLICATION/i
+    ]
+  },
+  'LEGAL_NEWS_LIST': {
+    requiredPatterns: [/<li>/i]
+  },
+  'JSON_ARRAY': {
+    validator: (text: string) => {
+      try {
+        const parsed = JSON.parse(text);
+        return Array.isArray(parsed);
+      } catch { return false; }
+    }
+  },
+  'MOCK_BAR_QUESTION': {
+    validator: (text: string) => {
+      try {
+        const parsed = JSON.parse(text);
+        return !!(parsed.question && parsed.explanation && typeof parsed.correctAnswerIndex === 'number');
+      } catch { return false; }
+    }
+  }
+};
+
+/**
  * INTERNAL ARCHITECTURAL LAYER: Logging & Audit Trail
  * Records all AI-related events for traceability and compliance.
- * Append-only and observational.
  */
 interface AuditLogEntry {
   requestId: string;
   timestamp: string;
-  eventType: 'INFERENCE_START' | 'INFERENCE_COMPLETE' | 'INFERENCE_ERROR' | 'VALIDATION_FAILURE';
+  eventType: 'INFERENCE_START' | 'INFERENCE_COMPLETE' | 'INFERENCE_ERROR' | 'VALIDATION_FAILURE' | 'SCHEMA_VALIDATION_PASS' | 'SCHEMA_VALIDATION_FAIL';
   component: string;
   metadata: {
     model?: string;
@@ -44,17 +81,15 @@ interface AuditLogEntry {
     tokensOut?: number;
     status?: string;
     errorType?: string;
+    schemaKey?: string;
   };
 }
 
-// Internal immutable-style sink (simulating backend secure log storage)
 const AUDIT_SINK: AuditLogEntry[] = [];
 
 const AuditLogger = {
   record: (entry: AuditLogEntry) => {
-    // Append-only recording
     AUDIT_SINK.push(Object.freeze(entry));
-    // In a production backend environment, this would be dispatched to a secure log aggregator (e.g., Cloud Logging)
   }
 };
 
@@ -63,7 +98,7 @@ const AuditLogger = {
  * Blocks unauthorized prompt patterns without modifying the source text.
  */
 const ValidationGate = {
-  validate: (contents: any): boolean => {
+  validateInput: (contents: any): boolean => {
     const textToInpect = JSON.stringify(contents).toLowerCase();
     const forbiddenPatterns = [
       /ignore (all )?previous instructions/i,
@@ -74,8 +109,22 @@ const ValidationGate = {
       /bypass guardrails/i,
       /forget (your )?rules/i
     ];
-    
     return !forbiddenPatterns.some(pattern => pattern.test(textToInpect));
+  },
+
+  validateOutput: (text: string, schemaKey?: string): boolean => {
+    if (!schemaKey || !SchemaRegistry[schemaKey]) return true;
+    const schema = SchemaRegistry[schemaKey];
+    
+    if (schema.validator) {
+      return schema.validator(text);
+    }
+    
+    if (schema.requiredPatterns) {
+      return schema.requiredPatterns.every(pattern => pattern.test(text));
+    }
+    
+    return true;
   }
 };
 
@@ -91,7 +140,8 @@ class InferenceEngine {
   static async infer(params: {
     model: string,
     contents: any,
-    config?: any
+    config?: any,
+    schemaKey?: string
   }): Promise<string> {
     const requestId = RequestCorrelator.generateId();
     const startTime = performance.now();
@@ -103,11 +153,11 @@ class InferenceEngine {
       timestamp: new Date().toISOString(),
       eventType: 'INFERENCE_START',
       component: 'InferenceEngine',
-      metadata: { model: params.model, promptHash }
+      metadata: { model: params.model, promptHash, schemaKey: params.schemaKey }
     });
 
     // Prompt Validation Gate
-    if (!ValidationGate.validate(params.contents)) {
+    if (!ValidationGate.validateInput(params.contents)) {
       AuditLogger.record({
         requestId,
         timestamp: new Date().toISOString(),
@@ -129,6 +179,26 @@ class InferenceEngine {
       const endTime = performance.now();
       const responseText = response.text || "";
       const responseHash = await computeIntegrityHash(responseText);
+
+      // Output Schema Enforcement
+      if (!ValidationGate.validateOutput(responseText, params.schemaKey)) {
+        AuditLogger.record({
+          requestId,
+          timestamp: new Date().toISOString(),
+          eventType: 'SCHEMA_VALIDATION_FAIL',
+          component: 'ValidationGate',
+          metadata: { status: 'INVALID_STRUCTURE', schemaKey: params.schemaKey }
+        });
+        throw new Error(`Output Validation Failed: Response does not conform to required schema (${params.schemaKey}).`);
+      }
+
+      AuditLogger.record({
+        requestId,
+        timestamp: new Date().toISOString(),
+        eventType: 'SCHEMA_VALIDATION_PASS',
+        component: 'ValidationGate',
+        metadata: { schemaKey: params.schemaKey }
+      });
 
       AuditLogger.record({
         requestId,
@@ -203,11 +273,12 @@ Your task is to transform ALL generated legal content—codals, jurisprudence, c
 * Use <table> for comparisons.
 `;
 
-export const generateGeneralLegalAdvice = async (prompt: string): Promise<string> => {
+export const generateGeneralLegalAdvice = async (prompt: string, schemaKey: string = 'GENERAL_LEGAL_HTML'): Promise<string> => {
   return withInferenceSafety(async () => {
     return await InferenceEngine.infer({
       model: 'gemini-3-pro-preview', 
       contents: prompt,
+      schemaKey: schemaKey,
       config: {
         systemInstruction: LEGAL_PH_SYSTEM_INSTRUCTION,
         tools: [{ googleSearch: {} }], 
@@ -237,7 +308,7 @@ export const generateJDModuleContent = async (subjectCode: string, subjectTitle:
     
     Output HTML ONLY.
   `;
-  return generateGeneralLegalAdvice(prompt);
+  return generateGeneralLegalAdvice(prompt, 'JD_MODULE_HTML');
 };
 
 export const fetchLegalNews = async (prompt?: string): Promise<string> => {
@@ -246,6 +317,7 @@ export const fetchLegalNews = async (prompt?: string): Promise<string> => {
     return await InferenceEngine.infer({
       model: 'gemini-3-pro-preview',
       contents: prompt || defaultPrompt,
+      schemaKey: 'LEGAL_NEWS_LIST',
       config: {
         systemInstruction: "You are a legal news aggregator. Output only the <li> items. No <ul> tags.",
         tools: [{ googleSearch: {} }],
@@ -264,6 +336,7 @@ export const getCaseSuggestions = async (query: string): Promise<string[]> => {
     const response = await InferenceEngine.infer({
       model: 'gemini-3-flash-preview',
       contents: `5 cases containing "${query}". JSON array only.`,
+      schemaKey: 'JSON_ARRAY',
       config: { responseMimeType: 'application/json' }
     });
     return response ? JSON.parse(response) : [];
@@ -296,6 +369,7 @@ export const generateMockBarQuestion = async (subject: string, profile: string, 
     const response = await InferenceEngine.infer({
       model: 'gemini-3-pro-preview',
       contents: prompt,
+      schemaKey: 'MOCK_BAR_QUESTION',
       config: { 
         responseMimeType: "application/json",
         responseSchema: {
