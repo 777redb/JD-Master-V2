@@ -33,7 +33,9 @@ import {
   BookOpen,
   SplitSquareVertical,
   MousePointer2,
-  Pen
+  Pen,
+  PlusCircle,
+  Plus
 } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
 
@@ -65,14 +67,6 @@ const PAPER_TEMPLATES: { id: PaperStyle; name: string; desc: string }[] = [
   { id: 'dot-grid', name: 'Dot Grid', desc: 'Flexible Bulleting' },
   { id: 'graph', name: 'Graph Paper', desc: 'Precision Charting' },
   { id: 'blank', name: 'Clean Slate', desc: 'No Distractions' },
-];
-
-const COLORS = [
-  { name: 'Pure White', class: 'bg-white' },
-  { name: 'Legal Yellow', class: 'bg-amber-50' },
-  { name: 'Soft Blue', class: 'bg-blue-50' },
-  { name: 'Pale Green', class: 'bg-emerald-50' },
-  { name: 'Lavender', class: 'bg-purple-50' },
 ];
 
 const DEFAULT_NOTE: Note = {
@@ -110,19 +104,16 @@ export const LegalPad: React.FC = () => {
 
   const [activeNoteId, setActiveNoteId] = useState<string | null>(notebooks[0]?.notes[0]?.id || null);
   const [activeNotebookId, setActiveNotebookId] = useState<string | null>(notebooks[0]?.id || null);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [searchTerm, setSearchTerm] = useState('');
   const [isDeleteMode, setIsDeleteMode] = useState(false);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [timerSeconds, setTimerSeconds] = useState(0);
   const [aiLoading, setAiLoading] = useState(false);
 
-  // Sync to localStorage
   useEffect(() => {
     localStorage.setItem('legalph_notebooks', JSON.stringify(notebooks));
   }, [notebooks]);
 
-  // Billable Timer logic
   useEffect(() => {
     let interval: any;
     if (isTimerRunning) {
@@ -173,8 +164,7 @@ export const LegalPad: React.FC = () => {
     return notebooks.map(nb => {
       const filteredNotes = nb.notes.filter(n => 
         n.title.toLowerCase().includes(term) || 
-        n.content.toLowerCase().includes(term) ||
-        n.tags.some(t => t.toLowerCase().includes(term))
+        n.content.toLowerCase().includes(term)
       );
       if (nb.name.toLowerCase().includes(term) || filteredNotes.length > 0) {
         return { ...nb, notes: filteredNotes, isExpanded: true };
@@ -256,8 +246,12 @@ export const LegalPad: React.FC = () => {
            <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-black text-slate-800 tracking-tight">Workspace</h2>
               <div className="flex gap-1">
-                 <button onClick={createNotebook} className="p-1.5 hover:bg-slate-100 rounded text-slate-500" title="New Notebook / Folder"><FolderPlus size={18}/></button>
-                 <button onClick={createNote} disabled={!activeNotebookId} className="p-1.5 hover:bg-slate-100 rounded text-amber-600 disabled:opacity-30" title="New Page / Memo"><FilePlus size={18}/></button>
+                 <button onClick={createNotebook} className="p-1.5 hover:bg-slate-100 rounded text-slate-500 transition-colors" title="New Notebook / Folder">
+                    <FolderPlus size={20} />
+                 </button>
+                 <button onClick={createNote} disabled={!activeNotebookId} className="p-1.5 hover:bg-slate-100 rounded text-amber-600 disabled:opacity-30 transition-colors" title="New Memo / Page">
+                    <FilePlus size={20} />
+                 </button>
               </div>
            </div>
            <div className="relative">
@@ -289,40 +283,30 @@ export const LegalPad: React.FC = () => {
            <div>
               <div className="flex items-center justify-between px-2 mb-2">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Notebooks</span>
-                <button onClick={createNotebook} className="text-slate-400 hover:text-amber-600 transition-colors">
-                  <PlusSquareVertical size={12} />
+                <button onClick={createNotebook} className="p-1 hover:bg-slate-50 rounded text-slate-400 hover:text-amber-600 transition-colors" title="Add New Notebook">
+                  <Plus size={14} />
                 </button>
               </div>
               
               {filteredNotebooks.map((nb) => (
                 <div key={nb.id} className="mb-1 group">
                    <div 
-                     className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-bold transition-all cursor-pointer ${activeNotebookId === nb.id ? 'bg-amber-50 text-amber-900' : 'text-slate-600 hover:bg-slate-50'}`}
+                     className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-bold transition-all cursor-pointer ${activeNotebookId === nb.id ? 'bg-amber-50 text-amber-900 shadow-sm' : 'text-slate-600 hover:bg-slate-50'}`}
                      onClick={() => setActiveNotebookId(nb.id)}
                    >
                      <div className="flex items-center gap-2 truncate">
                         {activeNotebookId === nb.id ? <BookOpen size={16}/> : <FileText size={16} className="opacity-40" />}
                         <span className="truncate">{nb.name}</span>
                      </div>
-                     <div className="flex items-center gap-1.5">
-                        {isDeleteMode ? (
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); deleteNotebook(nb.id); }}
-                            className="p-1 text-red-500 hover:bg-red-50 rounded"
-                            title="Delete Notebook"
-                          >
-                            <Trash2 size={12} />
-                          </button>
-                        ) : (
-                          <span className="text-[10px] opacity-40 font-mono group-hover:hidden">{nb.notes.length}</span>
-                        )}
+                     <div className="flex items-center">
                         <button 
                           onClick={(e) => { e.stopPropagation(); deleteNotebook(nb.id); }}
-                          className="hidden group-hover:block p-1 text-slate-400 hover:text-red-500 rounded"
+                          className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition-all"
                           title="Delete Notebook"
                         >
                           <Trash2 size={12} />
                         </button>
+                        <span className="group-hover:hidden text-[10px] opacity-40 font-mono ml-1">{nb.notes.length}</span>
                      </div>
                    </div>
                    
@@ -334,16 +318,22 @@ export const LegalPad: React.FC = () => {
                             className={`w-full group/note flex items-center justify-between px-3 py-1.5 rounded-md text-[13px] transition-all cursor-pointer ${activeNoteId === note.id ? 'text-amber-600 font-bold bg-amber-50/50' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
                             onClick={() => setActiveNoteId(note.id)}
                           >
-                             <span className="truncate">{note.title || 'Untitled'}</span>
+                             <span className="truncate">{note.title || 'Untitled Memo'}</span>
                              <button 
                                onClick={(e) => { e.stopPropagation(); deleteNote(nb.id, note.id); }}
-                               className="hidden group-note/hover:block p-1 text-slate-300 hover:text-red-500 rounded"
+                               className="opacity-0 group-note/hover:opacity-100 p-1 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded transition-all"
                                title="Delete Memo"
                              >
                                <X size={10} />
                              </button>
                           </div>
                         ))}
+                        <button 
+                          onClick={createNote}
+                          className="w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-[11px] font-bold text-slate-400 hover:text-amber-600 hover:bg-amber-50/30 transition-all border border-dashed border-transparent hover:border-amber-200"
+                        >
+                           <Plus size={10} /> New Page
+                        </button>
                      </div>
                    )}
                 </div>
@@ -352,9 +342,9 @@ export const LegalPad: React.FC = () => {
         </div>
 
         <div className="p-4 border-t border-slate-50 bg-slate-50/30">
-           <button onClick={() => setIsDeleteMode(!isDeleteMode)} className={`w-full flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all ${isDeleteMode ? 'bg-red-600 text-white' : 'text-slate-400 hover:text-slate-600'}`}>
+           <button onClick={() => setIsDeleteMode(!isDeleteMode)} className={`w-full flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all ${isDeleteMode ? 'bg-red-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}>
               <Trash2 size={14} />
-              {isDeleteMode ? 'Exit Selection Mode' : 'Manage Items'}
+              {isDeleteMode ? 'Exit Selection Mode' : 'Manage Workspace'}
            </button>
         </div>
       </div>
@@ -428,7 +418,6 @@ export const LegalPad: React.FC = () => {
                <div className={`
                  w-full max-w-[8.5in] min-h-[11in] shadow-2xl rounded-sm transition-all duration-500 relative flex flex-col
                  ${activeNote.paperStyle === 'yellow-legal' ? 'bg-[#fffae0]' : 'bg-white'}
-                 ${activeNote.paperStyle === 'cornell' ? 'paper-cornell' : ''}
                `}>
                   {/* CSS Patterns for paper styles */}
                   <style>{`
@@ -508,14 +497,6 @@ export const LegalPad: React.FC = () => {
     </div>
   );
 };
-
-// Utility components/icons for new features
-const PlusSquareVertical = ({ size, className }: { size: number; className?: string }) => (
-  <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect width="18" height="18" x="3" y="3" rx="2" />
-    <path d="M12 8v8" /><path d="M8 12h8" />
-  </svg>
-);
 
 const Loader2 = ({ className, size }: { className?: string; size?: number }) => (
   <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
