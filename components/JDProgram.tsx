@@ -5,7 +5,6 @@ import { JDSubject } from '../types';
 import { generateJDModuleContent } from '../services/gemini';
 import { 
   GraduationCap, 
-  BookOpen, 
   CheckCircle2, 
   ChevronRight, 
   Loader2, 
@@ -18,10 +17,8 @@ import {
   ArrowLeft,
   Bookmark,
   BookmarkCheck,
-  FileDown,
-  Share2,
   PlusSquare,
-  Copy,
+  Share2,
   Printer,
   Check
 } from 'lucide-react';
@@ -44,7 +41,6 @@ export const JDProgram: React.FC = () => {
   const [bookmarkedSubjects, setBookmarkedSubjects] = useState<Set<string>>(new Set());
   const [showCopyFeedback, setShowCopyFeedback] = useState(false);
   
-  // Reader Settings
   const [theme, setTheme] = useState<Theme>('light');
   const [zoomLevel, setZoomLevel] = useState(100);
   const [fontFamily, setFontFamily] = useState<LegalFont>('font-crimson');
@@ -70,7 +66,7 @@ export const JDProgram: React.FC = () => {
       const content = await generateJDModuleContent(subject.code, subject.title);
       setModuleContent(content);
     } catch (e) {
-      setModuleContent("<p>Error loading module.</p>");
+      setModuleContent("<p>Error loading module. Please check your connection or retry.</p>");
     } finally {
       setIsLoading(false);
     }
@@ -92,9 +88,7 @@ export const JDProgram: React.FC = () => {
     localStorage.setItem('legalph_jd_bookmarks', JSON.stringify(Array.from(next)));
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
+  const handlePrint = () => window.print();
 
   const handleShare = async () => {
     if (!activeSubject) return;
@@ -118,40 +112,32 @@ export const JDProgram: React.FC = () => {
 
   const saveToLegalPad = () => {
     if (!activeSubject || !moduleContent) return;
-    
-    const savedFolders = localStorage.getItem('legalph_folders');
-    let folders = savedFolders ? JSON.parse(savedFolders) : [];
-    
-    // Find or create "JD Program Research" folder
-    let jdFolder = folders.find((f: any) => f.name === "JD Program Research");
-    if (!jdFolder) {
-      jdFolder = {
-        id: 'jd_research_' + Date.now(),
-        name: 'JD Program Research',
-        notes: [],
-        isExpanded: true
-      };
-      folders.push(jdFolder);
+    const savedNotebooks = localStorage.getItem('legalph_notebooks');
+    let notebooks = savedNotebooks ? JSON.parse(savedNotebooks) : [];
+    let jdNotebook = notebooks.find((n: any) => n.name === "JD Program Research");
+    if (!jdNotebook) {
+      jdNotebook = { id: 'jd_research_' + Date.now(), name: 'JD Program Research', notes: [], isExpanded: true };
+      notebooks.push(jdNotebook);
     }
-
     const newNote = {
       id: Date.now().toString(),
       title: `${activeSubject.code}: ${activeSubject.title}`,
       content: moduleContent,
       updatedAt: Date.now(),
       tags: ['JD Program', activeSubject.code],
-      color: 'bg-amber-50'
+      color: 'bg-amber-50',
+      isFavorite: false,
+      paperStyle: 'yellow-legal',
+      billableMinutes: 0
     };
-
-    jdFolder.notes.unshift(newNote);
-    localStorage.setItem('legalph_folders', JSON.stringify(folders));
-    alert(`"${activeSubject.title}" has been added to your Legal Pad under "JD Program Research".`);
+    jdNotebook.notes.unshift(newNote);
+    localStorage.setItem('legalph_notebooks', JSON.stringify(notebooks));
+    alert(`"${activeSubject.title}" has been added to your Legal Pad.`);
   };
 
   if (activeSubject) {
     return (
-      <div className={`h-full flex flex-col ${currentTheme.bg} transition-colors duration-300`}>
-        {/* Dynamic Reader CSS */}
+      <div className={`h-full w-full flex flex-col ${currentTheme.bg} transition-colors duration-300 overflow-hidden`}>
         <style>{`
           @media print {
             .no-print { display: none !important; }
@@ -168,9 +154,9 @@ export const JDProgram: React.FC = () => {
           .book-content li { margin-bottom: 0.5rem; text-indent: 0; }
         `}</style>
 
-        {/* Header/Controls */}
-        <div className={`p-4 border-b flex flex-wrap items-center justify-between ${currentTheme.ui} z-20 shadow-sm no-print`}>
-          <div className="flex items-center gap-4 mb-2 sm:mb-0">
+        {/* EDGE-TO-EDGE HEADER */}
+        <div className={`w-full px-6 py-4 border-b flex flex-wrap items-center justify-between shrink-0 ${currentTheme.ui} z-20 shadow-sm no-print`}>
+          <div className="flex items-center gap-4">
             <button onClick={() => setActiveSubject(null)} className="flex items-center gap-2 text-sm font-bold hover:text-amber-600 transition-colors">
               <ArrowLeft size={18} /> Exit
             </button>
@@ -182,34 +168,17 @@ export const JDProgram: React.FC = () => {
           </div>
           
           <div className="flex items-center gap-2">
-            {/* Integrated Legal Actions */}
             <div className="flex bg-slate-100 p-1 rounded-lg mr-2">
-              <button 
-                onClick={() => toggleBookmark(activeSubject.code)} 
-                className={`p-2 rounded-md transition-all ${bookmarkedSubjects.has(activeSubject.code) ? 'bg-amber-500 text-white shadow-sm' : 'text-slate-500 hover:bg-white'}`}
-                title="Bookmark Module"
-              >
+              <button onClick={() => toggleBookmark(activeSubject.code)} className={`p-2 rounded-md transition-all ${bookmarkedSubjects.has(activeSubject.code) ? 'bg-amber-500 text-white shadow-sm' : 'text-slate-500 hover:bg-white'}`} title="Bookmark Module">
                 {bookmarkedSubjects.has(activeSubject.code) ? <BookmarkCheck size={18} /> : <Bookmark size={18} />}
               </button>
-              <button 
-                onClick={handlePrint} 
-                className="p-2 rounded-md text-slate-500 hover:bg-white transition-all"
-                title="Download as PDF / Print"
-              >
+              <button onClick={handlePrint} className="p-2 rounded-md text-slate-500 hover:bg-white transition-all" title="Print">
                 <Printer size={18} />
               </button>
-              <button 
-                onClick={saveToLegalPad} 
-                className="p-2 rounded-md text-slate-500 hover:bg-white transition-all"
-                title="Add to Legal Pad"
-              >
+              <button onClick={saveToLegalPad} className="p-2 rounded-md text-slate-500 hover:bg-white transition-all" title="Add to Legal Pad">
                 <PlusSquare size={18} />
               </button>
-              <button 
-                onClick={handleShare} 
-                className="p-2 rounded-md text-slate-500 hover:bg-white transition-all relative"
-                title="Share Research"
-              >
+              <button onClick={handleShare} className="p-2 rounded-md text-slate-500 hover:bg-white transition-all relative" title="Share">
                 {showCopyFeedback ? <Check size={18} className="text-green-600" /> : <Share2 size={18} />}
               </button>
             </div>
@@ -256,8 +225,8 @@ export const JDProgram: React.FC = () => {
           </div>
         </div>
 
-        {/* Content Area */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-12 scroll-smooth">
+        {/* FULL-WIDTH SCROLLABLE AREA */}
+        <div className="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth">
           {isLoading ? (
             <div className="h-full flex flex-col items-center justify-center opacity-70">
               <Loader2 className="animate-spin text-amber-600 mb-6" size={64} />
@@ -266,7 +235,7 @@ export const JDProgram: React.FC = () => {
             </div>
           ) : moduleContent ? (
             <div 
-              className={`max-w-[8.5in] mx-auto min-h-[11in] ${currentTheme.pageBg} ${currentTheme.text} ${fontFamily} shadow-2xl py-20 px-12 md:px-16 book-content transition-all rounded-sm`}
+              className={`max-w-6xl mx-auto min-h-[11in] ${currentTheme.pageBg} ${currentTheme.text} ${fontFamily} shadow-2xl py-16 px-8 md:px-24 book-content transition-all rounded-sm`}
               style={{ fontSize: `${effectiveFontSize}px` }}
               dangerouslySetInnerHTML={{ __html: moduleContent }}
             />
@@ -277,93 +246,82 @@ export const JDProgram: React.FC = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto h-full flex flex-col animate-in fade-in duration-500">
-      <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div>
-          <h2 className="text-3xl font-serif font-bold text-slate-900 flex items-center gap-3">
-            <GraduationCap className="text-amber-600" size={32} />
-            Integrated JD Program
-          </h2>
-          <p className="text-slate-500 mt-2 max-w-2xl leading-relaxed">The Optimized Study Guide: Synthesizing the core strengths of UP (Policy), Ateneo (Practice), and San Beda (Discipline) Law Traditions.</p>
-        </div>
-        <div className="text-right bg-white p-4 rounded-2xl border border-slate-200 shadow-sm min-w-[200px]">
-           <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Curriculum Mastery</div>
-           <div className="flex items-center gap-3">
-              <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-amber-600 transition-all duration-1000" 
-                  style={{ width: `${(completedSubjects.size / 40) * 100}%` }}
-                />
-              </div>
-              <span className="font-mono font-bold text-sm text-amber-700 whitespace-nowrap">{completedSubjects.size}/40</span>
-           </div>
-           <p className="text-[9px] text-slate-400 mt-2 font-medium italic">Based on CLEPP-aligned subjects</p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 pb-16">
-        {JD_CURRICULUM.map(year => (
-          <div key={year.year} className="space-y-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-slate-900 text-white flex items-center justify-center font-bold text-xl shadow-lg">
-                {year.year}
-              </div>
-              <div>
-                <h3 className="text-xl font-serif font-bold text-slate-800">
-                  {year.year === 1 ? 'Year I: Foundations' : year.year === 2 ? 'Year II: Procedural Mastery' : year.year === 3 ? 'Year III: Integration' : 'Year IV: Bar Review & Practice'}
-                </h3>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Year Level Progress</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-6">
-              {year.semesters.map(sem => (
-                <div key={sem.name} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden group hover:border-amber-200 transition-colors">
-                  <div className="bg-slate-50/80 px-5 py-3 border-b flex justify-between items-center">
-                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{sem.name}</span>
-                  </div>
-                  <div className="p-3 grid grid-cols-1 gap-2">
-                    {sem.subjects.map(sub => (
-                      <button
-                        key={sub.code}
-                        onClick={() => handleSubjectClick(sub)}
-                        className={`group p-4 text-left rounded-xl transition-all border relative overflow-hidden ${
-                          completedSubjects.has(sub.code) 
-                          ? 'bg-green-50/50 border-green-100 hover:bg-green-50' 
-                          : 'bg-white hover:bg-amber-50/50 hover:border-amber-200 border-slate-100'
-                        }`}
-                      >
-                        <div className="flex justify-between items-start mb-2 relative z-10">
-                          <div className="flex items-center gap-2">
-                            <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${completedSubjects.has(sub.code) ? 'bg-green-200 text-green-800' : 'bg-slate-100 text-slate-500'}`}>
-                              {sub.code}
-                            </span>
-                            {bookmarkedSubjects.has(sub.code) && <Bookmark className="text-amber-500 fill-amber-500" size={12} />}
-                          </div>
-                          <span className="text-[10px] font-black text-slate-300 uppercase tracking-tighter">{sub.units} Units</span>
-                        </div>
-                        <h4 className={`text-[15px] font-serif font-bold leading-tight relative z-10 ${completedSubjects.has(sub.code) ? 'text-green-900' : 'text-slate-800 group-hover:text-amber-800'}`}>
-                          {sub.title}
-                        </h4>
-                        <div className="mt-3 flex items-center justify-between relative z-10">
-                           <span className={`text-[10px] font-bold uppercase tracking-wide flex items-center gap-1.5 transition-colors ${completedSubjects.has(sub.code) ? 'text-green-600' : 'text-slate-400 group-hover:text-amber-600'}`}>
-                              {completedSubjects.has(sub.code) ? <><CheckCircle2 size={12}/> Syllabus Mastered</> : <><Bookmark size={12}/> Access Modules</>}
-                           </span>
-                           <ChevronRight size={14} className={`transition-transform duration-300 ${completedSubjects.has(sub.code) ? 'text-green-400' : 'text-slate-300 group-hover:text-amber-500 group-hover:translate-x-1'}`} />
-                        </div>
-                        
-                        {/* Background Decor */}
-                        <div className="absolute -bottom-4 -right-4 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity">
-                           <GraduationCap size={80} />
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
+    <div className="flex-1 overflow-y-auto px-4 py-8 md:px-8 lg:px-12 animate-in fade-in duration-500">
+      <div className="max-w-7xl mx-auto h-full flex flex-col">
+        <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div>
+            <h2 className="text-3xl font-serif font-bold text-slate-900 flex items-center gap-3">
+              <GraduationCap className="text-amber-600" size={32} />
+              Integrated JD Program
+            </h2>
+            <p className="text-slate-500 mt-2 max-w-2xl leading-relaxed">The Optimized Study Guide: Synthesizing the core strengths of UP (Policy), Ateneo (Practice), and San Beda (Discipline) Law Traditions.</p>
           </div>
-        ))}
+          <div className="text-right bg-white p-4 rounded-2xl border border-slate-200 shadow-sm min-w-[200px]">
+             <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Curriculum Mastery</div>
+             <div className="flex items-center gap-3">
+                <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div className="h-full bg-amber-600 transition-all duration-1000" style={{ width: `${(completedSubjects.size / 40) * 100}%` }} />
+                </div>
+                <span className="font-mono font-bold text-sm text-amber-700 whitespace-nowrap">{completedSubjects.size}/40</span>
+             </div>
+             <p className="text-[9px] text-slate-400 mt-2 font-medium italic">Based on CLEPP-aligned subjects</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 pb-16">
+          {JD_CURRICULUM.map(year => (
+            <div key={year.year} className="space-y-6">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-slate-900 text-white flex items-center justify-center font-bold text-xl shadow-lg">
+                  {year.year}
+                </div>
+                <div>
+                  <h3 className="text-xl font-serif font-bold text-slate-800">
+                    {year.year === 1 ? 'Year I: Foundations' : year.year === 2 ? 'Year II: Procedural Mastery' : year.year === 3 ? 'Year III: Integration' : 'Year IV: Bar Review & Practice'}
+                  </h3>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Year Level Progress</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-6">
+                {year.semesters.map(sem => (
+                  <div key={sem.name} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden group hover:border-amber-200 transition-colors">
+                    <div className="bg-slate-50/80 px-5 py-3 border-b flex justify-between items-center">
+                      <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{sem.name}</span>
+                    </div>
+                    <div className="p-3 grid grid-cols-1 gap-2">
+                      {sem.subjects.map(sub => (
+                        <button key={sub.code} onClick={() => handleSubjectClick(sub)} className={`group p-4 text-left rounded-xl transition-all border relative overflow-hidden ${completedSubjects.has(sub.code) ? 'bg-green-50/50 border-green-100 hover:bg-green-50' : 'bg-white hover:bg-amber-50/50 hover:border-amber-200 border-slate-100'}`}>
+                          <div className="flex justify-between items-start mb-2 relative z-10">
+                            <div className="flex items-center gap-2">
+                              <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${completedSubjects.has(sub.code) ? 'bg-green-200 text-green-800' : 'bg-slate-100 text-slate-500'}`}>
+                                {sub.code}
+                              </span>
+                              {bookmarkedSubjects.has(sub.code) && <Bookmark className="text-amber-500 fill-amber-500" size={12} />}
+                            </div>
+                            <span className="text-[10px] font-black text-slate-300 uppercase tracking-tighter">{sub.units} Units</span>
+                          </div>
+                          <h4 className={`text-[15px] font-serif font-bold leading-tight relative z-10 ${completedSubjects.has(sub.code) ? 'text-green-900' : 'text-slate-800 group-hover:text-amber-800'}`}>
+                            {sub.title}
+                          </h4>
+                          <div className="mt-3 flex items-center justify-between relative z-10">
+                             <span className={`text-[10px] font-bold uppercase tracking-wide flex items-center gap-1.5 transition-colors ${completedSubjects.has(sub.code) ? 'text-green-600' : 'text-slate-400 group-hover:text-amber-600'}`}>
+                                {completedSubjects.has(sub.code) ? <><CheckCircle2 size={12}/> Syllabus Mastered</> : <><Bookmark size={12}/> Access Modules</>}
+                             </span>
+                             <ChevronRight size={14} className={`transition-transform duration-300 ${completedSubjects.has(sub.code) ? 'text-green-400' : 'text-slate-300 group-hover:text-amber-500 group-hover:translate-x-1'}`} />
+                          </div>
+                          <div className="absolute -bottom-4 -right-4 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity">
+                             <GraduationCap size={80} />
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

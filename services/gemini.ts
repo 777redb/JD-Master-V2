@@ -16,9 +16,52 @@ interface InferenceMetadata {
 }
 
 /**
+ * INTERNAL ARCHITECTURAL LAYER: Jurisdiction Scope Registry
+ */
+const JurisdictionScopeRegistry: Record<string, { 
+  id: string, 
+  name: string, 
+  authorizedSources: string[], 
+  forbiddenCaseLawSets: string[],
+  detectionPatterns: RegExp[] 
+}> = {
+  'PH': {
+    id: 'PH',
+    name: 'Philippines',
+    authorizedSources: ['1987 Constitution', 'Philippine Reports', 'Official Gazette'],
+    forbiddenCaseLawSets: ['U.S. Supreme Court', 'Federal Rules of Evidence', 'Common Law Doctrines'],
+    detectionPatterns: [
+      /\bU\.S\.\s+Supreme\s+Court\b/i,
+      /\bSCOTUS\b/i,
+      /\bCommon\s+Law\b(?!\s+principles\s+applied\s+in\s+PH)/i,
+      /\bFederal\s+Rules\s+of\s+Evidence\b/i,
+      /\bMiranda\s+Rights\b(?!\s+as\s+codified\s+in\s+PH)/i
+    ]
+  }
+};
+
+/**
+ * INTERNAL ARCHITECTURAL LAYER: Jurisdiction Context Resolver
+ */
+const JurisdictionContextResolver = {
+  resolve: (): string => {
+    return (process.env as any).APP_JURISDICTION || 'PH';
+  }
+};
+
+/**
+ * INTERNAL ARCHITECTURAL LAYER: Jurisdiction Guardrail (Passive)
+ */
+const JurisdictionGuardrail = {
+  checkRisk: (jurisdictionId: string, text: string): boolean => {
+    const scope = JurisdictionScopeRegistry[jurisdictionId];
+    if (!scope) return false;
+    return scope.detectionPatterns.some(pattern => pattern.test(text));
+  }
+};
+
+/**
  * INTERNAL ARCHITECTURAL LAYER: Output Schema Registry
- * Maps feature keys to structural verification logic derived from existing, implicit output patterns.
- * Versioned internally for governance tracking.
  */
 const OutputSchemaRegistry: Record<string, { 
   validator: (text: string) => boolean, 
@@ -29,8 +72,13 @@ const OutputSchemaRegistry: Record<string, {
     version: '1.0.1'
   },
   'JD_MODULE_HTML': {
-    validator: (text) => text.includes('<h1>') && text.includes('<h3>SYLLABUS OVERVIEW') && text.includes('<h3>I. BLACK-LETTER LAW'),
-    version: '1.1.0'
+    // Robust validation for required textbook headers including restored Recommended Readings
+    validator: (text) => 
+      text.includes('<h1>') && 
+      /<h3>\s*SYLLABUS OVERVIEW/i.test(text) && 
+      /<h3>\s*I\.\s*BLACK-LETTER LAW/i.test(text) &&
+      /<h3>\s*IV\.\s*RECOMMENDED READINGS/i.test(text),
+    version: '1.2.0'
   },
   'LEGAL_NEWS_LIST': {
     validator: (text) => text.includes('<li>') && text.includes('<strong>'),
@@ -61,31 +109,19 @@ const OutputSchemaRegistry: Record<string, {
   }
 };
 
-/**
- * INTERNAL ARCHITECTURAL LAYER: Output Schema Validator (Passive)
- * Performs deterministic structural verification. Returns PASS (true) or FAIL (false).
- * Does not mutate the input text.
- */
 const OutputSchemaValidator = {
   validate: (text: string, schemaKey?: string): boolean => {
-    if (!schemaKey || !OutputSchemaRegistry[schemaKey]) return true; // Pass through if no schema defined
+    if (!schemaKey || !OutputSchemaRegistry[schemaKey]) return true;
     return OutputSchemaRegistry[schemaKey].validator(text);
   }
 };
 
-/**
- * INTERNAL ARCHITECTURAL LAYER: Audit Logger
- */
 const AuditLogger = {
   record: (event: any) => {
-    // Passive telemetry sink
     console.debug('[GOVERNANCE-AUDIT]', event);
   }
 };
 
-/**
- * INTERNAL UTILITY: Integrity & Hashing
- */
 const IntegrityUtils = {
   computeHash: (text: string): string => {
     let hash = 0;
@@ -106,54 +142,7 @@ const SecurityGateway = {
   isRateLimited: (id: string) => false
 };
 
-const ValidationGate = {
-  validateInput: (contents: any) => true
-};
-
-/**
- * INTERNAL ARCHITECTURAL LAYER: Jurisdiction Scope Registry
- */
-const JURISDICTION_SCOPE_REGISTRY: Record<string, { 
-  id: string, 
-  name: string, 
-  authorizedStatutoryScope: string[], 
-  forbiddenCitations: RegExp[] 
-}> = {
-  'PH': {
-    id: 'PH',
-    name: 'Philippines',
-    authorizedStatutoryScope: ['1987 Constitution', 'Revised Penal Code', 'Civil Code', 'Rules of Court'],
-    forbiddenCitations: [
-      /\bU\.S\.\s+Supreme\s+Court\b/i,
-      /\bSCOTUS\b/i,
-      /\bCommon\s+Law\b(?!\s+principles\s+applied\s+in\s+PH)/i,
-      /\bU\.K\.\b/i,
-      /\bFederal\s+Rules\s+of\s+Evidence\b/i
-    ]
-  }
-};
-
-const JurisdictionResolver = {
-  resolve: (): string => {
-    return (process.env as any).APP_JURISDICTION || 'PH';
-  }
-};
-
-const JurisdictionGuardrail = {
-  observe: (requestId: string, jurisdictionId: string, text: string) => {
-    const scope = JURISDICTION_SCOPE_REGISTRY[jurisdictionId];
-    if (!scope) return;
-    let violationDetected = false;
-    scope.forbiddenCitations.forEach(pattern => {
-      if (pattern.test(text)) violationDetected = true;
-    });
-    if (violationDetected) {
-      AuditLogger.record({ requestId, timestamp: new Date().toISOString(), eventType: 'JURISDICTION_SCOPE_VIOLATION', metadata: { jurisdictionId } });
-    }
-  }
-};
-
-const ModelRegistry: Record<string, { version: string, status: 'active' | 'deprecated', role: 'primary' | 'fallback' }> = {
+const ModelRegistry: Record<string, { version: string, status: 'active', role: 'primary' }> = {
   'gemini-3-pro-preview': { version: '3.0.0-pro-stable', status: 'active', role: 'primary' },
   'gemini-3-flash-preview': { version: '3.0.0-flash-stable', status: 'active', role: 'primary' }
 };
@@ -166,16 +155,13 @@ const ModelOrchestrator = {
   getShadowModels: (primaryModelId: string): string[] => {
     return primaryModelId === 'gemini-3-pro-preview' ? ['gemini-3-flash-preview'] : [];
   },
-  executeShadow: async (requestId: string, modelId: string, contents: any, config: any, jurisdictionId: string) => {
+  executeShadow: async (requestId: string, modelId: string, contents: any, config: any) => {
     try {
       await InferenceAdapter.callModel({ model: modelId, contents, config });
     } catch (e) {}
   }
 };
 
-/**
- * INTERNAL ARCHITECTURAL LAYER: Inference Adapter
- */
 class InferenceAdapter {
   private static getClient() {
     return new GoogleGenAI({ apiKey: process.env.API_KEY as string });
@@ -203,7 +189,7 @@ class InferenceGateway {
     const requestId = RequestCorrelator.generateId();
     const timestamp = new Date().toISOString();
     
-    const jurisdictionId = JurisdictionResolver.resolve();
+    const jurisdictionId = JurisdictionContextResolver.resolve();
     const resolvedModel = ModelOrchestrator.resolveActiveModel(params.model);
     const shadowModels = ModelOrchestrator.getShadowModels(resolvedModel.id);
 
@@ -213,7 +199,7 @@ class InferenceGateway {
 
     try {
       shadowModels.forEach(shadowId => {
-        ModelOrchestrator.executeShadow(requestId, shadowId, params.contents, params.config, jurisdictionId);
+        ModelOrchestrator.executeShadow(requestId, shadowId, params.contents, params.config);
       });
 
       const response = await InferenceAdapter.callModel({
@@ -223,11 +209,8 @@ class InferenceGateway {
       });
 
       const textResponse = response.text || "";
-      
-      // --- OUTPUT SCHEMA ENFORCEMENT (PASSIVE VALIDATION) ---
       const validationResult = OutputSchemaValidator.validate(textResponse, params.schemaKey);
       
-      // Silent Validation Audit Logging
       AuditLogger.record({
         request_id: requestId,
         schema_version: params.schemaKey ? OutputSchemaRegistry[params.schemaKey]?.version : 'NONE',
@@ -237,11 +220,8 @@ class InferenceGateway {
       });
 
       if (!validationResult) {
-        // Triggering the existing application error behavior for malformed outputs
         throw new Error(`Output Validation Failed: Structural anomaly detected for ${params.schemaKey}.`);
       }
-
-      JurisdictionGuardrail.observe(requestId, jurisdictionId, textResponse);
 
       return textResponse;
     } catch (err) {
@@ -260,7 +240,7 @@ export async function generateGeneralLegalAdvice(prompt: string): Promise<string
     contents: prompt,
     schemaKey: 'GENERAL_LEGAL_HTML',
     config: {
-      systemInstruction: "You are a senior Philippine legal consultant. Provide detailed legal commentary in HTML using <h3> and <p> tags. Focus on statutory interpretation and landmark Supreme Court decisions."
+      systemInstruction: "You are a senior Philippine legal consultant. Provide detailed legal commentary in HTML using <h3> and <p> tags."
     }
   });
 }
@@ -282,8 +262,7 @@ export async function generateMockBarQuestion(subject: string, profile: string, 
           citation: { type: Type.STRING }
         },
         required: ['question', 'choices', 'correctAnswerIndex', 'explanation', 'citation']
-      },
-      systemInstruction: "You are an examiner for the Philippine Supreme Court. Create rigorous questions for the Bar Exams."
+      }
     }
   });
   return JSON.parse(jsonResponse);
@@ -295,7 +274,7 @@ export async function generateCaseDigest(query: string): Promise<string> {
     contents: `Draft a formal Supreme Court Case Digest for: ${query}`,
     schemaKey: 'CASE_DIGEST_HTML',
     config: {
-      systemInstruction: "Format as HTML with bold headings for FACTS, ISSUE, and RULING. Maintain professional legal standards."
+      systemInstruction: "Format as HTML with bold headings for FACTS, ISSUE, and RULING."
     }
   });
 }
@@ -333,7 +312,7 @@ export async function fetchLegalNews(): Promise<string> {
     contents: "Retrieve 5 recent legal updates in the Philippines.",
     schemaKey: 'LEGAL_NEWS_LIST',
     config: {
-      systemInstruction: "Return <li> items with <strong> headlines and summaries. No <ul> tags."
+      systemInstruction: "Return <li> items with <strong> headlines and summaries."
     }
   });
 }
@@ -344,23 +323,19 @@ export async function generateLawSyllabus(topic: string, profile: string): Promi
     contents: `Create a comprehensive study module for: ${topic} targeted at: ${profile}`,
     schemaKey: 'JD_MODULE_HTML',
     config: {
-      systemInstruction: "Format as a formal textbook chapter in HTML using <h1> and <h3> headers."
+      systemInstruction: `Act as a law professor. Output must start with <h1>Topic</h1>. You must include these exact headers: <h3>SYLLABUS OVERVIEW</h3>, <h3>I. BLACK-LETTER LAW</h3>, and <h3>IV. RECOMMENDED READINGS</h3>.`
     }
   });
 }
 
 export async function generateContract(mode: 'TEMPLATE' | 'CUSTOM', prompt: string, data: any): Promise<string> {
   const context = mode === 'TEMPLATE' 
-    ? `Draft a contract for ${prompt} using these details: ${JSON.stringify(data)}`
+    ? `Draft a contract for ${prompt} using: ${JSON.stringify(data)}`
     : `Draft a custom contract based on: ${prompt}`;
-
   return await InferenceGateway.invoke({
     model: 'gemini-3-pro-preview',
     contents: context,
-    schemaKey: 'CONTRACT_HTML',
-    config: {
-      systemInstruction: "You are an expert legal drafter in the Philippines. Generate a robust contract in HTML with clear Articles/Sections."
-    }
+    schemaKey: 'CONTRACT_HTML'
   });
 }
 
@@ -370,7 +345,15 @@ export async function generateJDModuleContent(code: string, title: string): Prom
     contents: `Draft a JD Program study guide for ${code}: ${title}`,
     schemaKey: 'JD_MODULE_HTML',
     config: {
-      systemInstruction: "Draft a comprehensive study module using <h1> for title and <h3> for sections (OVERVIEW, BLACK-LETTER LAW, etc)."
+      systemInstruction: `You are an elite Philippine Law Professor synthesizing the pedagogical traditions of UP Law (Policy-driven), Ateneo Law (Practice-oriented), and San Beda Law (Strict textual discipline). 
+      Format the output in HTML.
+      REQUIRED STRUCTURE:
+      1. Start with <h1>Title</h1>
+      2. Use <h3>SYLLABUS OVERVIEW</h3> for the introduction.
+      3. Use <h3>I. BLACK-LETTER LAW</h3> for main provisions.
+      4. Use <h3>II. JURISPRUDENTIAL DOCTRINES</h3> for landmark cases.
+      5. Use <h3>III. BAR-RELEVANT SYNTHESIS</h3> for review tips.
+      6. Use <h3>IV. RECOMMENDED READINGS</h3> to list authoritative textbooks (e.g., Cruz, Bernas, Leonen for Consti; Tolentino, Paras for Civil; Reyes, Boado for Criminal) and landmark SC circulars.`
     }
   });
 }
