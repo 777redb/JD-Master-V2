@@ -4,7 +4,6 @@ import { MockBarQuestion } from "../types";
 
 /**
  * INTERNAL ARCHITECTURAL LAYER: Internal Metadata Channel
- * Silently records inference lifecycle metrics for platform observability.
  */
 interface InferenceMetadata {
   requestId: string;
@@ -50,7 +49,7 @@ const JurisdictionContextResolver = {
 };
 
 /**
- * INTERNAL ARCHITECTURAL LAYER: Jurisdiction Guardrail (Passive)
+ * INTERNAL ARCHITECTURAL LAYER: Jurisdiction Guardrail
  */
 const JurisdictionGuardrail = {
   checkRisk: (jurisdictionId: string, text: string): boolean => {
@@ -72,7 +71,6 @@ const OutputSchemaRegistry: Record<string, {
     version: '1.0.1'
   },
   'JD_MODULE_HTML': {
-    // Robust validation for required textbook headers including restored Recommended Readings
     validator: (text) => 
       text.includes('<h1>') && 
       /<h3>\s*SYLLABUS OVERVIEW/i.test(text) && 
@@ -176,9 +174,6 @@ class InferenceAdapter {
   }
 }
 
-/**
- * INTERNAL ARCHITECTURAL LAYER: Inference Gateway
- */
 class InferenceGateway {
   static async invoke(params: {
     model: string,
@@ -187,21 +182,9 @@ class InferenceGateway {
     schemaKey?: string
   }): Promise<string> {
     const requestId = RequestCorrelator.generateId();
-    const timestamp = new Date().toISOString();
-    
-    const jurisdictionId = JurisdictionContextResolver.resolve();
     const resolvedModel = ModelOrchestrator.resolveActiveModel(params.model);
-    const shadowModels = ModelOrchestrator.getShadowModels(resolvedModel.id);
-
-    if (SecurityGateway.isRateLimited('default_session')) {
-      throw new Error("Security Policy: Rate limit exceeded.");
-    }
 
     try {
-      shadowModels.forEach(shadowId => {
-        ModelOrchestrator.executeShadow(requestId, shadowId, params.contents, params.config);
-      });
-
       const response = await InferenceAdapter.callModel({
         model: resolvedModel.id,
         contents: params.contents,
@@ -320,10 +303,24 @@ export async function fetchLegalNews(): Promise<string> {
 export async function generateLawSyllabus(topic: string, profile: string): Promise<string> {
   return await InferenceGateway.invoke({
     model: 'gemini-3-pro-preview',
-    contents: `Create a comprehensive study module for: ${topic} targeted at: ${profile}`,
+    contents: `Synthesize a comprehensive book-grade study module for: ${topic}. Targeted at: ${profile}.`,
     schemaKey: 'JD_MODULE_HTML',
     config: {
-      systemInstruction: `Act as a law professor. Output must start with <h1>Topic</h1>. You must include these exact headers: <h3>SYLLABUS OVERVIEW</h3>, <h3>I. BLACK-LETTER LAW</h3>, and <h3>IV. RECOMMENDED READINGS</h3>.`
+      systemInstruction: `Act as an elite Philippine Law Professor and Syllabus Director.
+      Output a definitive legal review module in HTML.
+      
+      REQUIREMENTS:
+      1. Start with <h1>TOPIC TITLE</h1>.
+      2. Use <div class="headnote"><h3>SYLLABUS OVERVIEW</h3><p>...</p></div> for the intro.
+      3. Use <h3>I. BLACK-LETTER LAW</h3> for main provisions. Wrap codal text in <div class="statute-box">...</div>.
+      4. Use <h3>II. JURISPRUDENTIAL DOCTRINES</h3> for landmark cases with bolded Ratio Decidendi.
+      5. Use <h3>III. BAR-RELEVANT SYNTHESIS</h3> for integration tips.
+      6. Use <h3>IV. RECOMMENDED READINGS</h3> to list authoritative textbooks (Cruz, Bernas, Tolentino).
+      
+      TYPOGRAPHY RULES:
+      - Maintain academic tone. 
+      - Use professional legal terminology. 
+      - Ensure clear hierarchical subheadings (h4 for sub-topics).`
     }
   });
 }
@@ -345,7 +342,7 @@ export async function generateJDModuleContent(code: string, title: string): Prom
     contents: `Draft a JD Program study guide for ${code}: ${title}`,
     schemaKey: 'JD_MODULE_HTML',
     config: {
-      systemInstruction: `You are an elite Philippine Law Professor synthesizing the pedagogical traditions of UP Law (Policy-driven), Ateneo Law (Practice-oriented), and San Beda Law (Strict textual discipline). 
+      systemInstruction: `You are an elite Philippine Law Professor.
       Format the output in HTML.
       REQUIRED STRUCTURE:
       1. Start with <h1>Title</h1>
@@ -353,7 +350,7 @@ export async function generateJDModuleContent(code: string, title: string): Prom
       3. Use <h3>I. BLACK-LETTER LAW</h3> for main provisions.
       4. Use <h3>II. JURISPRUDENTIAL DOCTRINES</h3> for landmark cases.
       5. Use <h3>III. BAR-RELEVANT SYNTHESIS</h3> for review tips.
-      6. Use <h3>IV. RECOMMENDED READINGS</h3> to list authoritative textbooks (e.g., Cruz, Bernas, Leonen for Consti; Tolentino, Paras for Civil; Reyes, Boado for Criminal) and landmark SC circulars.`
+      6. Use <h3>IV. RECOMMENDED READINGS</h3> to list authoritative textbooks.`
     }
   });
 }
