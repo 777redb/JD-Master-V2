@@ -375,7 +375,7 @@ export const LegalDoctrines: React.FC = () => {
                 </div>
               )}
 
-              {isLoading && (
+              {isLoading ? (
                   <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/60 z-10 backdrop-blur-md">
                       <div className="relative">
                          <Loader2 className="animate-spin text-blue-800 mb-4" size={64} />

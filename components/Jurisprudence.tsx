@@ -1,9 +1,7 @@
 
 import React, { useState, useRef, useMemo } from 'react';
 import { generateGeneralLegalAdvice } from '../services/gemini';
-// FIX: Changed JURISPRUDENCE_TOPICS to LEGAL_DOCTRINES_ARCHIVE as it is the correct export from constants.
 import { LEGAL_DOCTRINES_ARCHIVE } from '../constants';
-/* FIX: Added AlignLeft and AlignJustify to imports to resolve missing name errors. */
 import { 
   Scale, 
   Search, 
@@ -59,7 +57,6 @@ export const Jurisprudence: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   
   // Navigation State
-  // FIX: Using LEGAL_DOCTRINES_ARCHIVE instead of JURISPRUDENCE_TOPICS.
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>(() => {
     return { [LEGAL_DOCTRINES_ARCHIVE[0].category]: true };
   });
@@ -79,7 +76,6 @@ export const Jurisprudence: React.FC = () => {
   const effectiveFontSize = Math.round(18 * (zoomLevel / 100));
 
   const filteredTopics = useMemo(() => {
-    // FIX: Using LEGAL_DOCTRINES_ARCHIVE and fixed typo JURISPRPRUDENCE_TOPICS.
     if (!sidebarSearch) return LEGAL_DOCTRINES_ARCHIVE;
     const search = sidebarSearch.toLowerCase();
     return LEGAL_DOCTRINES_ARCHIVE.map(cat => ({
@@ -371,7 +367,7 @@ export const Jurisprudence: React.FC = () => {
                        <span className="text-xs font-bold text-slate-700 block mb-3">Paper Theme</span>
                        <div className="grid grid-cols-4 gap-2">
                           {Object.keys(THEMES).map((t) => (
-                             <button key={t} onClick={() => setTheme(t as Theme)} className={`h-8 rounded-lg border-2 ${THEMES[t as Theme].bg} ${theme === t ? 'border-blue-600 ring-2 ring-blue-600' : 'border-slate-200'}`} title={t} />
+                             <button key={t} onClick={() => setTheme(t as Theme)} className={`h-8 rounded-lg border-2 ${THEMES[t as Theme].bg} ${theme === t ? 'border-blue-600 ring-2 ring-blue-600' : 'border-slate-200 hover:border-slate-300'}`} title={t} />
                           ))}
                        </div>
                     </div>
@@ -379,7 +375,7 @@ export const Jurisprudence: React.FC = () => {
                 </div>
               )}
 
-              {isLoading && (
+              {isLoading ? (
                   <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/60 z-10 backdrop-blur-md">
                       <div className="relative">
                          <Loader2 className="animate-spin text-blue-800 mb-4" size={64} />

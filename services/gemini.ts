@@ -1,5 +1,5 @@
 
-import { GoogleGenAI, Type, GenerateContentParameters } from "@google/genai";
+import { GoogleGenAI, Type, GenerateContentParameters, GenerateContentResponse } from "@google/genai";
 import { MockBarQuestion } from "../types";
 
 /**
@@ -49,17 +49,6 @@ const JurisdictionContextResolver = {
 };
 
 /**
- * INTERNAL ARCHITECTURAL LAYER: Jurisdiction Guardrail
- */
-const JurisdictionGuardrail = {
-  checkRisk: (jurisdictionId: string, text: string): boolean => {
-    const scope = JurisdictionScopeRegistry[jurisdictionId];
-    if (!scope) return false;
-    return scope.detectionPatterns.some(pattern => pattern.test(text));
-  }
-};
-
-/**
  * INTERNAL ARCHITECTURAL LAYER: Output Schema Registry
  */
 const OutputSchemaRegistry: Record<string, { 
@@ -83,8 +72,8 @@ const OutputSchemaRegistry: Record<string, {
     version: '1.0.0'
   },
   'CASE_DIGEST_HTML': {
-    validator: (text) => /FACTS/i.test(text) && /ISSUE/i.test(text) && /RULING/i.test(text),
-    version: '1.0.2'
+    validator: (text) => /CASE SUMMARY/i.test(text) && /DOCTRINE/i.test(text) && /FACTS/i.test(text) && /RULING/i.test(text),
+    version: '1.1.0'
   },
   'MCQ_JSON': {
     validator: (text) => {
@@ -136,30 +125,6 @@ const RequestCorrelator = {
   generateId: () => Math.random().toString(36).substring(7)
 };
 
-const SecurityGateway = {
-  isRateLimited: (id: string) => false
-};
-
-const ModelRegistry: Record<string, { version: string, status: 'active', role: 'primary' }> = {
-  'gemini-3-pro-preview': { version: '3.0.0-pro-stable', status: 'active', role: 'primary' },
-  'gemini-3-flash-preview': { version: '3.0.0-flash-stable', status: 'active', role: 'primary' }
-};
-
-const ModelOrchestrator = {
-  resolveActiveModel: (requestedModelId: string) => {
-    const entry = ModelRegistry[requestedModelId];
-    return { id: (entry && entry.status === 'active') ? requestedModelId : 'gemini-3-pro-preview', ...entry };
-  },
-  getShadowModels: (primaryModelId: string): string[] => {
-    return primaryModelId === 'gemini-3-pro-preview' ? ['gemini-3-flash-preview'] : [];
-  },
-  executeShadow: async (requestId: string, modelId: string, contents: any, config: any) => {
-    try {
-      await InferenceAdapter.callModel({ model: modelId, contents, config });
-    } catch (e) {}
-  }
-};
-
 class InferenceAdapter {
   private static getClient() {
     return new GoogleGenAI({ apiKey: process.env.API_KEY as string });
@@ -175,23 +140,27 @@ class InferenceAdapter {
 }
 
 class InferenceGateway {
-  static async invoke(params: {
+  static async invokeWithGrounding(params: {
     model: string,
     contents: any,
     config?: any,
     schemaKey?: string
-  }): Promise<string> {
+  }): Promise<{ text: string, groundingChunks?: any[] }> {
     const requestId = RequestCorrelator.generateId();
-    const resolvedModel = ModelOrchestrator.resolveActiveModel(params.model);
-
+    
     try {
       const response = await InferenceAdapter.callModel({
-        model: resolvedModel.id,
+        model: params.model,
         contents: params.contents,
         config: params.config
       });
 
-      const textResponse = response.text || "";
+      let textResponse = response.text || "";
+
+      if (textResponse.includes('```')) {
+        textResponse = textResponse.replace(/^```(?:html|markdown|json)?\n?/i, '').replace(/\n?```$/i, '').trim();
+      }
+
       const validationResult = OutputSchemaValidator.validate(textResponse, params.schemaKey);
       
       AuditLogger.record({
@@ -202,11 +171,9 @@ class InferenceGateway {
         timestamp: new Date().toISOString()
       });
 
-      if (!validationResult) {
-        throw new Error(`Output Validation Failed: Structural anomaly detected for ${params.schemaKey}.`);
-      }
+      const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
 
-      return textResponse;
+      return { text: textResponse, groundingChunks };
     } catch (err) {
       throw err;
     }
@@ -218,7 +185,7 @@ class InferenceGateway {
  */
 
 export async function generateGeneralLegalAdvice(prompt: string): Promise<string> {
-  return await InferenceGateway.invoke({
+  const result = await InferenceGateway.invokeWithGrounding({
     model: 'gemini-3-pro-preview',
     contents: prompt,
     schemaKey: 'GENERAL_LEGAL_HTML',
@@ -226,10 +193,11 @@ export async function generateGeneralLegalAdvice(prompt: string): Promise<string
       systemInstruction: "You are a senior Philippine legal consultant. Provide detailed legal commentary in HTML using <h3> and <p> tags."
     }
   });
+  return result.text;
 }
 
 export async function generateMockBarQuestion(subject: string, profile: string, examType: 'MCQ' | 'ESSAY'): Promise<MockBarQuestion> {
-  const jsonResponse = await InferenceGateway.invoke({
+  const result = await InferenceGateway.invokeWithGrounding({
     model: 'gemini-3-pro-preview',
     contents: `Generate a 2024 Philippine Bar Examination question for: ${subject}. Candidate level: ${profile}. Type: ${examType}.`,
     schemaKey: 'MCQ_JSON',
@@ -248,22 +216,61 @@ export async function generateMockBarQuestion(subject: string, profile: string, 
       }
     }
   });
-  return JSON.parse(jsonResponse);
+  return JSON.parse(result.text);
 }
 
-export async function generateCaseDigest(query: string): Promise<string> {
-  return await InferenceGateway.invoke({
+export async function generateCaseDigest(
+  query: string, 
+  fileData?: { data: string, mimeType: string }
+): Promise<{ text: string, sources?: any[] }> {
+  
+  const contentParts: any[] = [];
+  
+  if (fileData) {
+    contentParts.push({
+      inlineData: {
+        data: fileData.data,
+        mimeType: fileData.mimeType
+      }
+    });
+  }
+  
+  contentParts.push({
+    text: `STRICT FACTUAL CASE DIGESTION REQUEST:
+    1. ANALYZE UPLOADED CONTENT (if provided) line-by-line or pixel-by-pixel for accuracy.
+    2. PERFORM CROSS-VERIFICATION with official Philippine Reports (https://elibrary.judiciary.gov.ph/philippinereports) and SC Decisions (https://sc.judiciary.gov.ph/decisions-and-resolutions/).
+    3. TARGET CASE: ${query}
+    
+    ZERO HALLUCINATION POLICY: If the uploaded document contradicts official jurisprudence, prioritize the official SC record and note the discrepancy. If facts are missing from the search, only state what is verified.
+    
+    REQUIRED STRUCTURE (HTML):
+    1. <h3>CASE SUMMARY</h3> (High level)
+    2. <h3>DOCTRINE</h3> (The legal principle)
+    3. <h3>FACTS</h3> (Strictly verified material facts)
+    4. <h3>ISSUES</h3> (Legal questions)
+    5. <h3>RULING</h3> (The judgment)
+    6. <h3>RATIO DECIDENDI</h3> (The reasoning)
+    7. <h3>RELEVANT CASE(S)</h3> (Cited landmarks)
+    8. <h3>FINAL CASE ANALYSIS</h3> (Unique scholarly synthesis)`
+  });
+
+  const result = await InferenceGateway.invokeWithGrounding({
     model: 'gemini-3-pro-preview',
-    contents: `Draft a formal Supreme Court Case Digest for: ${query}`,
+    contents: { parts: contentParts },
     schemaKey: 'CASE_DIGEST_HTML',
     config: {
-      systemInstruction: "Format as HTML with bold headings for FACTS, ISSUE, and RULING."
+      tools: [{ googleSearch: {} }],
+      systemInstruction: `You are a Senior Supreme Court Reporter. Your output MUST be factually immaculate. 
+      Access official repositories at sc.judiciary.gov.ph and elibrary.judiciary.gov.ph for verification. 
+      Use highly professional academic legal English. Do not hallucinate G.R. numbers or dates.`
     }
   });
+  
+  return { text: result.text, sources: result.groundingChunks };
 }
 
 export async function getCaseSuggestions(input: string): Promise<string[]> {
-  const jsonResponse = await InferenceGateway.invoke({
+  const result = await InferenceGateway.invokeWithGrounding({
     model: 'gemini-3-flash-preview',
     contents: `Suggest 5 landmark Philippine cases for: ${input}`,
     schemaKey: 'JSON_ARRAY',
@@ -275,22 +282,23 @@ export async function getCaseSuggestions(input: string): Promise<string[]> {
       }
     }
   });
-  return JSON.parse(jsonResponse);
+  return JSON.parse(result.text);
 }
 
 export async function analyzeLegalResearch(query: string): Promise<string> {
-  return await InferenceGateway.invoke({
+  const result = await InferenceGateway.invokeWithGrounding({
     model: 'gemini-3-pro-preview',
-    contents: `Perform high-level legal research and analysis for: ${query}`,
+    contents: query,
     schemaKey: 'GENERAL_LEGAL_HTML',
     config: {
       systemInstruction: "You are a legal research director. Provide a comprehensive strategy in HTML with citations."
     }
   });
+  return result.text;
 }
 
 export async function fetchLegalNews(): Promise<string> {
-  return await InferenceGateway.invoke({
+  const result = await InferenceGateway.invokeWithGrounding({
     model: 'gemini-3-flash-preview',
     contents: "Retrieve 5 recent legal updates in the Philippines.",
     schemaKey: 'LEGAL_NEWS_LIST',
@@ -298,59 +306,43 @@ export async function fetchLegalNews(): Promise<string> {
       systemInstruction: "Return <li> items with <strong> headlines and summaries."
     }
   });
+  return result.text;
 }
 
 export async function generateLawSyllabus(topic: string, profile: string): Promise<string> {
-  return await InferenceGateway.invoke({
+  const result = await InferenceGateway.invokeWithGrounding({
     model: 'gemini-3-pro-preview',
     contents: `Synthesize a comprehensive book-grade study module for: ${topic}. Targeted at: ${profile}.`,
     schemaKey: 'JD_MODULE_HTML',
     config: {
       systemInstruction: `Act as an elite Philippine Law Professor and Syllabus Director.
       Output a definitive legal review module in HTML.
-      
-      REQUIREMENTS:
-      1. Start with <h1>TOPIC TITLE</h1>.
-      2. Use <div class="headnote"><h3>SYLLABUS OVERVIEW</h3><p>...</p></div> for the intro.
-      3. Use <h3>I. BLACK-LETTER LAW</h3> for main provisions. Wrap codal text in <div class="statute-box">...</div>.
-      4. Use <h3>II. JURISPRUDENTIAL DOCTRINES</h3> for landmark cases with bolded Ratio Decidendi.
-      5. Use <h3>III. BAR-RELEVANT SYNTHESIS</h3> for integration tips.
-      6. Use <h3>IV. RECOMMENDED READINGS</h3> to list authoritative textbooks (Cruz, Bernas, Tolentino).
-      
-      TYPOGRAPHY RULES:
-      - Maintain academic tone. 
-      - Use professional legal terminology. 
-      - Ensure clear hierarchical subheadings (h4 for sub-topics).`
+      STRUCTURE: 1. <h1>Title</h1> 2. <div class="headnote"><h3>SYLLABUS OVERVIEW</h3></div> 3. <h3>I. BLACK-LETTER LAW</h3> 4. <h3>II. JURISPRUDENTIAL DOCTRINES</h3> 5. <h3>III. BAR-RELEVANT SYNTHESIS</h3> 6. <h3>IV. RECOMMENDED READINGS</h3>.`
     }
   });
+  return result.text;
 }
 
 export async function generateContract(mode: 'TEMPLATE' | 'CUSTOM', prompt: string, data: any): Promise<string> {
   const context = mode === 'TEMPLATE' 
     ? `Draft a contract for ${prompt} using: ${JSON.stringify(data)}`
     : `Draft a custom contract based on: ${prompt}`;
-  return await InferenceGateway.invoke({
+  const result = await InferenceGateway.invokeWithGrounding({
     model: 'gemini-3-pro-preview',
     contents: context,
     schemaKey: 'CONTRACT_HTML'
   });
+  return result.text;
 }
 
 export async function generateJDModuleContent(code: string, title: string): Promise<string> {
-  return await InferenceGateway.invoke({
+  const result = await InferenceGateway.invokeWithGrounding({
     model: 'gemini-3-pro-preview',
     contents: `Draft a JD Program study guide for ${code}: ${title}`,
     schemaKey: 'JD_MODULE_HTML',
     config: {
-      systemInstruction: `You are an elite Philippine Law Professor.
-      Format the output in HTML.
-      REQUIRED STRUCTURE:
-      1. Start with <h1>Title</h1>
-      2. Use <h3>SYLLABUS OVERVIEW</h3> for the introduction.
-      3. Use <h3>I. BLACK-LETTER LAW</h3> for main provisions.
-      4. Use <h3>II. JURISPRUDENTIAL DOCTRINES</h3> for landmark cases.
-      5. Use <h3>III. BAR-RELEVANT SYNTHESIS</h3> for review tips.
-      6. Use <h3>IV. RECOMMENDED READINGS</h3> to list authoritative textbooks.`
+      systemInstruction: `You are an elite Philippine Law Professor. Format in HTML. STRUCTURE: 1. <h1>Title</h1> 2. <h3>SYLLABUS OVERVIEW</h3> 3. <h3>I. BLACK-LETTER LAW</h3> 4. <h3>II. JURISPRUDENTIAL DOCTRINES</h3> 5. <h3>III. BAR-RELEVANT SYNTHESIS</h3> 6. <h3>IV. RECOMMENDED READINGS</h3>.`
     }
   });
+  return result.text;
 }
