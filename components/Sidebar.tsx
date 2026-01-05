@@ -22,16 +22,18 @@ interface SidebarProps {
   setIsMobileOpen: (v: boolean) => void;
 }
 
-const NavItem = ({ view, icon: Icon, label, active, onClick }: any) => (
+const NavItem = ({ view, icon: Icon, label, active, onClick, isSubItem = false }: any) => (
   <button
     onClick={onClick}
     className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors duration-200 rounded-lg mb-1
       ${active 
         ? 'bg-amber-600/10 text-amber-600 border-r-2 border-amber-600' 
         : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
-      }`}
+      }
+      ${isSubItem ? 'pl-8' : ''}
+    `}
   >
-    <Icon size={18} />
+    <Icon size={isSubItem ? 16 : 18} />
     <span>{label}</span>
   </button>
 );
@@ -69,21 +71,27 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, isM
         </div>
 
         <nav className="flex-1 overflow-y-auto py-6 px-3">
+          <div className="mb-4">
+            <NavItem view={AppView.DASHBOARD} icon={Layout} label="Dashboard" active={currentView === AppView.DASHBOARD} onClick={() => handleNav(AppView.DASHBOARD)} />
+          </div>
+
           <div className="mb-6">
             <p className="px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Academic</p>
-            <NavItem view={AppView.DASHBOARD} icon={Layout} label="Dashboard" active={currentView === AppView.DASHBOARD} onClick={() => handleNav(AppView.DASHBOARD)} />
-            <NavItem view={AppView.JD_PROGRAM} icon={GraduationCap} label="JD Program" active={currentView === AppView.JD_PROGRAM} onClick={() => handleNav(AppView.JD_PROGRAM)} />
-            <NavItem view={AppView.CODAL_LIBRARY} icon={BookOpen} label="Codal Library" active={currentView === AppView.CODAL_LIBRARY} onClick={() => handleNav(AppView.CODAL_LIBRARY)} />
-            <NavItem view={AppView.LEGAL_DOCTRINES} icon={Library} label="Legal Doctrines" active={currentView === AppView.LEGAL_DOCTRINES} onClick={() => handleNav(AppView.LEGAL_DOCTRINES)} />
-            <NavItem view={AppView.CASE_DIGEST} icon={FileText} label="Case Digest" active={currentView === AppView.CASE_DIGEST} onClick={() => handleNav(AppView.CASE_DIGEST)} />
-            <NavItem view={AppView.LAW_REVIEW} icon={ScrollText} label="Law Review" active={currentView === AppView.LAW_REVIEW} onClick={() => handleNav(AppView.LAW_REVIEW)} />
+            <NavItem isSubItem view={AppView.CODAL_LIBRARY} icon={BookOpen} label="Codal Library" active={currentView === AppView.CODAL_LIBRARY} onClick={() => handleNav(AppView.CODAL_LIBRARY)} />
+            <NavItem isSubItem view={AppView.LEGAL_DOCTRINES} icon={Library} label="Legal Doctrines" active={currentView === AppView.LEGAL_DOCTRINES} onClick={() => handleNav(AppView.LEGAL_DOCTRINES)} />
+            <NavItem isSubItem view={AppView.CASE_DIGEST} icon={FileText} label="Case Digest" active={currentView === AppView.CASE_DIGEST} onClick={() => handleNav(AppView.CASE_DIGEST)} />
+            <NavItem isSubItem view={AppView.CASE_BUILD} icon={Briefcase} label="Case Build" active={currentView === AppView.CASE_BUILD} onClick={() => handleNav(AppView.CASE_BUILD)} />
+          </div>
+
+          <div className="mb-6">
+            <p className="px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Training</p>
+            <NavItem isSubItem view={AppView.JD_PROGRAM} icon={GraduationCap} label="JD Program" active={currentView === AppView.JD_PROGRAM} onClick={() => handleNav(AppView.JD_PROGRAM)} />
+            <NavItem isSubItem view={AppView.LAW_REVIEW} icon={ScrollText} label="Law Review" active={currentView === AppView.LAW_REVIEW} onClick={() => handleNav(AppView.LAW_REVIEW)} />
+            <NavItem isSubItem view={AppView.MOCK_BAR} icon={Award} label="Mock Bar" active={currentView === AppView.MOCK_BAR} onClick={() => handleNav(AppView.MOCK_BAR)} />
+            <NavItem isSubItem view={AppView.CONTRACT_DRAFTING} icon={PenTool} label="Drafting" active={currentView === AppView.CONTRACT_DRAFTING} onClick={() => handleNav(AppView.CONTRACT_DRAFTING)} />
           </div>
 
           <div>
-            <p className="px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Training</p>
-            <NavItem view={AppView.MOCK_BAR} icon={Award} label="Mock Bar" active={currentView === AppView.MOCK_BAR} onClick={() => handleNav(AppView.MOCK_BAR)} />
-            <NavItem view={AppView.CASE_BUILD} icon={Briefcase} label="Case Build" active={currentView === AppView.CASE_BUILD} onClick={() => handleNav(AppView.CASE_BUILD)} />
-            <NavItem view={AppView.CONTRACT_DRAFTING} icon={PenTool} label="Drafting" active={currentView === AppView.CONTRACT_DRAFTING} onClick={() => handleNav(AppView.CONTRACT_DRAFTING)} />
             <NavItem view={AppView.LEGAL_PAD} icon={FileEdit} label="Legal Pad" active={currentView === AppView.LEGAL_PAD} onClick={() => handleNav(AppView.LEGAL_PAD)} />
           </div>
         </nav>
