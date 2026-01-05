@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { generateCaseDigest, getCaseSuggestions } from '../services/gemini';
-// FIX: Added Scale to the lucide-react imports to resolve missing name errors.
 import { 
   FileText, 
   Wand2, 
@@ -161,17 +160,23 @@ export const CaseDigest: React.FC = () => {
         }
         .book-content { text-align: ${textAlign}; line-height: 1.8; hyphens: auto; }
         .book-content h1 { text-align: center; font-weight: 900; text-transform: uppercase; margin-top: 3rem; margin-bottom: 3.5rem; line-height: 1.2; padding-bottom: 1.5rem; border-bottom: 3px double currentColor; text-indent: 0; letter-spacing: -0.01em; }
-        .book-content h3 { font-weight: 800; text-transform: uppercase; margin-top: 4rem; margin-bottom: 1.5rem; border-bottom: 1px solid currentColor; font-size: 1.25em; text-indent: 0; padding-bottom: 0.5rem; opacity: 0.9; letter-spacing: 0.05em; }
+        /* Matching the sample PDF header style */
+        .book-content h3 { font-weight: 800; text-transform: uppercase; margin-top: 4rem; margin-bottom: 1.5rem; border-bottom: 1.5px solid currentColor; font-size: 1.25em; text-indent: 0; padding-bottom: 0.5rem; opacity: 1; letter-spacing: 0.05em; color: #000; }
         .book-content h4 { font-weight: 700; margin-top: 2rem; margin-bottom: 1rem; font-size: 1.1em; text-transform: uppercase; text-indent: 0; page-break-after: avoid; }
+        /* Specific indention rule from sample */
         .book-content p { margin-top: 0; margin-bottom: 1.25rem; text-indent: 2.5em; }
+        /* No indention after headers */
         .book-content h1 + p, .book-content h3 + p, .book-content h4 + p, .book-content div + p, .book-content blockquote + p, .book-content hr + p { text-indent: 0; }
         .book-content blockquote { margin: 2rem 3.5rem; padding: 1.5rem 2rem; border-left: 5px solid #b45309; background-color: rgba(0,0,0,0.03); font-style: normal; text-indent: 0; font-family: 'Merriweather', serif; font-size: 0.95em; line-height: 1.7; }
-        .book-content ul, .book-content ol { margin-top: 1rem; margin-bottom: 1.5rem; padding-left: 3rem; text-indent: 0; }
+        .book-content ul, .book-content ol { margin-top: 1rem; margin-bottom: 1.5rem; padding-left: 3.5rem; text-indent: 0; }
         .book-content li { margin-bottom: 0.75rem; text-indent: 0; }
         .book-content strong { font-weight: 800; color: inherit; }
         .book-content hr { border: 0; border-top: 1px solid currentColor; opacity: 0.1; margin: 3.5rem auto; width: 60%; }
         .book-content .annotation { color: inherit; opacity: 0.7; font-size: 0.9em; font-style: italic; border-top: 1px dashed currentColor; padding-top: 0.75rem; margin-top: 1.5rem; text-indent: 0; }
-        .book-content .statute-box { border: 1px solid currentColor; background-color: rgba(0,0,0,0.03); padding: 1.75rem; margin: 2.5rem 0; border-radius: 2px; text-indent: 0; font-family: 'Merriweather', serif; position: relative; }
+        /* Statute box styling from sample */
+        .book-content .statute-box { border: 1px solid #e2e8f0; background-color: #fffbeb; padding: 1.75rem; margin: 2.5rem 0; border-left: 5px solid #f59e0b; text-indent: 0; font-family: 'Merriweather', serif; position: relative; border-radius: 4px; }
+        .book-content .so-ordered { text-align: center; margin-top: 4rem; font-weight: 900; text-transform: uppercase; text-indent: 0; border-top: 1px solid currentColor; padding-top: 2rem; letter-spacing: 0.2em; }
+        .book-content .final-analysis { border: 1px dashed currentColor; padding: 2rem; background: rgba(0,0,0,0.02); border-radius: 4px; margin-top: 3rem; text-indent: 0; }
       `}</style>
       
       {/* Search Header Container */}
@@ -251,9 +256,9 @@ export const CaseDigest: React.FC = () => {
              <div className="relative">
                 <button onClick={() => setShowAppearance(!showAppearance)} className={`p-2 rounded-lg hover:bg-black/5 transition-colors ${currentTheme.text}`} title="Reader Appearance Settings"><Settings size={20} /></button>
                 
-                {/* Advanced Reading Mode Settings Popover (Matching Doctrines standard) */}
+                {/* Advanced Reading Mode Settings Popover */}
                 {showAppearance && (
-                  <div className="absolute right-0 top-full mt-4 w-80 bg-white rounded-xl shadow-2xl border border-slate-200 p-6 z-50 animate-in fade-in slide-in-from-top-4 text-slate-900 no-print">
+                  <div className="absolute right-0 top-full mt-4 w-80 bg-white rounded-xl shadow-2xl border border-slate-200 p-6 z-50 text-slate-900 animate-in fade-in slide-in-from-top-4 no-print">
                     <div className="flex justify-between items-center mb-6">
                       <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Visual Controls</span>
                       <button onClick={() => setShowAppearance(false)} className="text-slate-400 hover:text-slate-600"><X size={16}/></button>
@@ -312,9 +317,9 @@ export const CaseDigest: React.FC = () => {
              </div>
              <p className={`font-serif text-2xl font-black tracking-tight animate-pulse ${currentTheme.text}`}>Verifying Jurisprudence...</p>
              <div className="flex flex-col items-center gap-2 mt-4 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">
-                 <span className="flex items-center gap-1.5"><Globe size={12}/> Accessing Supreme Court Repositories</span>
-                 <span className="flex items-center gap-1.5"><FileText size={12}/> Synthesizing Official Case Reports</span>
-                 <span className="flex items-center gap-1.5"><ImageIcon size={12}/> Performing Multi-modal Analysis</span>
+                 <span className="flex items-center gap-1.5"><Globe size={12}/> Consultando Supreme Court Portals</span>
+                 <span className="flex items-center gap-1.5"><FileText size={12}/> Synthesizing official Philippine Reports</span>
+                 <span className="flex items-center gap-1.5"><ImageIcon size={12}/> Scanning Artifacts Line-by-Line</span>
              </div>
            </div>
         ) : digest ? (

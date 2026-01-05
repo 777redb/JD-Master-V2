@@ -72,8 +72,8 @@ const OutputSchemaRegistry: Record<string, {
     version: '1.0.0'
   },
   'CASE_DIGEST_HTML': {
-    validator: (text) => /CASE SUMMARY/i.test(text) && /DOCTRINE/i.test(text) && /FACTS/i.test(text) && /RULING/i.test(text),
-    version: '1.1.0'
+    validator: (text) => /High-Level Case Summary/i.test(text) && /Case Title and G.R. Nos./i.test(text) && /Ponente/i.test(text) && /Facts/i.test(text) && /Ruling/i.test(text) && /Case Analysis/i.test(text),
+    version: '2.5.0'
   },
   'MCQ_JSON': {
     validator: (text) => {
@@ -236,22 +236,30 @@ export async function generateCaseDigest(
   }
   
   contentParts.push({
-    text: `STRICT FACTUAL CASE DIGESTION REQUEST:
-    1. ANALYZE UPLOADED CONTENT (if provided) line-by-line or pixel-by-pixel for accuracy.
-    2. PERFORM CROSS-VERIFICATION with official Philippine Reports (https://elibrary.judiciary.gov.ph/philippinereports) and SC Decisions (https://sc.judiciary.gov.ph/decisions-and-resolutions/).
+    text: `STRICT FACTUAL CASE DIGESTION REQUEST BASED ON PREMIUM BOOK-GRADE TEMPLATE:
+    1. ANALYZE INPUT FOR ABSOLUTE FACTUAL ACCURACY.
+    2. CROSS-VERIFY with Philippine Reports (https://elibrary.judiciary.gov.ph/philippinereports) and SC Decisions (https://sc.judiciary.gov.ph/decisions-and-resolutions/).
     3. TARGET CASE: ${query}
     
-    ZERO HALLUCINATION POLICY: If the uploaded document contradicts official jurisprudence, prioritize the official SC record and note the discrepancy. If facts are missing from the search, only state what is verified.
-    
-    REQUIRED STRUCTURE (HTML):
-    1. <h3>CASE SUMMARY</h3> (High level)
-    2. <h3>DOCTRINE</h3> (The legal principle)
-    3. <h3>FACTS</h3> (Strictly verified material facts)
-    4. <h3>ISSUES</h3> (Legal questions)
-    5. <h3>RULING</h3> (The judgment)
-    6. <h3>RATIO DECIDENDI</h3> (The reasoning)
-    7. <h3>RELEVANT CASE(S)</h3> (Cited landmarks)
-    8. <h3>FINAL CASE ANALYSIS</h3> (Unique scholarly synthesis)`
+    REQUIRED STRUCTURE (HTML ONLY):
+    1. <h3>High-Level Case Summary</h3>: A summary paragraph highlighting the case's core significance and the Court's major action.
+    2. <h3>Case Title and G.R. Nos.</h3>: Full title (e.g., PETITIONER vs. RESPONDENTS) and associated G.R. Nos. in a list.
+    3. <h3>Ponente</h3>: The name of the Justice (e.g., LEONEN, S.A.J.).
+    4. <h3>Date Promulgated</h3>: Full date (e.g., July 25, 2025).
+    5. <h3>Relevant Constitutional Provisions</h3>: Use <div class="statute-box">...</div> for citations of the Constitution or statutes.
+    6. <h3>Facts</h3>: Material facts of the case, narrated with precision. Use <p> with 2.5em indention.
+    7. <h3>Issues</h3>: Bulleted list of the specific legal questions resolved.
+    8. <h3>Ruling</h3>: The Court's final judgment (e.g., THE PETITION IS GRANTED).
+    9. <h3>Ratio Decidendi</h3>: For each issue:
+       - <h4>[No]. [Issue Title]</h4>
+       - <strong>Categorical Answer</strong>: Yes/No/Partially.
+       - <strong>Legal Basis</strong>: Cite the specific provision/doctrine.
+       - <strong>Application</strong>: How the law applies to the facts.
+       - <strong>Conclusion</strong>: Summary of the reasoning.
+    10. <h3>Relevant Case(s)</h3>: List landmark cases cited in the decision (e.g., Francisco vs. House of Representatives).
+    11. <h3>Case Analysis</h3>: A scholar-level analysis of how this case changes or reinforces current jurisprudence.
+    12. <h3>Dispositive Portion</h3>: Verbatim "ACCORDINGLY..." or "WHEREFORE..." section.
+    13. Finish with center-aligned <strong>SO ORDERED.</strong>`
   });
 
   const result = await InferenceGateway.invokeWithGrounding({
@@ -260,9 +268,13 @@ export async function generateCaseDigest(
     schemaKey: 'CASE_DIGEST_HTML',
     config: {
       tools: [{ googleSearch: {} }],
-      systemInstruction: `You are a Senior Supreme Court Reporter. Your output MUST be factually immaculate. 
-      Access official repositories at sc.judiciary.gov.ph and elibrary.judiciary.gov.ph for verification. 
-      Use highly professional academic legal English. Do not hallucinate G.R. numbers or dates.`
+      systemInstruction: `You are a Senior Supreme Court Reporter. Matching the provided high-fidelity sample is mandatory.
+      Output HTML must follow the hierarchical structure with specific formatting: 
+      - Use <h3> and <h4> for headers.
+      - Use 2.5em paragraph indention for Facts.
+      - Use 'statute-box' class for provisions.
+      - Use 'categorical-answer' format for Ratio.
+      - ZERO HALLUCINATION POLICY.`
     }
   });
   
