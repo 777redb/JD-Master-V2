@@ -28,8 +28,8 @@ import {
   Maximize2,
   Minimize2,
   FileEdit,
-  // Added Sparkles to imports
-  Sparkles
+  Sparkles,
+  PlusSquare
 } from 'lucide-react';
 
 type Theme = 'light' | 'sepia' | 'dark' | 'night';
@@ -76,19 +76,26 @@ export const CaseBuild: React.FC = () => {
     
     try {
       const prompt = `
-        ACT AS A SENIOR LITIGATION STRATEGIST.
-        Build a comprehensive case file based on:
+        ACT AS A SENIOR LITIGATION STRATEGIST AND ELITE LEGAL ANALYST.
+        Synthesize a comprehensive, high-fidelity Case Strategy Brief based on the following:
+        
         PARTIES: ${parties}
         FACTS: ${facts}
         LEGAL ISSUES: ${issues}
 
-        Structure the output as follows (HTML):
-        1. <h3>THEORY OF THE CASE</h3>: Synthesize the facts into a winning narrative.
-        2. <h3>PLAINTIFF/PROSECUTION ARGUMENTS</h3>: Bulleted list of legal and factual arguments.
-        3. <h3>DEFENSE COUNTER-ARGUMENTS</h3>: Anticipate and address defense strategies.
-        4. <h3>RELEVANT STATUTORY PROVISIONS</h3>: Cite specific PH codes (Civil, Criminal, etc).
-        5. <h3>SUPPORTING JURISPRUDENCE</h3>: List relevant Supreme Court cases.
-        6. <h3>EVIDENTIARY REQUIREMENTS</h3>: List necessary documents/witnesses to prove the theory.
+        REQUIREMENTS:
+        - Output HTML strictly following the premium book-grade template.
+        - Ensure all statutory citations are from official Philippine codes.
+        - Use sophisticated, professional legal English.
+
+        STRUCTURE THE OUTPUT AS FOLLOWS:
+        1. <h3>THEORY OF THE CASE</h3>: A masterful synthesis of the facts into a winning legal narrative.
+        2. <h3>PLAINTIFF/PROSECUTION ARGUMENTS</h3>: Bulleted list of persuasive legal and factual arguments.
+        3. <h3>DEFENSE COUNTER-ARGUMENTS</h3>: Anticipate and proactively address potential defense strategies.
+        4. <h3>RELEVANT STATUTORY PROVISIONS</h3>: Verbatim or summarized citations of controlling PH statutes.
+        5. <h3>SUPPORTING JURISPRUDENCE</h3>: Landmark Supreme Court cases that bolster the theory.
+        6. <h3>EVIDENTIARY REQUIREMENTS</h3>: Actionable list of documents, witnesses, and exhibits needed for trial.
+        7. <h3>FINAL ANALYSIS & STRATEGIC RECOMMENDATION</h3>: A definitive conclusion providing a critical evaluation of the case's strength, specific tactical advice for the next phase of litigation, a realistic risk assessment, and a clear recommendation on the most viable path forward to secure a favorable judgment.
       `;
       
       const result = await analyzeLegalResearch(prompt);
@@ -99,6 +106,71 @@ export const CaseBuild: React.FC = () => {
     } finally {
       setIsBuilding(false);
     }
+  };
+
+  const convertToPlainText = (html: string) => {
+    const temp = document.createElement('div');
+    temp.innerHTML = html;
+    
+    let text = "";
+    const processNode = (node: Node) => {
+      node.childNodes.forEach(child => {
+        if (child.nodeType === Node.TEXT_NODE) {
+          text += child.textContent;
+        } else if (child.nodeType === Node.ELEMENT_NODE) {
+          const el = child as HTMLElement;
+          const tag = el.tagName.toLowerCase();
+          
+          if (['h1', 'h2', 'h3'].includes(tag)) {
+            text += `\n\n${el.innerText.toUpperCase()}\n${'='.repeat(el.innerText.length)}\n\n`;
+          } else if (tag === 'h4') {
+            text += `\n\n${el.innerText.toUpperCase()}\n\n`;
+          } else if (tag === 'p') {
+            const isIndented = el.style.textIndent === '2.5em';
+            text += (isIndented ? "    " : "") + el.innerText.trim() + "\n\n";
+          } else if (tag === 'li') {
+            text += " • " + el.innerText.trim() + "\n";
+          } else if (tag === 'blockquote') {
+            text += `\n    "${el.innerText.trim()}"\n\n`;
+          } else if (tag === 'br') {
+            text += "\n";
+          } else {
+            processNode(child);
+          }
+        }
+      });
+    };
+    processNode(temp);
+    return text.trim();
+  };
+
+  const saveToLegalPad = () => {
+    if (!analysis) return;
+    const plainText = convertToPlainText(analysis);
+    const savedNotebooks = localStorage.getItem('legalph_notebooks');
+    let notebooks = savedNotebooks ? JSON.parse(savedNotebooks) : [];
+    let strategyNotebook = notebooks.find((n: any) => n.name === "Case Strategies Archive");
+    
+    if (!strategyNotebook) {
+      strategyNotebook = { id: 'strategies_' + Date.now(), name: 'Case Strategies Archive', notes: [], isExpanded: true };
+      notebooks.push(strategyNotebook);
+    }
+    
+    const newNote = {
+      id: Date.now().toString(),
+      title: parties || "Litigation Strategy Brief",
+      content: plainText,
+      updatedAt: Date.now(),
+      tags: ['Strategy', 'Litigation'],
+      color: 'bg-violet-50',
+      isFavorite: true,
+      paperStyle: 'legal-ruled',
+      billableMinutes: 0
+    };
+    
+    strategyNotebook.notes.unshift(newNote);
+    localStorage.setItem('legalph_notebooks', JSON.stringify(notebooks));
+    alert('Case Strategy successfully added to Legal Pad as formatted plain text.');
   };
 
   const handleReset = () => {
@@ -112,11 +184,9 @@ export const CaseBuild: React.FC = () => {
   };
 
   const handleCopy = () => {
-    const tempDiv = document.createElement("div");
-    tempDiv.innerHTML = analysis;
-    const text = tempDiv.textContent || tempDiv.innerText || "";
+    const text = convertToPlainText(analysis);
     navigator.clipboard.writeText(text);
-    alert("Strategy copied to clipboard.");
+    alert("Strategy copied to clipboard as text.");
   };
 
   return (
@@ -299,6 +369,7 @@ export const CaseBuild: React.FC = () => {
                   <div className="border-b-2 border-slate-900 pb-12 mb-16 text-center relative z-10 no-print" style={{ borderColor: 'currentColor' }}>
                      <div className="flex justify-between items-start absolute right-0 top-0 opacity-40 hover:opacity-100 transition-opacity">
                         <div className="flex gap-2">
+                           <button onClick={saveToLegalPad} className="p-2.5 rounded-lg hover:bg-black/5" title="Add to Legal Pad (Plain Text)"><PlusSquare size={18}/></button>
                            <button onClick={handleCopy} className="p-2.5 rounded-lg hover:bg-black/5" title="Copy Strategy"><Copy size={18}/></button>
                            <button onClick={() => window.print()} className="p-2.5 rounded-lg hover:bg-black/5" title="Print Brief"><Printer size={18}/></button>
                         </div>

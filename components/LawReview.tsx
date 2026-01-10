@@ -25,7 +25,8 @@ import {
   Sparkles,
   RefreshCw,
   Library,
-  ChevronDown
+  ChevronDown,
+  PlusSquare
 } from 'lucide-react';
 
 type Theme = 'light' | 'sepia' | 'dark' | 'night';
@@ -78,12 +79,77 @@ export const LawReview: React.FC = () => {
     }
   };
 
+  const convertToPlainText = (html: string) => {
+    const temp = document.createElement('div');
+    temp.innerHTML = html;
+    
+    let text = "";
+    const processNode = (node: Node) => {
+      node.childNodes.forEach(child => {
+        if (child.nodeType === Node.TEXT_NODE) {
+          text += child.textContent;
+        } else if (child.nodeType === Node.ELEMENT_NODE) {
+          const el = child as HTMLElement;
+          const tag = el.tagName.toLowerCase();
+          
+          if (['h1', 'h2', 'h3'].includes(tag)) {
+            text += `\n\n${el.innerText.toUpperCase()}\n${'='.repeat(el.innerText.length)}\n\n`;
+          } else if (tag === 'h4') {
+            text += `\n\n${el.innerText.toUpperCase()}\n\n`;
+          } else if (tag === 'p') {
+            const isIndented = el.classList.contains('indented') || (el.style.textIndent === '2.5em');
+            text += (isIndented ? "    " : "") + el.innerText.trim() + "\n\n";
+          } else if (tag === 'li') {
+            text += " • " + el.innerText.trim() + "\n";
+          } else if (tag === 'blockquote') {
+            text += `\n    "${el.innerText.trim()}"\n\n`;
+          } else if (tag === 'div' && el.classList.contains('headnote')) {
+            text += `\nSYLLABUS OVERVIEW\n------------------------------------------------\n${el.innerText.trim()}\n------------------------------------------------\n\n`;
+          } else if (tag === 'br') {
+            text += "\n";
+          } else {
+            processNode(child);
+          }
+        }
+      });
+    };
+    processNode(temp);
+    return text.trim();
+  };
+
+  const saveToLegalPad = () => {
+    if (!syllabus) return;
+    const plainText = convertToPlainText(syllabus);
+    const savedNotebooks = localStorage.getItem('legalph_notebooks');
+    let notebooks = savedNotebooks ? JSON.parse(savedNotebooks) : [];
+    let reviewerNotebook = notebooks.find((n: any) => n.name === "Study Reviewers");
+    
+    if (!reviewerNotebook) {
+      reviewerNotebook = { id: 'reviewers_' + Date.now(), name: 'Study Reviewers', notes: [], isExpanded: true };
+      notebooks.push(reviewerNotebook);
+    }
+    
+    const newNote = {
+      id: Date.now().toString(),
+      title: topic || "Law Review Module",
+      content: plainText,
+      updatedAt: Date.now(),
+      tags: ['Law Review', profile],
+      color: 'bg-white',
+      isFavorite: false,
+      paperStyle: 'cornell',
+      billableMinutes: 0
+    };
+    
+    reviewerNotebook.notes.unshift(newNote);
+    localStorage.setItem('legalph_notebooks', JSON.stringify(notebooks));
+    alert('Reviewer saved to Legal Pad in book-grade plain text format.');
+  };
+
   const handleCopy = () => {
-    const tempDiv = document.createElement("div");
-    tempDiv.innerHTML = syllabus;
-    const text = tempDiv.textContent || tempDiv.innerText || "";
+    const text = convertToPlainText(syllabus);
     navigator.clipboard.writeText(text);
-    alert("Module copied to clipboard.");
+    alert("Module copied to clipboard as text.");
   };
 
   const handleDownload = () => {
@@ -281,6 +347,7 @@ export const LawReview: React.FC = () => {
                   <div className="border-b-2 border-slate-900 pb-12 mb-16 text-center relative z-10 no-print" style={{ borderColor: 'currentColor' }}>
                      <div className="flex justify-between items-start absolute right-0 top-0 opacity-40 hover:opacity-100 transition-opacity">
                         <div className="flex gap-2">
+                           <button onClick={saveToLegalPad} className="p-2.5 rounded-lg hover:bg-black/5" title="Add to Legal Pad (Plain Text)"><PlusSquare size={18}/></button>
                            <button onClick={handleCopy} className="p-2.5 rounded-lg hover:bg-black/5" title="Copy Content"><Copy size={18}/></button>
                            <button onClick={() => window.print()} className="p-2.5 rounded-lg hover:bg-black/5" title="Print Brief"><Printer size={18}/></button>
                            <button onClick={handleDownload} className="p-2.5 rounded-lg hover:bg-black/5" title="Download HTML"><Download size={18}/></button>
