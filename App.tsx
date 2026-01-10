@@ -36,8 +36,14 @@ import {
   FileEdit
 } from 'lucide-react';
 
+interface NewsItem {
+  headline: string;
+  summary: string;
+  url: string;
+}
+
 const LegalNews = () => {
-  const [newsItems, setNewsItems] = useState<string[]>([]);
+  const [newsItems, setNewsItems] = useState<NewsItem[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(false);
 
@@ -57,9 +63,13 @@ const LegalNews = () => {
 
   const handleRefresh = async () => {
     setLoading(true);
-    const updates = await fetchLegalNews();
-    const items = updates.match(/<li>(.*?)<\/li>/gs)?.map(item => item.replace(/<\/?li>/g, '')) || [];
-    setNewsItems(items);
+    try {
+      const items = await fetchLegalNews();
+      setNewsItems(items);
+    } catch (e) {
+      console.error("Failed to fetch legal news", e);
+      setNewsItems([]);
+    }
     setCurrentIndex(0);
     setLoading(false);
   };
@@ -141,23 +151,29 @@ const LegalNews = () => {
                      <span className="text-sm font-medium animate-pulse">Syncing with SC Bulletins...</span>
                   </div>
                ) : newsItems.length > 0 ? (
-                  <div key={currentIndex} className="animate-in fade-in slide-in-from-right-4 duration-700">
-                    <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-red-100 text-red-700 text-[10px] font-bold uppercase tracking-widest mb-6">
+                  <a 
+                    key={currentIndex} 
+                    href={newsItems[currentIndex].url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex-1 flex flex-col justify-center animate-in fade-in slide-in-from-right-4 duration-700 hover:opacity-95 transition-opacity group/slide"
+                  >
+                    <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-red-100 text-red-700 text-[10px] font-bold uppercase tracking-widest mb-6 w-fit">
                       <span className="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse"></span>
                       Breaking Legal Update
                     </div>
                     <div className="text-sm space-y-4">
-                       <div 
-                         className="news-headline font-serif text-2xl font-bold text-slate-900 leading-tight"
-                         dangerouslySetInnerHTML={{ __html: newsItems[currentIndex].split('</strong>')[0] + '</strong>' }} 
-                       />
-                       <div 
-                         className="news-summary text-slate-600 text-lg leading-relaxed font-medium"
-                         dangerouslySetInnerHTML={{ __html: newsItems[currentIndex].split('</strong>')[1] || '' }} 
-                       />
+                       <div className="news-headline font-serif text-2xl font-bold text-slate-900 leading-tight group-hover/slide:text-amber-700 transition-colors">
+                         {newsItems[currentIndex].headline}
+                       </div>
+                       <div className="news-summary text-slate-600 text-lg leading-relaxed font-medium">
+                         {newsItems[currentIndex].summary}
+                       </div>
                     </div>
                     <div className="mt-8 pt-6 border-t border-slate-100 flex justify-between items-center">
-                       <span className="text-xs text-slate-400 font-medium">Source: Official SC RSS</span>
+                       <div className="flex items-center gap-2 text-xs text-amber-600 font-bold group-hover/slide:underline">
+                          Read source <ExternalLink size={12} />
+                       </div>
                        <div className="flex gap-1.5">
                           {newsItems.map((_, idx) => (
                              <div 
@@ -167,7 +183,7 @@ const LegalNews = () => {
                           ))}
                        </div>
                     </div>
-                  </div>
+                  </a>
                ) : (
                   <div className="text-center text-slate-400 font-serif italic py-12">
                      No recent announcements detected. Check back later.
