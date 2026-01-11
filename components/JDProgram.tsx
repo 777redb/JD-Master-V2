@@ -72,45 +72,6 @@ export const JDProgram: React.FC = () => {
     }
   };
 
-  const convertToPlainText = (html: string) => {
-    const temp = document.createElement('div');
-    temp.innerHTML = html;
-    
-    let text = "";
-    const processNode = (node: Node) => {
-      node.childNodes.forEach(child => {
-        if (child.nodeType === Node.TEXT_NODE) {
-          text += child.textContent;
-        } else if (child.nodeType === Node.ELEMENT_NODE) {
-          const el = child as HTMLElement;
-          const tag = el.tagName.toLowerCase();
-          
-          if (['h1', 'h2', 'h3'].includes(tag)) {
-            text += `\n\n${el.innerText.toUpperCase()}\n${'='.repeat(el.innerText.length)}\n\n`;
-          } else if (tag === 'h4') {
-            text += `\n\n${el.innerText.toUpperCase()}\n\n`;
-          } else if (tag === 'p') {
-            // Apply indention rule (paragraphs following paragraphs get indented)
-            const isIndented = el.previousElementSibling && el.previousElementSibling.tagName.toLowerCase() === 'p';
-            text += (isIndented ? "    " : "") + el.innerText.trim() + "\n\n";
-          } else if (tag === 'li') {
-            text += " • " + el.innerText.trim() + "\n";
-          } else if (tag === 'blockquote') {
-            text += `\n    "${el.innerText.trim()}"\n\n`;
-          } else if (tag === 'div' && el.classList.contains('statute-box')) {
-            text += `\n[STATUTE]\n------------------------------------------------\n${el.innerText.trim()}\n------------------------------------------------\n\n`;
-          } else if (tag === 'br') {
-            text += "\n";
-          } else {
-            processNode(child);
-          }
-        }
-      });
-    };
-    processNode(temp);
-    return text.trim();
-  };
-
   const toggleComplete = (code: string) => {
     const next = new Set(completedSubjects);
     if (next.has(code)) next.delete(code);
@@ -140,7 +101,8 @@ export const JDProgram: React.FC = () => {
       if (navigator.share) {
         await navigator.share(shareData);
       } else {
-        navigator.clipboard.writeText(JSON.stringify(shareData));
+        const text = JSON.stringify(shareData);
+        navigator.clipboard.writeText(text);
         setShowCopyFeedback(true);
         setTimeout(() => setShowCopyFeedback(false), 2000);
       }
@@ -151,7 +113,6 @@ export const JDProgram: React.FC = () => {
 
   const saveToLegalPad = () => {
     if (!activeSubject || !moduleContent) return;
-    const plainText = convertToPlainText(moduleContent);
     const savedNotebooks = localStorage.getItem('legalph_notebooks');
     let notebooks = savedNotebooks ? JSON.parse(savedNotebooks) : [];
     let jdNotebook = notebooks.find((n: any) => n.name === "JD Program Research");
@@ -162,7 +123,7 @@ export const JDProgram: React.FC = () => {
     const newNote = {
       id: Date.now().toString(),
       title: `${activeSubject.code}: ${activeSubject.title}`,
-      content: plainText,
+      content: moduleContent, // Strictly keep entire original format
       updatedAt: Date.now(),
       tags: ['JD Program', activeSubject.code],
       color: 'bg-amber-50',
@@ -172,7 +133,7 @@ export const JDProgram: React.FC = () => {
     };
     jdNotebook.notes.unshift(newNote);
     localStorage.setItem('legalph_notebooks', JSON.stringify(notebooks));
-    alert(`"${activeSubject.title}" syllabus has been added to your Legal Pad as structured plain text.`);
+    alert(`"${activeSubject.title}" strictly preserved and added to your Legal Pad.`);
   };
 
   if (activeSubject) {
@@ -215,7 +176,7 @@ export const JDProgram: React.FC = () => {
               <button onClick={handlePrint} className="p-2 rounded-md text-slate-500 hover:bg-white transition-all" title="Print">
                 <Printer size={18} />
               </button>
-              <button onClick={saveToLegalPad} className="p-2 rounded-md text-slate-500 hover:bg-white transition-all" title="Add to Legal Pad (Plain Text)">
+              <button onClick={saveToLegalPad} className="p-2 rounded-md text-slate-500 hover:bg-white transition-all" title="Add to Legal Pad (Strict Format)">
                 <PlusSquare size={18} />
               </button>
               <button onClick={handleShare} className="p-2 rounded-md text-slate-500 hover:bg-white transition-all relative" title="Share">

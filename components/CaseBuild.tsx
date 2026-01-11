@@ -108,45 +108,8 @@ export const CaseBuild: React.FC = () => {
     }
   };
 
-  const convertToPlainText = (html: string) => {
-    const temp = document.createElement('div');
-    temp.innerHTML = html;
-    
-    let text = "";
-    const processNode = (node: Node) => {
-      node.childNodes.forEach(child => {
-        if (child.nodeType === Node.TEXT_NODE) {
-          text += child.textContent;
-        } else if (child.nodeType === Node.ELEMENT_NODE) {
-          const el = child as HTMLElement;
-          const tag = el.tagName.toLowerCase();
-          
-          if (['h1', 'h2', 'h3'].includes(tag)) {
-            text += `\n\n${el.innerText.toUpperCase()}\n${'='.repeat(el.innerText.length)}\n\n`;
-          } else if (tag === 'h4') {
-            text += `\n\n${el.innerText.toUpperCase()}\n\n`;
-          } else if (tag === 'p') {
-            const isIndented = el.style.textIndent === '2.5em';
-            text += (isIndented ? "    " : "") + el.innerText.trim() + "\n\n";
-          } else if (tag === 'li') {
-            text += " • " + el.innerText.trim() + "\n";
-          } else if (tag === 'blockquote') {
-            text += `\n    "${el.innerText.trim()}"\n\n`;
-          } else if (tag === 'br') {
-            text += "\n";
-          } else {
-            processNode(child);
-          }
-        }
-      });
-    };
-    processNode(temp);
-    return text.trim();
-  };
-
   const saveToLegalPad = () => {
     if (!analysis) return;
-    const plainText = convertToPlainText(analysis);
     const savedNotebooks = localStorage.getItem('legalph_notebooks');
     let notebooks = savedNotebooks ? JSON.parse(savedNotebooks) : [];
     let strategyNotebook = notebooks.find((n: any) => n.name === "Case Strategies Archive");
@@ -159,7 +122,7 @@ export const CaseBuild: React.FC = () => {
     const newNote = {
       id: Date.now().toString(),
       title: parties || "Litigation Strategy Brief",
-      content: plainText,
+      content: analysis, // Strictly keep entire original format
       updatedAt: Date.now(),
       tags: ['Strategy', 'Litigation'],
       color: 'bg-violet-50',
@@ -170,7 +133,7 @@ export const CaseBuild: React.FC = () => {
     
     strategyNotebook.notes.unshift(newNote);
     localStorage.setItem('legalph_notebooks', JSON.stringify(notebooks));
-    alert('Case Strategy successfully added to Legal Pad as formatted plain text.');
+    alert('Case Strategy strictly preserved and saved to Legal Pad.');
   };
 
   const handleReset = () => {
@@ -184,9 +147,10 @@ export const CaseBuild: React.FC = () => {
   };
 
   const handleCopy = () => {
-    const text = convertToPlainText(analysis);
-    navigator.clipboard.writeText(text);
-    alert("Strategy copied to clipboard as text.");
+    const temp = document.createElement('div');
+    temp.innerHTML = analysis;
+    navigator.clipboard.writeText(temp.innerText);
+    alert("Strategy copied to clipboard.");
   };
 
   return (
@@ -201,7 +165,7 @@ export const CaseBuild: React.FC = () => {
         .book-content h4 { font-weight: 700; margin-top: 2rem; margin-bottom: 1rem; font-size: 1.1em; text-transform: uppercase; text-indent: 0; page-break-after: avoid; }
         .book-content p { margin-top: 0; margin-bottom: 0.75rem; text-indent: 2.5em; }
         .book-content h3 + p, .book-content h4 + p, .book-content div + p, .book-content blockquote + p { text-indent: 0; }
-        .book-content .statute-box { border: 1px solid currentColor; background-color: rgba(0,0,0,0.03); padding: 1.5rem; margin: 2.5rem 0; border-radius: 2px; text-indent: 0; font-family: 'Merriweather', serif; position: relative; }
+        .book-content .statute-box { border: 1px solid currentColor; background-color: rgba(0,0,0,0.03); padding: 1.5rem; margin: 2rem 0; border-radius: 2px; text-indent: 0; font-family: 'Merriweather', serif; position: relative; }
         .book-content blockquote { margin: 2rem 2.5rem; padding: 1rem 1.5rem; border-left: 4px solid #7c3aed; background-color: rgba(0,0,0,0.02); font-style: italic; text-indent: 0; }
         .book-content ul, .book-content ol { margin-top: 1rem; padding-left: 2rem; text-indent: 0; margin-bottom: 1.5rem; }
         .book-content li { margin-bottom: 0.5rem; text-indent: 0; }
@@ -369,7 +333,7 @@ export const CaseBuild: React.FC = () => {
                   <div className="border-b-2 border-slate-900 pb-12 mb-16 text-center relative z-10 no-print" style={{ borderColor: 'currentColor' }}>
                      <div className="flex justify-between items-start absolute right-0 top-0 opacity-40 hover:opacity-100 transition-opacity">
                         <div className="flex gap-2">
-                           <button onClick={saveToLegalPad} className="p-2.5 rounded-lg hover:bg-black/5" title="Add to Legal Pad (Plain Text)"><PlusSquare size={18}/></button>
+                           <button onClick={saveToLegalPad} className="p-2.5 rounded-lg hover:bg-black/5" title="Add to Legal Pad (Strict Format)"><PlusSquare size={18}/></button>
                            <button onClick={handleCopy} className="p-2.5 rounded-lg hover:bg-black/5" title="Copy Strategy"><Copy size={18}/></button>
                            <button onClick={() => window.print()} className="p-2.5 rounded-lg hover:bg-black/5" title="Print Brief"><Printer size={18}/></button>
                         </div>

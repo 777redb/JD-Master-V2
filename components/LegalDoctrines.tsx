@@ -160,49 +160,8 @@ export const LegalDoctrines: React.FC = () => {
     }
   };
 
-  const convertToPlainText = (html: string) => {
-    const temp = document.createElement('div');
-    temp.innerHTML = html;
-    
-    let text = "";
-    const processNode = (node: Node) => {
-      node.childNodes.forEach(child => {
-        if (child.nodeType === Node.TEXT_NODE) {
-          text += child.textContent;
-        } else if (child.nodeType === Node.ELEMENT_NODE) {
-          const el = child as HTMLElement;
-          const tag = el.tagName.toLowerCase();
-          
-          if (['h1', 'h2', 'h3'].includes(tag)) {
-            text += `\n\n${el.innerText.toUpperCase()}\n${'='.repeat(el.innerText.length)}\n\n`;
-          } else if (tag === 'h4') {
-            text += `\n\n${el.innerText.toUpperCase()}\n\n`;
-          } else if (tag === 'p') {
-            const isIndented = el.classList.contains('indented') || (el.style.textIndent === '2.5em');
-            text += (isIndented ? "    " : "") + el.innerText.trim() + "\n\n";
-          } else if (tag === 'li') {
-            text += " • " + el.innerText.trim() + "\n";
-          } else if (tag === 'blockquote') {
-            text += `\n    "${el.innerText.trim()}"\n\n`;
-          } else if (tag === 'div' && el.classList.contains('headnote')) {
-            text += `\nHEADNOTE / SYLLABUS\n------------------------------------------------\n${el.innerText.trim()}\n------------------------------------------------\n\n`;
-          } else if (tag === 'div' && el.classList.contains('statute-box')) {
-            text += `\nCONTROLLING JURISPRUDENCE\n------------------------------------------------\n${el.innerText.trim()}\n------------------------------------------------\n\n`;
-          } else if (tag === 'br') {
-            text += "\n";
-          } else {
-            processNode(child);
-          }
-        }
-      });
-    };
-    processNode(temp);
-    return text.trim();
-  };
-
   const saveToLegalPad = () => {
     if (!result) return;
-    const plainText = convertToPlainText(result);
     const savedNotebooks = localStorage.getItem('legalph_notebooks');
     let notebooks = savedNotebooks ? JSON.parse(savedNotebooks) : [];
     let doctrineNotebook = notebooks.find((n: any) => n.name === "Legal Doctrines Archive");
@@ -215,7 +174,7 @@ export const LegalDoctrines: React.FC = () => {
     const newNote = {
       id: Date.now().toString(),
       title: activeTopicTitle || "Legal Doctrine Treatise",
-      content: plainText,
+      content: result, // Strictly keep entire original format
       updatedAt: Date.now(),
       tags: ['Doctrines', 'Jurisprudence'],
       color: 'bg-indigo-50',
@@ -226,7 +185,7 @@ export const LegalDoctrines: React.FC = () => {
     
     doctrineNotebook.notes.unshift(newNote);
     localStorage.setItem('legalph_notebooks', JSON.stringify(notebooks));
-    alert('Treatise saved to Legal Pad in book-grade plain text format.');
+    alert('Treatise strictly preserved and saved to Legal Pad.');
   };
 
   const handleManualSearch = (e: React.FormEvent) => {
@@ -394,7 +353,7 @@ export const LegalDoctrines: React.FC = () => {
               <div className="flex items-center gap-1">
                  {result && (
                    <>
-                    <button onClick={saveToLegalPad} className={`p-2 rounded hover:bg-black/5 transition-colors ${currentTheme.text}`} title="Add to Legal Pad (Plain Text)"><PlusSquare size={16}/></button>
+                    <button onClick={saveToLegalPad} className={`p-2 rounded hover:bg-black/5 transition-colors ${currentTheme.text}`} title="Add to Legal Pad (Strict Format)"><PlusSquare size={16}/></button>
                     <button onClick={handleHighlight} className={`p-2 rounded hover:bg-black/5 transition-colors ${currentTheme.text}`} title="Highlight Selection"><Highlighter size={16}/></button>
                     <button onClick={() => setIsEditing(!isEditing)} className={`p-2 rounded hover:bg-black/5 transition-colors ${isEditing ? 'bg-blue-100 text-blue-700' : currentTheme.text}`} title="Toggle Edit/Note Mode"><Edit3 size={16}/></button>
                     <button onClick={handleCopyCitation} className={`p-2 rounded hover:bg-black/5 transition-colors ${currentTheme.text}`} title="Copy Proper Citation"><Copy size={16}/></button>

@@ -143,7 +143,7 @@ const LegalNews = () => {
               </div>
            </div>
            
-           <div className="flex-1 bg-white rounded-xl border border-slate-200 shadow-sm p-8 flex flex-col justify-center relative overflow-hidden group">
+           <div className="flex-1 bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:ring-2 hover:ring-amber-500/10 transition-all p-8 flex flex-col justify-center relative overflow-hidden group">
                <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 blur-3xl -mr-16 -mt-16"></div>
                {loading ? (
                   <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-2">
@@ -156,9 +156,9 @@ const LegalNews = () => {
                     href={newsItems[currentIndex].url} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="flex-1 flex flex-col justify-center animate-in fade-in slide-in-from-right-4 duration-700 hover:opacity-95 transition-opacity group/slide"
+                    className="flex-1 flex flex-col justify-center animate-in fade-in slide-in-from-right-4 duration-700 hover:opacity-95 transition-opacity group/slide cursor-pointer"
                   >
-                    <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-red-100 text-red-700 text-[10px] font-bold uppercase tracking-widest mb-6 w-fit">
+                    <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-red-100 text-red-700 text-[10px] font-bold uppercase tracking-widest mb-6 w-fit shadow-sm">
                       <span className="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse"></span>
                       Breaking Legal Update
                     </div>
@@ -171,8 +171,8 @@ const LegalNews = () => {
                        </div>
                     </div>
                     <div className="mt-8 pt-6 border-t border-slate-100 flex justify-between items-center">
-                       <div className="flex items-center gap-2 text-xs text-amber-600 font-bold group-hover/slide:underline">
-                          Read source <ExternalLink size={12} />
+                       <div className="flex items-center gap-2 text-xs text-amber-600 font-bold group-hover/slide:translate-x-1 transition-transform">
+                          Read full article at source <ExternalLink size={12} />
                        </div>
                        <div className="flex gap-1.5">
                           {newsItems.map((_, idx) => (

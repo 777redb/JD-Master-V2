@@ -121,48 +121,8 @@ export const CaseDigest: React.FC = () => {
     }
   };
 
-  const convertToPlainText = (html: string) => {
-    const temp = document.createElement('div');
-    temp.innerHTML = html;
-    
-    let text = "";
-    const processNode = (node: Node) => {
-      node.childNodes.forEach(child => {
-        if (child.nodeType === Node.TEXT_NODE) {
-          text += child.textContent;
-        } else if (child.nodeType === Node.ELEMENT_NODE) {
-          const el = child as HTMLElement;
-          const tag = el.tagName.toLowerCase();
-          
-          if (['h1', 'h2', 'h3'].includes(tag)) {
-            text += `\n\n${el.innerText.toUpperCase()}\n${'='.repeat(el.innerText.length)}\n\n`;
-          } else if (tag === 'h4') {
-            text += `\n\n${el.innerText.toUpperCase()}\n\n`;
-          } else if (tag === 'p') {
-            // Apply indention based on standard 2.5em rule from reading mode
-            const isIndented = el.previousElementSibling && !['h1', 'h2', 'h3', 'h4'].includes(el.previousElementSibling.tagName.toLowerCase());
-            text += (isIndented ? "    " : "") + el.innerText.trim() + "\n\n";
-          } else if (tag === 'li') {
-            text += " • " + el.innerText.trim() + "\n";
-          } else if (tag === 'blockquote') {
-            text += `\n    "${el.innerText.trim()}"\n\n`;
-          } else if (tag === 'div' && el.classList.contains('statute-box')) {
-            text += `\n[PROVISION]\n------------------------------------------------\n${el.innerText.trim()}\n------------------------------------------------\n\n`;
-          } else if (tag === 'br') {
-            text += "\n";
-          } else {
-            processNode(child);
-          }
-        }
-      });
-    };
-    processNode(temp);
-    return text.trim();
-  };
-
   const saveToLegalPad = () => {
     if (!digest) return;
-    const plainText = convertToPlainText(digest);
     const savedNotebooks = localStorage.getItem('legalph_notebooks');
     let notebooks = savedNotebooks ? JSON.parse(savedNotebooks) : [];
     let digestNotebook = notebooks.find((n: any) => n.name === "Case Digests Archive");
@@ -175,7 +135,7 @@ export const CaseDigest: React.FC = () => {
     const newNote = {
       id: Date.now().toString(),
       title: input || "Case Digest",
-      content: plainText,
+      content: digest, // Save original HTML for strict formatting preservation
       updatedAt: Date.now(),
       tags: ['Case Digest', 'Research'],
       color: 'bg-amber-50',
@@ -186,7 +146,7 @@ export const CaseDigest: React.FC = () => {
     
     digestNotebook.notes.unshift(newNote);
     localStorage.setItem('legalph_notebooks', JSON.stringify(notebooks));
-    alert('Digest successfully saved to Legal Pad in book-grade plain text format.');
+    alert('Digest strictly preserved and saved to Legal Pad.');
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -208,9 +168,10 @@ export const CaseDigest: React.FC = () => {
   };
 
   const handleCopy = () => {
-    const text = convertToPlainText(digest);
-    navigator.clipboard.writeText(text);
-    alert('Case Digest copied to clipboard as plain text.');
+    const temp = document.createElement('div');
+    temp.innerHTML = digest;
+    navigator.clipboard.writeText(temp.innerText);
+    alert('Text copied to clipboard.');
   };
 
   const clearFile = () => {
@@ -397,7 +358,7 @@ export const CaseDigest: React.FC = () => {
                   <div className={`border-b-2 pb-10 mb-16 text-center relative z-10 ${theme === 'light' ? 'border-slate-900' : 'border-current'}`} style={{ borderColor: 'currentColor' }}>
                     <div className="flex justify-between items-start absolute right-0 top-0 opacity-40 hover:opacity-100 transition-opacity no-print">
                       <div className="flex gap-1">
-                        <button onClick={saveToLegalPad} className="p-2 rounded-lg hover:bg-black/5" title="Add to Legal Pad (Plain Text)"><PlusSquare size={18} /></button>
+                        <button onClick={saveToLegalPad} className="p-2 rounded-lg hover:bg-black/5" title="Add to Legal Pad (Strict Format)"><PlusSquare size={18} /></button>
                         <button onClick={handleCopy} className="p-2 rounded-lg hover:bg-black/5" title="Copy as Text"><Copy size={18} /></button>
                         <button onClick={() => window.print()} className="p-2 rounded-lg hover:bg-black/5" title="Print Brief"><Printer size={18} /></button>
                       </div>

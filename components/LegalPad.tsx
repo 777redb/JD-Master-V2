@@ -35,7 +35,8 @@ import {
   MousePointer2,
   Pen,
   PlusCircle,
-  Plus
+  Plus,
+  Copy
 } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
 
@@ -72,7 +73,15 @@ const PAPER_TEMPLATES: { id: PaperStyle; name: string; desc: string }[] = [
 const DEFAULT_NOTE: Note = {
   id: 'welcome-note',
   title: 'My First Case Memo',
-  content: 'WELCOME TO LEGALPH LEGAL PAD\n\nThis workspace is inspired by Goodnotes 6, designed specifically for legal practitioners and law students in the Philippines.\n\nFEATURES:\n1. 1.25" Margin: Essential for case annotations and court filings.\n2. Paper Templates: Choose from Cornell, Legal Ruled, or Graph paper.\n3. Billable Timer: Track your time spent on research directly in the pad.\n4. AI Summarizer: Click the Sparkles icon to synthesize your long notes.\n5. Organization: Drag and drop notes between notebooks.',
+  content: `<h3>WELCOME TO LEGALPH LEGAL PAD</h3>
+<p>This workspace is now <strong>Rich Text Enabled</strong>, designed specifically for legal practitioners and law students in the Philippines.</p>
+<p><strong>FEATURES:</strong></p>
+<ul>
+  <li><strong>1.25" Margin:</strong> Essential for case annotations and court filings.</li>
+  <li><strong>Preserved Styles:</strong> Case Digests, Law Reviewers, and JD Modules moved here will strictly keep their original book-grade formatting.</li>
+  <li><strong>Billable Timer:</strong> Track your time spent on research directly in the pad.</li>
+  <li><strong>AI Summarizer:</strong> Click the Sparkles icon to synthesize your long notes.</li>
+</ul>`,
   updatedAt: Date.now(),
   tags: ['Onboarding', 'Tutorial'],
   color: 'bg-amber-50',
@@ -109,6 +118,7 @@ export const LegalPad: React.FC = () => {
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [timerSeconds, setTimerSeconds] = useState(0);
   const [aiLoading, setAiLoading] = useState(false);
+  const editorRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     localStorage.setItem('legalph_notebooks', JSON.stringify(notebooks));
@@ -150,7 +160,7 @@ export const LegalPad: React.FC = () => {
         contents: `Summarize this legal note and format it with clear bullet points. Keep it professional. Content: ${activeNote.content}`
       });
       const summary = response.text || "Could not generate summary.";
-      updateActiveNote('content', `${activeNote.content}\n\n--- AI SUMMARY ---\n${summary}`);
+      updateActiveNote('content', `${activeNote.content}<br/><br/>--- AI SUMMARY ---<br/>${summary}`);
     } catch (e) {
       console.error(e);
     } finally {
@@ -234,14 +244,82 @@ export const LegalPad: React.FC = () => {
     } : nb));
   };
 
+  const handleEditorChange = () => {
+    if (editorRef.current) {
+      updateActiveNote('content', editorRef.current.innerHTML);
+    }
+  };
+
   const activeNotebook = notebooks.find(nb => nb.id === activeNotebookId);
   const activeNote = activeNotebook?.notes.find(n => n.id === activeNoteId);
 
+  // Maintain text focus when switching notes
+  useEffect(() => {
+    if (editorRef.current && activeNote) {
+      editorRef.current.innerHTML = activeNote.content;
+    }
+  }, [activeNoteId]);
+
   return (
     <div className="h-full flex flex-col md:flex-row gap-0 bg-[#f8f9fa] overflow-hidden rounded-3xl border border-slate-200 shadow-2xl">
+      <style>{`
+        /* Shared Book-Grade Formatting for Legal Pad */
+        .legal-pad-paper {
+          text-align: justify;
+          line-height: 1.8;
+        }
+        .legal-pad-paper h1, .legal-pad-paper h2 { 
+          text-align: center; font-weight: 900; text-transform: uppercase; 
+          margin: 2rem 0; border-bottom: 3px double currentColor; padding-bottom: 1rem; 
+        }
+        .legal-pad-paper h3 { 
+          font-weight: 800; text-transform: uppercase; margin-top: 3rem; margin-bottom: 1rem; 
+          border-bottom: 1px solid currentColor; font-size: 1.15em; opacity: 0.9;
+        }
+        .legal-pad-paper h4 { font-weight: 700; margin-top: 1.5rem; margin-bottom: 0.5rem; text-transform: uppercase; }
+        .legal-pad-paper p { margin-bottom: 1rem; }
+        .legal-pad-paper blockquote { 
+          margin: 1.5rem 2rem; padding: 1rem; border-left: 4px solid #b45309; 
+          background: rgba(0,0,0,0.02); font-style: italic; 
+        }
+        .legal-pad-paper .statute-box { 
+          border: 1px solid currentColor; background: rgba(0,0,0,0.03); 
+          padding: 1.25rem; margin: 2rem 0; border-radius: 4px; font-family: 'Merriweather', serif; 
+        }
+        .legal-pad-paper .so-ordered { text-align: center; margin-top: 3rem; font-weight: 900; text-transform: uppercase; }
+        
+        /* Layout CSS */
+        .paper-content {
+          min-height: calc(11in - 100px);
+          font-size: 1.1rem;
+          background-attachment: local;
+          padding-top: 1rem;
+        }
+        .margin-line {
+          position: absolute;
+          left: 120px;
+          top: 0;
+          bottom: 0;
+          width: 2px;
+          background-color: rgba(220, 38, 38, 0.4);
+          z-index: 10;
+        }
+        .ruled-lines {
+          background-image: linear-gradient(transparent 96%, rgba(59, 130, 246, 0.1) 96%);
+          background-size: 100% 2rem;
+        }
+        .dot-grid {
+          background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+          background-size: 2rem 2rem;
+        }
+        .graph-paper {
+          background-image: linear-gradient(rgba(59, 130, 246, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(59, 130, 246, 0.05) 1px, transparent 1px);
+          background-size: 2rem 2rem;
+        }
+      `}</style>
       
       {/* Goodnotes Sidebar - The Shelf */}
-      <div className="w-full md:w-72 bg-white border-r border-slate-200 flex flex-col shrink-0">
+      <div className="w-full md:w-72 bg-white border-r border-slate-200 flex flex-col shrink-0 no-print">
         <div className="p-6 border-b border-slate-50">
            <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-black text-slate-800 tracking-tight">Workspace</h2>
@@ -267,7 +345,6 @@ export const LegalPad: React.FC = () => {
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 custom-scrollbar space-y-4">
-           {/* Favorites Section */}
            <div>
               <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2 mb-2 block">Quick Access</span>
               <button className="w-full flex items-center gap-3 px-3 py-2 hover:bg-slate-50 rounded-lg text-sm font-medium text-slate-700 transition-colors">
@@ -354,7 +431,7 @@ export const LegalPad: React.FC = () => {
         {activeNote ? (
           <>
             {/* Context Toolbar */}
-            <div className="h-14 bg-white border-b border-slate-200 px-6 flex items-center justify-between shrink-0 shadow-sm z-30">
+            <div className="h-14 bg-white border-b border-slate-200 px-6 flex items-center justify-between shrink-0 shadow-sm z-30 no-print">
               <div className="flex items-center gap-4 flex-1">
                  <div className="p-2 bg-slate-100 rounded-lg text-slate-500">
                     <Pen size={18} />
@@ -391,7 +468,7 @@ export const LegalPad: React.FC = () => {
                    className="p-2 hover:bg-amber-50 text-amber-600 rounded-lg transition-colors disabled:opacity-50"
                    title="AI Summarize"
                  >
-                    {aiLoading ? <Loader2 className="animate-spin" size={20}/> : <Sparkles size={20}/>}
+                    {aiLoading ? <RefreshCw className="animate-spin" size={20}/> : <Sparkles size={20}/>}
                  </button>
                  
                  <div className="relative group">
@@ -409,6 +486,7 @@ export const LegalPad: React.FC = () => {
                        ))}
                     </div>
                  </div>
+                 <button onClick={() => window.print()} className="p-2 hover:bg-slate-100 text-slate-500 rounded-lg"><FileText size={20}/></button>
               </div>
             </div>
 
@@ -419,50 +497,19 @@ export const LegalPad: React.FC = () => {
                  w-full max-w-[8.5in] min-h-[11in] shadow-2xl rounded-sm transition-all duration-500 relative flex flex-col
                  ${activeNote.paperStyle === 'yellow-legal' ? 'bg-[#fffae0]' : 'bg-white'}
                `}>
-                  {/* CSS Patterns for paper styles */}
-                  <style>{`
-                    .paper-content {
-                      line-height: 2rem;
-                      font-size: 1.1rem;
-                      background-attachment: local;
-                      padding-top: 1rem;
-                    }
-                    /* Standard Legal Margin: 1.25 inch = ~120px */
-                    .margin-line {
-                      position: absolute;
-                      left: 120px;
-                      top: 0;
-                      bottom: 0;
-                      width: 2px;
-                      background-color: rgba(220, 38, 38, 0.4);
-                      z-index: 10;
-                    }
-                    .ruled-lines {
-                      background-image: linear-gradient(transparent 96%, rgba(59, 130, 246, 0.1) 96%);
-                      background-size: 100% 2rem;
-                    }
-                    .dot-grid {
-                      background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
-                      background-size: 2rem 2rem;
-                    }
-                    .graph-paper {
-                      background-image: linear-gradient(rgba(59, 130, 246, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(59, 130, 246, 0.05) 1px, transparent 1px);
-                      background-size: 2rem 2rem;
-                    }
-                  `}</style>
-
-                  <div className="margin-line"></div>
+                  <div className="margin-line no-print"></div>
                   
                   {/* Billable info footer on paper */}
-                  <div className="absolute top-4 right-6 text-[10px] font-mono text-slate-400 pointer-events-none uppercase">
+                  <div className="absolute top-4 right-6 text-[10px] font-mono text-slate-400 pointer-events-none uppercase no-print">
                      ID: {activeNote.id} | Billable: {activeNote.billableMinutes}m
                   </div>
 
-                  <textarea 
-                    value={activeNote.content}
-                    onChange={(e) => updateActiveNote('content', e.target.value)}
+                  <div
+                    ref={editorRef}
+                    contentEditable
+                    onInput={handleEditorChange}
                     className={`
-                      flex-1 w-full p-10 pl-[140px] pr-10 outline-none resize-none bg-transparent font-serif text-slate-800 paper-content
+                      flex-1 w-full p-10 pl-[140px] pr-10 outline-none bg-transparent font-serif text-slate-800 paper-content legal-pad-paper
                       ${activeNote.paperStyle === 'legal-ruled' || activeNote.paperStyle === 'yellow-legal' ? 'ruled-lines' : ''}
                       ${activeNote.paperStyle === 'dot-grid' ? 'dot-grid' : ''}
                       ${activeNote.paperStyle === 'graph' ? 'graph-paper' : ''}
@@ -470,7 +517,7 @@ export const LegalPad: React.FC = () => {
                     placeholder="Commence legal drafting or research annotation..."
                   />
 
-                  <div className="h-20 bg-transparent border-t border-slate-100/50 flex items-center justify-center pointer-events-none">
+                  <div className="h-20 bg-transparent border-t border-slate-100/50 flex items-center justify-center pointer-events-none no-print">
                      <span className="text-[10px] text-slate-300 font-serif italic tracking-widest">*** End of Page ***</span>
                   </div>
                </div>
@@ -498,7 +545,7 @@ export const LegalPad: React.FC = () => {
   );
 };
 
-const Loader2 = ({ className, size }: { className?: string; size?: number }) => (
+const RefreshCw = ({ className, size }: { className?: string; size?: number }) => (
   <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
   </svg>
