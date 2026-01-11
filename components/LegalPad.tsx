@@ -263,35 +263,85 @@ export const LegalPad: React.FC = () => {
   return (
     <div className="h-full flex flex-col md:flex-row gap-0 bg-[#f8f9fa] overflow-hidden rounded-3xl border border-slate-200 shadow-2xl">
       <style>{`
-        /* Shared Book-Grade Formatting for Legal Pad */
+        /* Shared Book-Grade Formatting for Legal Pad - Universal Legal Styles */
         .legal-pad-paper {
           text-align: justify;
           line-height: 1.8;
+          font-family: 'Crimson Pro', 'Merriweather', serif;
         }
+        
+        /* Headers */
         .legal-pad-paper h1, .legal-pad-paper h2 { 
           text-align: center; font-weight: 900; text-transform: uppercase; 
-          margin: 2rem 0; border-bottom: 3px double currentColor; padding-bottom: 1rem; 
+          margin: 2.5rem 0; border-bottom: 3px double currentColor; padding-bottom: 1.25rem; 
         }
         .legal-pad-paper h3 { 
-          font-weight: 800; text-transform: uppercase; margin-top: 3rem; margin-bottom: 1rem; 
-          border-bottom: 1px solid currentColor; font-size: 1.15em; opacity: 0.9;
+          font-weight: 800; text-transform: uppercase; margin-top: 3.5rem; margin-bottom: 1.25rem; 
+          border-bottom: 1.5px solid rgba(0,0,0,0.15); font-size: 1.25em; opacity: 0.9;
         }
-        .legal-pad-paper h4 { font-weight: 700; margin-top: 1.5rem; margin-bottom: 0.5rem; text-transform: uppercase; }
-        .legal-pad-paper p { margin-bottom: 1rem; }
+        .legal-pad-paper h4 { 
+          font-weight: 700; margin-top: 2rem; margin-bottom: 0.75rem; 
+          font-size: 1.1em; text-transform: uppercase; 
+        }
+        
+        /* Paragraphs and Text Elements */
+        .legal-pad-paper p { margin-bottom: 1.25rem; }
         .legal-pad-paper blockquote { 
-          margin: 1.5rem 2rem; padding: 1rem; border-left: 4px solid #b45309; 
-          background: rgba(0,0,0,0.02); font-style: italic; 
+          margin: 2rem 2.5rem; padding: 1.5rem 2rem; border-left: 5px solid #b45309; 
+          background: rgba(0,0,0,0.03); font-style: normal; 
         }
+        
+        /* Specialized Legal Containers (Preserving Module Layouts) */
         .legal-pad-paper .statute-box { 
           border: 1px solid currentColor; background: rgba(0,0,0,0.03); 
-          padding: 1.25rem; margin: 2rem 0; border-radius: 4px; font-family: 'Merriweather', serif; 
+          padding: 1.75rem; margin: 2.5rem 0; border-radius: 4px; font-family: 'Merriweather', serif;
+          border-left: 5px solid #f59e0b;
         }
-        .legal-pad-paper .so-ordered { text-align: center; margin-top: 3rem; font-weight: 900; text-transform: uppercase; }
+        .legal-pad-paper .so-ordered { 
+          text-align: center; margin-top: 4rem; font-weight: 900; 
+          text-transform: uppercase; border-top: 1px solid currentColor; 
+          padding-top: 2rem; letter-spacing: 0.2em; 
+        }
+        .legal-pad-paper .headnote {
+          background: rgba(0,0,0,0.02); border: 1px dashed rgba(0,0,0,0.2);
+          padding: 2rem; margin-bottom: 2.5rem; border-radius: 8px;
+        }
+        .legal-pad-paper .legal-header {
+          border-bottom: 2px solid #1e3a8a; margin-bottom: 3rem;
+          padding-bottom: 1.5rem; text-align: center;
+        }
+        .legal-pad-paper .citation-block {
+          font-size: 0.75rem; text-transform: uppercase; 
+          letter-spacing: 0.1em; color: #64748b; font-weight: bold;
+        }
+        .legal-pad-paper .commentary {
+          border: 1px dashed #94a3b8; padding: 2rem; margin-top: 3.5rem;
+          border-radius: 8px; font-size: 0.95em; background: rgba(255,255,255,0.5);
+        }
+        .legal-pad-paper .final-analysis {
+          border: 1px dashed currentColor; padding: 2.5rem;
+          background: rgba(0,0,0,0.02); border-radius: 4px; margin-top: 3.5rem;
+        }
+        .legal-pad-paper .annotation {
+          color: inherit; opacity: 0.7; font-size: 0.9em; font-style: italic;
+          border-top: 1px dashed currentColor; padding-top: 1rem; margin-top: 2rem;
+        }
+        .legal-pad-paper .end-marker {
+          text-align: center; margin-top: 5rem; opacity: 0.3;
+          font-size: 0.75rem; letter-spacing: 0.5em; border-top: 1px solid rgba(0,0,0,0.1);
+          padding-top: 2.5rem;
+        }
         
-        /* Layout CSS */
+        /* List Styling */
+        .legal-pad-paper ul, .legal-pad-paper ol {
+          margin-top: 1rem; margin-bottom: 2rem; padding-left: 3rem;
+        }
+        .legal-pad-paper li { margin-bottom: 0.75rem; }
+
+        /* Paper Layout CSS */
         .paper-content {
           min-height: calc(11in - 100px);
-          font-size: 1.1rem;
+          font-size: 1.15rem;
           background-attachment: local;
           padding-top: 1rem;
         }
@@ -318,16 +368,16 @@ export const LegalPad: React.FC = () => {
         }
       `}</style>
       
-      {/* Goodnotes Sidebar - The Shelf */}
+      {/* Workspace Sidebar */}
       <div className="w-full md:w-72 bg-white border-r border-slate-200 flex flex-col shrink-0 no-print">
         <div className="p-6 border-b border-slate-50">
            <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-black text-slate-800 tracking-tight">Workspace</h2>
               <div className="flex gap-1">
-                 <button onClick={createNotebook} className="p-1.5 hover:bg-slate-100 rounded text-slate-500 transition-colors" title="New Notebook / Folder">
+                 <button onClick={createNotebook} className="p-1.5 hover:bg-slate-100 rounded text-slate-500 transition-colors" title="New Notebook">
                     <FolderPlus size={20} />
                  </button>
-                 <button onClick={createNote} disabled={!activeNotebookId} className="p-1.5 hover:bg-slate-100 rounded text-amber-600 disabled:opacity-30 transition-colors" title="New Memo / Page">
+                 <button onClick={createNote} disabled={!activeNotebookId} className="p-1.5 hover:bg-slate-100 rounded text-amber-600 disabled:opacity-30 transition-colors" title="New Memo">
                     <FilePlus size={20} />
                  </button>
               </div>
@@ -379,7 +429,6 @@ export const LegalPad: React.FC = () => {
                         <button 
                           onClick={(e) => { e.stopPropagation(); deleteNotebook(nb.id); }}
                           className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition-all"
-                          title="Delete Notebook"
                         >
                           <Trash2 size={12} />
                         </button>
@@ -399,7 +448,6 @@ export const LegalPad: React.FC = () => {
                              <button 
                                onClick={(e) => { e.stopPropagation(); deleteNote(nb.id, note.id); }}
                                className="opacity-0 group-note/hover:opacity-100 p-1 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded transition-all"
-                               title="Delete Memo"
                              >
                                <X size={10} />
                              </button>
@@ -430,7 +478,6 @@ export const LegalPad: React.FC = () => {
       <div className="flex-1 flex flex-col relative bg-slate-200 overflow-hidden">
         {activeNote ? (
           <>
-            {/* Context Toolbar */}
             <div className="h-14 bg-white border-b border-slate-200 px-6 flex items-center justify-between shrink-0 shadow-sm z-30 no-print">
               <div className="flex items-center gap-4 flex-1">
                  <div className="p-2 bg-slate-100 rounded-lg text-slate-500">
@@ -446,7 +493,6 @@ export const LegalPad: React.FC = () => {
               </div>
 
               <div className="flex items-center gap-2">
-                 {/* Billable Timer Widget */}
                  <div className="flex items-center gap-2 bg-slate-900 text-white px-3 py-1.5 rounded-full shadow-lg mr-2 transition-all hover:scale-105">
                     <Clock size={14} className={isTimerRunning ? "animate-pulse text-green-400" : ""} />
                     <span className="text-xs font-mono font-bold">{formatTimer(timerSeconds)}</span>
@@ -490,16 +536,13 @@ export const LegalPad: React.FC = () => {
               </div>
             </div>
 
-            {/* Main Reading/Writing Area */}
             <div className="flex-1 overflow-y-auto p-4 md:p-10 flex justify-center custom-scrollbar">
-               {/* THE PAGE */}
                <div className={`
                  w-full max-w-[8.5in] min-h-[11in] shadow-2xl rounded-sm transition-all duration-500 relative flex flex-col
                  ${activeNote.paperStyle === 'yellow-legal' ? 'bg-[#fffae0]' : 'bg-white'}
                `}>
                   <div className="margin-line no-print"></div>
                   
-                  {/* Billable info footer on paper */}
                   <div className="absolute top-4 right-6 text-[10px] font-mono text-slate-400 pointer-events-none uppercase no-print">
                      ID: {activeNote.id} | Billable: {activeNote.billableMinutes}m
                   </div>
@@ -547,6 +590,6 @@ export const LegalPad: React.FC = () => {
 
 const RefreshCw = ({ className, size }: { className?: string; size?: number }) => (
   <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+    <path d="M21 12a9 9 1 1-6.219-8.56"/>
   </svg>
 );
