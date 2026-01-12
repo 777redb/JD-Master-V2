@@ -31,7 +31,8 @@ import {
   Minimize2,
   Layout,
   Columns,
-  ChevronUp
+  ChevronUp,
+  PlusSquare
 } from 'lucide-react';
 
 type Theme = 'light' | 'sepia' | 'dark' | 'night';
@@ -110,7 +111,6 @@ export const ContractDrafting: React.FC = () => {
         const res = await generateContract('CUSTOM', customPrompt, { additionalNotes: 'User requested custom draft' });
         setDraft(res);
       }
-      // Collapse config on success to focus on draft
       setIsConfigOpen(false);
     } catch (e) {
       setDraft("<p>Error generating contract.</p>");
@@ -119,12 +119,40 @@ export const ContractDrafting: React.FC = () => {
     }
   };
 
+  const saveToLegalPad = () => {
+    if (!draft) return;
+    const savedNotebooks = localStorage.getItem('legalph_notebooks');
+    let notebooks = savedNotebooks ? JSON.parse(savedNotebooks) : [];
+    let draftingNotebook = notebooks.find((n: any) => n.name === "Legal Drafts Archive");
+    
+    if (!draftingNotebook) {
+      draftingNotebook = { id: 'drafts_' + Date.now(), name: 'Legal Drafts Archive', notes: [], isExpanded: true };
+      notebooks.push(draftingNotebook);
+    }
+    
+    const newNote = {
+      id: Date.now().toString(),
+      title: template?.name || "Contract Draft",
+      content: draft, // Strictly preserve original book-grade HTML
+      updatedAt: Date.now(),
+      tags: ['Drafting', mode],
+      color: 'bg-white',
+      isFavorite: false,
+      paperStyle: 'legal-ruled',
+      billableMinutes: 0
+    };
+    
+    draftingNotebook.notes.unshift(newNote);
+    localStorage.setItem('legalph_notebooks', JSON.stringify(notebooks));
+    alert('Professional draft preserved and saved to Legal Pad.');
+  };
+
   const handleCopy = () => {
     const tempDiv = document.createElement("div");
     tempDiv.innerHTML = draft;
-    const text = tempDiv.textContent || tempDiv.innerText || "";
+    const text = tempDiv.innerText || "";
     navigator.clipboard.writeText(text);
-    alert('Contract copied to clipboard!');
+    alert('Contract text copied to clipboard!');
   };
 
   const selectTemplate = (t: ContractTemplate) => {
@@ -140,58 +168,130 @@ export const ContractDrafting: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col bg-white overflow-hidden">
-      {/* Premium Book-Grade Styles */}
+      {/* PREMIUM BOOK-GRADE LEGAL DRAFTING LAYOUT */}
       <style>{`
         .book-content {
           text-align: ${textAlign};
-          line-height: 1.8;
+          line-height: 1.85;
           hyphens: auto;
+          color: inherit;
         }
+
+        /* Formal Contract Header Style */
         .book-content h3 {
           text-align: center;
-          font-weight: 800;
+          font-weight: 900;
           text-transform: uppercase;
-          letter-spacing: 0.1em;
-          margin-top: 3rem;
-          margin-bottom: 2rem;
-          line-height: 1.2;
-          padding-bottom: 1.5rem;
-          border-bottom: 3px double currentColor;
+          letter-spacing: 0.15em;
+          margin-top: 3.5rem;
+          margin-bottom: 3.5rem;
+          line-height: 1.3;
+          padding-bottom: 2rem;
+          border-bottom: 4px double currentColor;
           text-indent: 0;
         }
+
+        /* Article / Section Subheaders */
         .book-content h4 {
-          font-weight: 700;
-          margin-top: 2rem;
-          margin-bottom: 1rem;
-          font-size: 1.1em;
+          font-weight: 800;
+          margin-top: 3rem;
+          margin-bottom: 1.25rem;
+          font-size: 1.15em;
           text-transform: uppercase;
           text-indent: 0;
           page-break-after: avoid;
+          letter-spacing: 0.05em;
         }
+
+        /* Standard Legal Paragraph Indention */
         .book-content p {
-          margin-bottom: 1rem;
+          margin-bottom: 1.5rem;
           text-indent: 2.5em;
         }
-        .book-content h3 + p, .book-content h4 + p, .book-content div + p, .book-content blockquote + p {
+
+        /* Exceptions: Paragraphs following headers or WITNESSETH are not indented */
+        .book-content h3 + p, 
+        .book-content h4 + p, 
+        .book-content div + p, 
+        .book-content blockquote + p,
+        .book-content hr + p {
           text-indent: 0;
         }
+
+        /* Formal Transitions and Boilerplate Containers */
         .book-content blockquote {
-          margin: 2rem 2.5rem;
-          padding: 1.25rem 1.5rem;
-          border-left: 4px solid #b45309;
+          margin: 2.5rem 3.5rem;
+          padding: 1.5rem 2rem;
+          border-left: 5px solid #b45309;
           background-color: rgba(0,0,0,0.02);
-          font-style: italic;
-          text-indent: 0;
-        }
-        .book-content .statute-box {
-          border: 1px solid currentColor;
-          background: rgba(0,0,0,0.03);
-          padding: 1.5rem;
-          margin: 2rem 0;
+          font-style: normal;
           text-indent: 0;
           font-family: 'Merriweather', serif;
           font-size: 0.95em;
+          line-height: 1.75;
+          border-radius: 2px;
+        }
+
+        /* WHEREAS / WITNESSETH centering if detected */
+        .book-content .so-ordered, 
+        .book-content .legal-transition {
+          text-align: center;
+          font-weight: 900;
+          text-transform: uppercase;
+          letter-spacing: 0.3em;
+          margin: 3rem 0;
+          text-indent: 0;
+          border-top: 1px solid rgba(0,0,0,0.05);
+          padding-top: 2rem;
+        }
+
+        .book-content .statute-box {
+          border: 1px solid rgba(0,0,0,0.1);
+          background: rgba(0,0,0,0.02);
+          padding: 2.25rem;
+          margin: 3.5rem 0;
+          text-indent: 0;
+          font-family: 'Merriweather', serif;
+          font-size: 0.9em;
           border-radius: 4px;
+          border-left: 5px solid #f59e0b;
+        }
+
+        .book-content ul, .book-content ol {
+          margin-top: 1.25rem;
+          padding-left: 3.5rem;
+          text-indent: 0;
+          margin-bottom: 2rem;
+        }
+
+        .book-content li {
+          margin-bottom: 0.85rem;
+          text-indent: 0;
+        }
+
+        .book-content hr {
+          border: 0;
+          border-top: 1.5px solid currentColor;
+          opacity: 0.15;
+          margin: 4.5rem auto;
+          width: 50%;
+        }
+
+        .book-content .signature-block {
+          margin-top: 5rem;
+          display: grid;
+          grid-template-cols: 1fr 1fr;
+          gap: 4rem;
+          text-indent: 0;
+        }
+
+        .book-content .signature-line {
+          border-top: 1.5px solid currentColor;
+          padding-top: 0.75rem;
+          text-align: center;
+          font-weight: 700;
+          font-size: 0.85em;
+          text-transform: uppercase;
         }
       `}</style>
 
@@ -232,9 +332,9 @@ export const ContractDrafting: React.FC = () => {
 
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1">
-             <button onClick={() => setZoomLevel(Math.max(70, zoomLevel - 10))} className="p-1.5 hover:bg-slate-100 rounded text-slate-500"><ZoomOut size={16}/></button>
+             <button onClick={() => setZoomLevel(Math.max(70, zoomLevel - 10))} className="p-1.5 hover:bg-slate-100 rounded text-slate-500 transition-colors"><ZoomOut size={16}/></button>
              <span className="text-[10px] font-bold text-slate-400 w-8 text-center">{zoomLevel}%</span>
-             <button onClick={() => setZoomLevel(Math.min(200, zoomLevel + 10))} className="p-1.5 hover:bg-slate-100 rounded text-slate-500"><ZoomIn size={16}/></button>
+             <button onClick={() => setZoomLevel(Math.min(200, zoomLevel + 10))} className="p-1.5 hover:bg-slate-100 rounded text-slate-500 transition-colors"><ZoomIn size={16}/></button>
           </div>
           <div className="w-px h-4 bg-slate-200"></div>
           <button onClick={() => setShowAppearance(!showAppearance)} className="p-2 hover:bg-slate-100 rounded-md text-slate-600 transition-colors">
@@ -438,9 +538,14 @@ export const ContractDrafting: React.FC = () => {
 
               <div className="flex items-center gap-2">
                 {draft && (
-                  <button onClick={handleCopy} className={`px-3 py-1.5 text-[10px] font-bold flex items-center gap-2 uppercase tracking-widest border rounded-lg hover:bg-black/5 transition-all ${currentTheme.text} ${currentTheme.border}`}>
-                    <Copy size={14}/> Copy Text
-                  </button>
+                  <>
+                    <button onClick={saveToLegalPad} className={`px-3 py-1.5 text-[10px] font-bold flex items-center gap-2 uppercase tracking-widest border rounded-lg hover:bg-black/5 transition-all ${currentTheme.text} ${currentTheme.border}`}>
+                      <PlusSquare size={14}/> Save to Workspace
+                    </button>
+                    <button onClick={handleCopy} className={`px-3 py-1.5 text-[10px] font-bold flex items-center gap-2 uppercase tracking-widest border rounded-lg hover:bg-black/5 transition-all ${currentTheme.text} ${currentTheme.border}`}>
+                      <Copy size={14}/> Copy Text
+                    </button>
+                  </>
                 )}
               </div>
             </div>
@@ -493,7 +598,7 @@ export const ContractDrafting: React.FC = () => {
                 >
                   <div dangerouslySetInnerHTML={{ __html: draft }} />
                   <div className="mt-20 pt-10 border-t border-black/5 text-center opacity-30 italic font-serif text-[10px] tracking-widest">
-                    *** END OF GENERATED DOCUMENT ***
+                    *** END OF GENERATED INSTRUMENT ***
                   </div>
                 </div>
               ) : (

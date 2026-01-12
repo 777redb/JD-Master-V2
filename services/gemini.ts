@@ -354,16 +354,24 @@ export async function generateLawSyllabus(topic: string, profile: string): Promi
 }
 
 export async function generateContract(mode: 'TEMPLATE' | 'CUSTOM', promptOrName: string, data: any): Promise<string> {
-  const prompt = mode === 'TEMPLATE' 
-    ? `Draft a formal Philippine legal contract for: ${promptOrName}. Details: ${JSON.stringify(data)}.`
-    : `Draft a custom Philippine legal contract based on these instructions: ${promptOrName}.`;
+  const instructions = mode === 'TEMPLATE' 
+    ? `Draft a formal Philippine legal contract for: ${promptOrName}. Use the following details: ${JSON.stringify(data)}.`
+    : `Draft a custom Philippine legal contract based on these specific instructions: ${promptOrName}.`;
 
   const result = await InferenceGateway.invokeWithGrounding({
     model: 'gemini-3-pro-preview',
-    contents: prompt,
+    contents: `
+      ${instructions}
+      
+      STRICT DRAFTING REQUIREMENTS (HTML ONLY):
+      - Start EXACTLY with the contract title in <h3>.
+      - Strip all conversational filler, "Here is your draft", and markdown artifacts (no **, no ***, no ###).
+      - Use ONLY semantic HTML: <h3> for titles, <h4> for Articles/Sections, <p> for clauses, <blockquote> for important citations.
+      - Ensure standard PH contract structure: Title, Parties, Witnesseth/Whereas, Terms & Conditions, and Signature Blocks.
+    `,
     schemaKey: 'CONTRACT_HTML',
     config: {
-      systemInstruction: "You are an expert legal draftsman specializing in Philippine Civil and Commercial law."
+      systemInstruction: "You are an expert legal draftsman specializing in Philippine Civil and Commercial law. You produce formal, ready-to-execute legal instruments strictly based on the Civil Code and relevant PH statutes. NEVER use foreign legal boilerplate. Output in Semantic HTML only."
     }
   });
   return result.text;
