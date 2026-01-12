@@ -27,14 +27,16 @@ const JurisdictionScopeRegistry: Record<string, {
   'PH': {
     id: 'PH',
     name: 'Philippines',
-    authorizedSources: ['1987 Constitution', 'Philippine Reports', 'Official Gazette'],
-    forbiddenCaseLawSets: ['U.S. Supreme Court', 'Federal Rules of Evidence', 'Common Law Doctrines'],
+    authorizedSources: ['1987 Constitution of the Republic of the Philippines', 'Philippine Reports', 'Official Gazette of the Philippines', 'Rules of Court'],
+    forbiddenCaseLawSets: ['U.S. Supreme Court', 'Federal Rules of Evidence', 'U.S. Constitution', 'Common Law Doctrines'],
     detectionPatterns: [
       /\bU\.S\.\s+Supreme\s+Court\b/i,
       /\bSCOTUS\b/i,
       /\bCommon\s+Law\b(?!\s+principles\s+applied\s+in\s+PH)/i,
       /\bFederal\s+Rules\s+of\s+Evidence\b/i,
-      /\bMiranda\s+Rights\b(?!\s+as\s+codified\s+in\s+PH)/i
+      /\bMiranda\s+Rights\b(?!\s+as\s+codified\s+in\s+PH)/i,
+      /\bSecond\s+Amendment\b/i,
+      /\bCommerce\s+Clause\b(?!\s+PH\s+equivalent)/i
     ]
   }
 };
@@ -157,8 +159,21 @@ class InferenceGateway {
 
       let textResponse = response.text || "";
 
+      // ENHANCED CLEANUP: Aggressively strip conversational preambles and markdown blocks
       if (textResponse.includes('```')) {
-        textResponse = textResponse.replace(/^```(?:html|markdown|json)?\n?/i, '').replace(/\n?```$/i, '').trim();
+        // Remove everything before and including the first code fence, and after the last fence
+        textResponse = textResponse.replace(/^[\s\S]*?```(?:html|markdown|json)?\n?/i, '').replace(/\n?```[\s\S]*?$/i, '').trim();
+      } else {
+        // If no code fence but has HTML, strip everything before the first tag and after the last
+        const firstTag = textResponse.indexOf('<');
+        const lastTag = textResponse.lastIndexOf('>');
+        if (firstTag !== -1 && lastTag !== -1 && lastTag > firstTag) {
+           const snippet = textResponse.substring(firstTag, firstTag + 20).toLowerCase();
+           // Only strip if the detected tags look like our structural tags
+           if (snippet.includes('<h') || snippet.includes('<p') || snippet.includes('<div')) {
+              textResponse = textResponse.substring(firstTag, lastTag + 1).trim();
+           }
+        }
       }
 
       const validationResult = OutputSchemaValidator.validate(textResponse, params.schemaKey);
@@ -184,24 +199,22 @@ class InferenceGateway {
  * PUBLIC EXPORTS: LEGAL SERVICE LAYER
  */
 
-// Fix: Implemented generateGeneralLegalAdvice to provide advice using gemini-3-pro-preview.
 export async function generateGeneralLegalAdvice(prompt: string): Promise<string> {
   const result = await InferenceGateway.invokeWithGrounding({
     model: 'gemini-3-pro-preview',
     contents: prompt,
     schemaKey: 'GENERAL_LEGAL_HTML',
     config: {
-      systemInstruction: "You are a senior Philippine legal consultant. Provide detailed legal commentary in HTML using <h3> and <p> tags."
+      systemInstruction: "You are a senior Philippine legal consultant. Provide detailed legal commentary STRICTLY within the Philippine jurisdiction. NEVER use US/UK law. Output in HTML using <h3> and <p> tags."
     }
   });
   return result.text;
 }
 
-// Fix: Implemented generateMockBarQuestion using gemini-3-pro-preview and responseSchema for structured JSON output.
 export async function generateMockBarQuestion(subject: string, profile: string, examType: 'MCQ' | 'ESSAY'): Promise<MockBarQuestion> {
   const result = await InferenceGateway.invokeWithGrounding({
     model: 'gemini-3-pro-preview',
-    contents: `Generate a 2024 Philippine Bar Examination question for: ${subject}. Candidate level: ${profile}. Type: ${examType}.`,
+    contents: `Generate a 2024 Philippine Bar Examination question for: ${subject}. STRICTLY following PH laws. Candidate level: ${profile}. Type: ${examType}.`,
     schemaKey: 'MCQ_JSON',
     config: {
       responseMimeType: "application/json",
@@ -221,7 +234,6 @@ export async function generateMockBarQuestion(subject: string, profile: string, 
   return JSON.parse(result.text);
 }
 
-// Fix: Completed generateCaseDigest to return verified research text and grounding sources.
 export async function generateCaseDigest(
   query: string, 
   fileData?: { data: string, mimeType: string }
@@ -239,22 +251,21 @@ export async function generateCaseDigest(
   }
   
   contentParts.push({
-    text: `STRICT FACTUAL CASE DIGESTION REQUEST BASED ON PREMIUM BOOK-GRADE TEMPLATE:
-    1. ANALYZE INPUT FOR ABSOLUTE FACTUAL ACCURACY.
-    2. CROSS-VERIFY with Philippine Reports (https://elibrary.judiciary.gov.ph/philippinereports) and SC Decisions (https://sc.judiciary.gov.ph/decisions-and-resolutions/).
-    3. TARGET CASE: ${query}
+    text: `STRICT PHILIPPINE CASE DIGESTION REQUEST:
+    1. ANALYZE INPUT FOR ABSOLUTE FACTUAL ACCURACY WITHIN PH JURISPRUDENCE.
+    2. TARGET CASE: ${query}
     
     REQUIRED STRUCTURE (HTML ONLY):
-    1. <h3>High-Level Case Summary</h3>: A summary paragraph highlighting the case's core significance and the Court's major action.
-    2. <h3>Case Title and G.R. Nos.</h3>: Full title (e.g., PETITIONER vs. RESPONDENTS) and associated G.R. Nos. in a list.
-    3. <h3>Ponente</h3>: The name of the Justice (e.g., LEONEN, S.A.J.).
-    4. <h3>Date Promulgated</h3>: Full date (e.g., July 25, 2025).
-    5. <h3>Relevant Constitutional Provisions</h3>: Use <div class="statute-box">...</div> for citations of the Constitution or statutes.
-    6. <h3>Facts</h3>: Material facts of the case, narrated with precision. Use <p> with 2.5em indention.
-    7. <h3>Issues</h3>: Bulleted list of the specific legal questions resolved.
-    8. <h3>Ruling</h3>: The Court's final judgment (e.g., THE PETITION IS GRANTED).
-    9. <h3>Ratio Decidendi</h3>: The legal logic behind the ruling.
-    10. <h3>Case Analysis</h3>: A final commentary on the impact of the ruling.
+    1. <h3>High-Level Case Summary</h3>
+    2. <h3>Case Title and G.R. Nos.</h3>
+    3. <h3>Ponente</h3>
+    4. <h3>Date Promulgated</h3>
+    5. <h3>Relevant Constitutional Provisions</h3>
+    6. <h3>Facts</h3>
+    7. <h3>Issues</h3>
+    8. <h3>Ruling</h3>
+    9. <h3>Ratio Decidendi</h3>
+    10. <h3>Case Analysis</h3>
     11. <div class="so-ordered">SO ORDERED.</div>`
   });
 
@@ -264,14 +275,13 @@ export async function generateCaseDigest(
     schemaKey: 'CASE_DIGEST_HTML',
     config: {
       tools: [{googleSearch: {}}],
-      systemInstruction: "You are a senior Supreme Court reporter. Provide precise, zero-hallucination case digests using Philippine jurisprudence."
+      systemInstruction: "You are a senior Supreme Court reporter in the Philippines. Provide precise, zero-hallucination case digests using Philippine jurisprudence ONLY. NEVER refer to foreign laws."
     }
   });
 
   return { text: result.text, sources: result.groundingChunks };
 }
 
-// Fix: Implemented getCaseSuggestions to provide landmark cases as a JSON array.
 export async function getCaseSuggestions(query: string): Promise<string[]> {
   const result = await InferenceGateway.invokeWithGrounding({
     model: 'gemini-3-flash-preview',
@@ -288,11 +298,10 @@ export async function getCaseSuggestions(query: string): Promise<string[]> {
   return JSON.parse(result.text);
 }
 
-// Fix: Implemented fetchLegalNews to retrieve latest legal updates for the dashboard with source URLs.
 export async function fetchLegalNews(): Promise<{headline: string, summary: string, url: string}[]> {
   const result = await InferenceGateway.invokeWithGrounding({
     model: 'gemini-3-flash-preview',
-    contents: "Provide the 5 latest significant legal updates, Supreme Court bulletins, or new laws in the Philippines (2024-2025). For each update, provide a headline, a short summary, and the official source URL. Return ONLY a JSON array of objects.",
+    contents: "Provide the 5 latest significant legal updates, Supreme Court bulletins, or new laws in the Philippines (2024-2025). Return ONLY a JSON array of objects.",
     schemaKey: 'JSON_ARRAY',
     config: {
       responseMimeType: "application/json",
@@ -309,63 +318,83 @@ export async function fetchLegalNews(): Promise<{headline: string, summary: stri
         }
       },
       tools: [{googleSearch: {}}],
-      systemInstruction: "You are a legal news aggregator specializing in Philippine law. Use Google Search to find current legal updates and their direct official or reputable source URLs (e.g. sc.judiciary.gov.ph, officialgazette.gov.ph)."
+      systemInstruction: "You are a news aggregator for Philippine Law. Use Google Search to find verified updates from sc.judiciary.gov.ph or officialgazette.gov.ph."
     }
   });
   return JSON.parse(result.text);
 }
 
-// Fix: Implemented generateLawSyllabus to create structured study modules.
 export async function generateLawSyllabus(topic: string, profile: string): Promise<string> {
   const result = await InferenceGateway.invokeWithGrounding({
     model: 'gemini-3-pro-preview',
-    contents: `Generate a comprehensive law study module/reviewer for: "${topic}". Tailor the complexity for a "${profile}". Use professional legal HTML following JD_MODULE_HTML structure.`,
+    contents: `
+      Act as a Lead Law Professor. Synthesize a comprehensive PHILIPPINE Law Study Module for: "${topic}". 
+      Jurisdiction Profile: ${profile}.
+      
+      STRICT OUTPUT REQUIREMENTS:
+      - Use ONLY Semantic HTML tags (<h3>, <h4>, <p>, <blockquote>, <ul>, <li>).
+      - NEVER use Markdown symbols like ### or **.
+      - Ensure professional academic hierarchy.
+      
+      MANDATORY SECTIONS:
+      1. <div class="headnote"><h3>MODULE OVERVIEW</h3><p>Synthesized summary for the candidate.</p></div>
+      2. <h3>I. SYLLABUS OVERVIEW</h3><p>Scope and core objectives.</p>
+      3. <h3>II. BLACK-LETTER LAW</h3><p>Deep statutory analysis.</p>
+      4. <div class="statute-box"><strong>CODIFIED PROVISION:</strong><p>Quote the relevant Article/Section here.</p></div>
+      5. <h3>III. JURISPRUDENTIAL APPLICATIONS</h3><p>Critical PH Supreme Court rulings.</p>
+      6. <h3>IV. RECOMMENDED READINGS</h3><ul><li>Cite leading treatises.</li></ul>
+      7. <div class="end-marker">*** END OF CHAPTER ***</div>
+    `,
     schemaKey: 'JD_MODULE_HTML',
     config: {
-      systemInstruction: "You are a senior law professor. Provide structured, academic-grade law reviewers with syllabus overview, black-letter law, and recommended readings."
+      systemInstruction: "You are a senior Law Professor from a top Philippine University. Provide structured, academic-grade PH law reviewers. NEVER use US or foreign legal frameworks. Format strictly in Semantic HTML."
     }
   });
   return result.text;
 }
 
-// Fix: Implemented generateContract to draft legal documents based on templates or custom prompts.
 export async function generateContract(mode: 'TEMPLATE' | 'CUSTOM', promptOrName: string, data: any): Promise<string> {
   const prompt = mode === 'TEMPLATE' 
-    ? `Draft a formal Philippine legal contract for: ${promptOrName}. Use the following details: ${JSON.stringify(data)}. Use <h3> for sections and include standard clauses like WHEREAS and WITNESSETH.`
-    : `Draft a custom Philippine legal contract based on these instructions: ${promptOrName}. Use professional legal HTML.`;
+    ? `Draft a formal Philippine legal contract for: ${promptOrName}. Details: ${JSON.stringify(data)}.`
+    : `Draft a custom Philippine legal contract based on these instructions: ${promptOrName}.`;
 
   const result = await InferenceGateway.invokeWithGrounding({
     model: 'gemini-3-pro-preview',
     contents: prompt,
     schemaKey: 'CONTRACT_HTML',
     config: {
-      systemInstruction: "You are an expert legal draftsman in the Philippines."
+      systemInstruction: "You are an expert legal draftsman specializing in Philippine Civil and Commercial law."
     }
   });
   return result.text;
 }
 
-// Fix: Implemented generateJDModuleContent to synthesize detailed academic modules for the JD Program.
 export async function generateJDModuleContent(code: string, title: string): Promise<string> {
   const result = await InferenceGateway.invokeWithGrounding({
     model: 'gemini-3-pro-preview',
-    contents: `Synthesize a detailed JD study module for ${code}: ${title}. Include syllabus overview, black-letter law sections, case citations, and recommended readings. Use JD_MODULE_HTML format.`,
+    contents: `Synthesize a detailed PHILIPPINE JD study module for ${code}: ${title}. 
+    REQUIREMENTS: 
+    - Base content EXCLUSIVELY on the Philippine legal system (1987 Constitution, RPC, Civil Code, PH Statutes). 
+    - NEVER refer to US or UK laws. 
+    - Synthesize the specific core strengths of UP (Policy), Ateneo (Practice), and San Beda (Discipline) traditions.
+    - Include syllabus overview, black-letter law sections, PH case citations, and recommended readings. 
+    - Use JD_MODULE_HTML format. 
+    - Output Semantic HTML tags only.`,
     schemaKey: 'JD_MODULE_HTML',
     config: {
-      systemInstruction: "You are a Law Dean providing high-fidelity academic modules."
+      systemInstruction: "You are a highly distinguished Law Dean from an integrated Philippine Law Center. You provide academic modules STRICTLY based on the Philippine legal system, Constitution, and Jurisprudence. Your pedagogical style synthesizes the traditions of UP Law (Critical Policy), Ateneo Law (Clinical Practice), and San Beda Law (Strict Discipline). UNDER NO CIRCUMSTANCES should you use US, UK, or other foreign laws as a primary basis. Output strictly Semantic HTML."
     }
   });
   return result.text;
 }
 
-// Fix: Implemented analyzeLegalResearch to generate case strategies and deep analysis.
 export async function analyzeLegalResearch(prompt: string): Promise<string> {
   const result = await InferenceGateway.invokeWithGrounding({
     model: 'gemini-3-pro-preview',
     contents: prompt,
     schemaKey: 'GENERAL_LEGAL_HTML',
     config: {
-      systemInstruction: "You are a lead litigation strategist. Provide deep legal analysis and strategy in HTML."
+      systemInstruction: "You are a lead litigation strategist in the Philippines. Provide deep legal analysis and strategy in HTML based ONLY on PH procedure and law."
     }
   });
   return result.text;

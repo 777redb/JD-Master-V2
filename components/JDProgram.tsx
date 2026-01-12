@@ -63,6 +63,7 @@ export const JDProgram: React.FC = () => {
     setIsLoading(true);
     setModuleContent(null);
     try {
+      // Logic for generation is now strictly PH-governed in the service layer
       const content = await generateJDModuleContent(subject.code, subject.title);
       setModuleContent(content);
     } catch (e) {
@@ -123,7 +124,7 @@ export const JDProgram: React.FC = () => {
     const newNote = {
       id: Date.now().toString(),
       title: `${activeSubject.code}: ${activeSubject.title}`,
-      content: moduleContent, // Strictly keep entire original format
+      content: moduleContent, // Transfer raw cleaned HTML
       updatedAt: Date.now(),
       tags: ['JD Program', activeSubject.code],
       color: 'bg-amber-50',
@@ -133,7 +134,7 @@ export const JDProgram: React.FC = () => {
     };
     jdNotebook.notes.unshift(newNote);
     localStorage.setItem('legalph_notebooks', JSON.stringify(notebooks));
-    alert(`"${activeSubject.title}" strictly preserved and added to your Legal Pad.`);
+    alert(`"${activeSubject.title}" module successfully moved to Legal Pad workspace.`);
   };
 
   if (activeSubject) {
@@ -232,7 +233,7 @@ export const JDProgram: React.FC = () => {
             <div className="h-full flex flex-col items-center justify-center opacity-70">
               <Loader2 className="animate-spin text-amber-600 mb-6" size={64} />
               <p className="font-serif text-2xl font-bold italic text-slate-800 animate-pulse text-center">Consulting Integrated Curricula...</p>
-              <p className="text-sm mt-2 text-slate-500 text-center">Synthesizing UP-Ateneo-Beda Pedagogies & Rules of Court</p>
+              <p className="text-sm mt-2 text-slate-500 text-center">Synthesizing UP-Ateneo-Beda Pedagogies & PH Laws</p>
             </div>
           ) : moduleContent ? (
             <div 
@@ -253,9 +254,9 @@ export const JDProgram: React.FC = () => {
           <div>
             <h2 className="text-3xl font-serif font-bold text-slate-900 flex items-center gap-3">
               <GraduationCap className="text-amber-600" size={32} />
-              Integrated JD Program
+              Integrated JD Program (PH)
             </h2>
-            <p className="text-slate-500 mt-2 max-w-2xl leading-relaxed">The Optimized Study Guide: Synthesizing the core strengths of UP (Policy), Ateneo (Practice), and San Beda (Discipline) Law Traditions.</p>
+            <p className="text-slate-500 mt-2 max-w-2xl leading-relaxed">The Optimized Study Guide: Synthesizing the core strengths of UP (Policy), Ateneo (Practice), and San Beda (Discipline) traditions strictly within Philippine Law.</p>
           </div>
           <div className="text-right bg-white p-4 rounded-2xl border border-slate-200 shadow-sm min-w-[200px]">
              <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Curriculum Mastery</div>
@@ -265,7 +266,7 @@ export const JDProgram: React.FC = () => {
                 </div>
                 <span className="font-mono font-bold text-sm text-amber-700 whitespace-nowrap">{completedSubjects.size}/40</span>
              </div>
-             <p className="text-[9px] text-slate-400 mt-2 font-medium italic">Based on CLEPP-aligned subjects</p>
+             <p className="text-[9px] text-slate-400 mt-2 font-medium italic">Philippine Jurisdiction Guaranteed</p>
           </div>
         </div>
 

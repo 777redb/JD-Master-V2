@@ -73,7 +73,7 @@ export const LawReview: React.FC = () => {
       setSyllabus(result);
       setViewMode('READER');
     } catch (e) {
-      setSyllabus("<p>Failed to generate syllabus.</p>");
+      setSyllabus("<p>Failed to generate syllabus. System interruption.</p>");
     } finally {
       setIsLoading(false);
     }
@@ -93,7 +93,7 @@ export const LawReview: React.FC = () => {
     const newNote = {
       id: Date.now().toString(),
       title: topic || "Law Review Module",
-      content: syllabus, // Strictly keep entire original format
+      content: syllabus, 
       updatedAt: Date.now(),
       tags: ['Law Review', profile],
       color: 'bg-white',
@@ -104,7 +104,7 @@ export const LawReview: React.FC = () => {
     
     reviewerNotebook.notes.unshift(newNote);
     localStorage.setItem('legalph_notebooks', JSON.stringify(notebooks));
-    alert('Reviewer saved to Legal Pad with full styling preserved.');
+    alert('Premium module saved to Legal Pad.');
   };
 
   const handleCopy = () => {
@@ -140,21 +140,167 @@ export const LawReview: React.FC = () => {
           .no-print { display: none !important; }
           .book-content { padding: 0 !important; margin: 0 !important; box-shadow: none !important; width: 100% !important; max-width: none !important; }
         }
-        .book-content { text-align: ${textAlign}; line-height: 1.8; hyphens: auto; }
-        .book-content h1 { text-align: center; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2rem; margin-bottom: 3.5rem; line-height: 1.2; padding-bottom: 1.5rem; border-bottom: 3px double currentColor; text-indent: 0; }
-        .book-content h3 { font-weight: 800; text-transform: uppercase; margin-top: 4rem; margin-bottom: 1.5rem; border-bottom: 1px solid currentColor; font-size: 1.2em; text-indent: 0; padding-bottom: 0.5rem; opacity: 0.9; }
-        .book-content h4 { font-weight: 700; margin-top: 2rem; margin-bottom: 1rem; font-size: 1.1em; text-transform: uppercase; text-indent: 0; page-break-after: avoid; }
-        .book-content p { margin-top: 0; margin-bottom: 1.25rem; text-indent: 2.5em; }
-        .book-content h1 + p, .book-content h3 + p, .book-content h4 + p, .book-content div + p, .book-content blockquote + p { text-indent: 0; }
-        .book-content blockquote { margin: 2rem 3rem; padding: 1.5rem; border-left: 5px solid ${theme === 'light' || theme === 'sepia' ? '#b45309' : '#f59e0b'}; background: rgba(0,0,0,0.03); font-style: normal; text-indent: 0; font-family: 'Merriweather', serif; font-size: 0.95em; }
-        .book-content ul, .book-content ol { margin-top: 1rem; padding-left: 2.5rem; text-indent: 0; margin-bottom: 1.5rem; }
-        .book-content li { margin-bottom: 0.75rem; text-indent: 0; }
-        .book-content .statute-box { border: 1px solid currentColor; background-color: rgba(0,0,0,0.03); padding: 1.75rem; margin: 2.5rem 0; border-radius: 2px; text-indent: 0; font-family: 'Merriweather', serif; position: relative; }
-        .book-content .headnote { border: 1px dashed currentColor; padding: 1.5rem; margin-bottom: 2.5rem; background: rgba(0,0,0,0.02); border-radius: 4px; text-indent: 0; }
-        .book-content .headnote h3 { border: 0; margin-top: 0; font-size: 0.9em; opacity: 0.6; padding: 0; margin-bottom: 0.5rem; letter-spacing: 0.2em; }
-        .book-content .annotation { color: inherit; opacity: 0.7; font-size: 0.9em; font-style: italic; border-top: 1px dashed currentColor; padding-top: 0.75rem; margin-top: 1.5rem; text-indent: 0; }
-        .book-content hr { border: 0; border-top: 1px solid currentColor; opacity: 0.1; margin: 3rem 0; }
-        .book-content .end-marker { text-align: center; margin-top: 5rem; opacity: 0.3; font-size: 0.7rem; letter-spacing: 0.5em; text-indent: 0; border-top: 1px solid currentColor; padding-top: 2rem; }
+        
+        /* PREMIUM BOOK-GRADE LAYOUT ENGINE */
+        .book-content { 
+          text-align: ${textAlign}; 
+          line-height: 1.85; 
+          hyphens: auto;
+          color: inherit;
+        }
+
+        /* Standard Book Header Hierarchy */
+        .book-content h1 { 
+          text-align: center; 
+          font-weight: 900; 
+          text-transform: uppercase; 
+          letter-spacing: 0.1em; 
+          margin-top: 3rem; 
+          margin-bottom: 4rem; 
+          line-height: 1.3; 
+          padding-bottom: 2rem; 
+          border-bottom: 4px double currentColor; 
+          text-indent: 0; 
+        }
+
+        .book-content h3 { 
+          font-weight: 800; 
+          text-transform: uppercase; 
+          margin-top: 4.5rem; 
+          margin-bottom: 1.75rem; 
+          border-bottom: 1.5px solid rgba(0,0,0,0.15); 
+          font-size: 1.3em; 
+          text-indent: 0; 
+          padding-bottom: 0.75rem; 
+          letter-spacing: 0.05em;
+          opacity: 1;
+        }
+
+        .book-content h4 { 
+          font-weight: 700; 
+          margin-top: 2.5rem; 
+          margin-bottom: 1.25rem; 
+          font-size: 1.15em; 
+          text-transform: uppercase; 
+          text-indent: 0; 
+          page-break-after: avoid; 
+          letter-spacing: 0.02em;
+        }
+
+        /* Paragraph Indention Logic - Classic Book Style */
+        .book-content p { 
+          margin-top: 0; 
+          margin-bottom: 1.5rem; 
+          text-indent: 2.5em; 
+        }
+
+        /* Exceptions: Paragraphs following headers are NOT indented in standard typesetting */
+        .book-content h1 + p, 
+        .book-content h3 + p, 
+        .book-content h4 + p, 
+        .book-content div + p, 
+        .book-content blockquote + p,
+        .book-content .statute-box + p { 
+          text-indent: 0; 
+        }
+
+        /* Specialized Academic Containers */
+        .book-content blockquote { 
+          margin: 2.5rem 3.5rem; 
+          padding: 1.75rem 2.25rem; 
+          border-left: 6px solid #b45309; 
+          background: rgba(0,0,0,0.03); 
+          font-style: normal; 
+          text-indent: 0; 
+          font-family: 'Merriweather', serif; 
+          font-size: 0.95em; 
+          line-height: 1.7;
+          border-radius: 2px;
+        }
+
+        .book-content ul, .book-content ol { 
+          margin-top: 1.25rem; 
+          padding-left: 3.5rem; 
+          text-indent: 0; 
+          margin-bottom: 2rem; 
+        }
+
+        .book-content li { 
+          margin-bottom: 0.85rem; 
+          text-indent: 0; 
+        }
+
+        /* Codified Provision Styling */
+        .book-content .statute-box { 
+          border: 1px solid rgba(0,0,0,0.1); 
+          background-color: #fffbeb; 
+          padding: 2.25rem; 
+          margin: 3.5rem 0; 
+          border-left: 5px solid #f59e0b;
+          border-radius: 4px; 
+          text-indent: 0; 
+          font-family: 'Merriweather', serif; 
+          position: relative; 
+          box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+        }
+
+        .book-content .statute-box strong {
+          display: block;
+          text-transform: uppercase;
+          font-size: 0.85em;
+          letter-spacing: 0.2em;
+          margin-bottom: 1rem;
+          color: #92400e;
+        }
+
+        .book-content .headnote { 
+          border: 1px dashed rgba(0,0,0,0.2); 
+          padding: 2rem; 
+          margin-bottom: 3.5rem; 
+          background: rgba(255,255,255,0.4); 
+          border-radius: 8px; 
+          text-indent: 0; 
+        }
+
+        .book-content .headnote h3 { 
+          border: 0; 
+          margin-top: 0; 
+          font-size: 0.95em; 
+          opacity: 0.6; 
+          padding: 0; 
+          margin-bottom: 0.75rem; 
+          letter-spacing: 0.25em; 
+        }
+
+        .book-content .annotation { 
+          color: inherit; 
+          opacity: 0.7; 
+          font-size: 0.9em; 
+          font-style: italic; 
+          border-top: 1px dashed currentColor; 
+          padding-top: 1rem; 
+          margin-top: 2rem; 
+          text-indent: 0; 
+        }
+
+        .book-content hr { 
+          border: 0; 
+          border-top: 1.5px solid currentColor; 
+          opacity: 0.1; 
+          margin: 4.5rem 0; 
+        }
+
+        .book-content .end-marker { 
+          text-align: center; 
+          margin-top: 6rem; 
+          opacity: 0.3; 
+          font-size: 0.75rem; 
+          letter-spacing: 0.6em; 
+          text-indent: 0; 
+          border-top: 1px solid currentColor; 
+          padding-top: 2.5rem; 
+          font-weight: 700;
+        }
       `}</style>
 
       {/* Header Bar */}
@@ -162,7 +308,7 @@ export const LawReview: React.FC = () => {
         <div className="flex items-center gap-3">
           <ScrollText className={viewMode === 'READER' ? currentTheme.text : 'text-amber-600'} size={20} />
           <h2 className={`text-sm font-bold tracking-tight ${viewMode === 'READER' ? currentTheme.text : 'text-slate-900'}`}>
-            Law Review Studio {viewMode === 'READER' && <span className="opacity-50 font-normal">/ Chapter Review</span>}
+            Reviewer Studio {viewMode === 'READER' && <span className="opacity-50 font-normal">/ Active Research</span>}
           </h2>
         </div>
         
@@ -182,11 +328,11 @@ export const LawReview: React.FC = () => {
           )}
           <div className="w-px h-4 bg-slate-200"></div>
           <button onClick={handleReset} className="text-xs font-bold text-slate-400 hover:text-red-600 px-3 py-1.5 rounded-lg transition-colors">
-            New Topic
+            Discard
           </button>
           {viewMode === 'READER' && (
             <button onClick={() => setViewMode('FORM')} className="text-xs font-bold bg-amber-600 text-white px-4 py-1.5 rounded-lg hover:bg-amber-700 shadow-md shadow-amber-600/20 transition-all">
-              Change Input
+              Edit Query
             </button>
           )}
         </div>
@@ -199,23 +345,23 @@ export const LawReview: React.FC = () => {
             <div className="max-w-4xl mx-auto">
               <div className="mb-10">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 text-amber-700 text-[10px] font-black uppercase tracking-widest mb-4">
-                   <Sparkles size={12} /> Legal Knowledge Synthesis
+                   <Sparkles size={12} /> Academic Module Synthesis
                 </div>
                 <h1 className="text-4xl font-serif font-bold text-slate-900 mb-2 tracking-tight">Reviewer Studio</h1>
-                <p className="text-slate-500 text-lg leading-relaxed">Enter a specific legal subject or topic. Our AI will synthesize a book-grade study module following premium academic standards.</p>
+                <p className="text-slate-500 text-lg leading-relaxed">Synthesize a professional, book-grade study guide from integrated Philippine Law traditions.</p>
               </div>
 
               <div className="space-y-8 bg-white p-10 rounded-3xl border border-slate-200 shadow-xl shadow-slate-200/50">
                 <div className="space-y-2">
                   <label className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                    <Library size={14} className="text-amber-500" /> Research Topic
+                    <Library size={14} className="text-amber-500" /> Subject Focus
                   </label>
                   <div className="relative group">
                     <input 
                       value={topic}
                       onChange={(e) => setTopic(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && handleGenerate()}
-                      placeholder="e.g. 'Validity of Warrantless Searches', 'Requisites of a Valid Marriage'..."
+                      placeholder="e.g. 'Insanity Defense in Criminal Law', 'Public Trust Doctrine'..."
                       className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:ring-2 focus:ring-amber-500/20 outline-none font-medium transition-all text-slate-900 text-lg shadow-inner"
                     />
                     <Search className="absolute left-4 top-4.5 text-slate-400 group-focus-within:text-amber-500 transition-colors" size={20} />
@@ -224,7 +370,7 @@ export const LawReview: React.FC = () => {
 
                 <div className="space-y-2">
                   <label className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                    <GraduationCap size={14} className="text-amber-500" /> Candidate Profile
+                    <GraduationCap size={14} className="text-amber-500" /> Research Persona
                   </label>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     {LEARNER_LEVELS.map(level => (
@@ -248,7 +394,7 @@ export const LawReview: React.FC = () => {
                     {isLoading ? (
                       <>
                         <Loader2 className="animate-spin" size={24} />
-                        Generating Module...
+                        Consulting Archives...
                       </>
                     ) : (
                       <>
@@ -269,12 +415,12 @@ export const LawReview: React.FC = () => {
             {showAppearance && (
               <div className="absolute right-6 top-4 w-80 bg-white rounded-xl shadow-2xl border border-slate-200 p-6 z-50 text-slate-900 animate-in fade-in slide-in-from-top-4 no-print">
                 <div className="flex justify-between items-center mb-6">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Display Settings</span>
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Typography Studio</span>
                   <button onClick={() => setShowAppearance(false)} className="text-slate-400 hover:text-slate-600"><X size={16}/></button>
                 </div>
                 <div className="space-y-6">
                   <div>
-                    <span className="text-xs font-bold text-slate-700 block mb-3">Font Selection</span>
+                    <span className="text-xs font-bold text-slate-700 block mb-3">Font Face</span>
                     <div className="grid grid-cols-2 gap-2">
                       {FONT_OPTIONS.map(font => (
                         <button key={font.value} onClick={() => setFontFamily(font.value)} className={`p-2.5 text-left border rounded-lg transition-all ${fontFamily === font.value ? 'bg-amber-50 border-amber-500 ring-1 ring-amber-500' : 'bg-white border-slate-200'}`}>
@@ -284,14 +430,14 @@ export const LawReview: React.FC = () => {
                     </div>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-700">Text Alignment</span>
+                    <span className="text-xs font-bold text-slate-700">Alignment</span>
                     <div className="flex gap-1 bg-slate-100 p-1 rounded-md">
                       <button onClick={() => setTextAlign('left')} className={`p-1.5 rounded ${textAlign === 'left' ? 'bg-white shadow text-amber-600' : 'text-slate-500'}`}><AlignLeft size={16}/></button>
                       <button onClick={() => setTextAlign('justify')} className={`p-1.5 rounded ${textAlign === 'justify' ? 'bg-white shadow text-amber-600' : 'text-slate-500'}`}><AlignJustify size={16}/></button>
                     </div>
                   </div>
                   <div>
-                     <span className="text-xs font-bold text-slate-700 block mb-3">Study Environment</span>
+                     <span className="text-xs font-bold text-slate-700 block mb-3">Environment</span>
                      <div className="grid grid-cols-4 gap-2">
                         {Object.keys(THEMES).map((t) => (
                            <button key={t} onClick={() => setTheme(t as Theme)} className={`h-8 rounded-lg border-2 ${THEMES[t as Theme].bg} ${theme === t ? 'border-amber-600 ring-2 ring-amber-600' : 'border-slate-200'}`} title={t} />
@@ -309,20 +455,20 @@ export const LawReview: React.FC = () => {
                   <div className="border-b-2 border-slate-900 pb-12 mb-16 text-center relative z-10 no-print" style={{ borderColor: 'currentColor' }}>
                      <div className="flex justify-between items-start absolute right-0 top-0 opacity-40 hover:opacity-100 transition-opacity">
                         <div className="flex gap-2">
-                           <button onClick={saveToLegalPad} className="p-2.5 rounded-lg hover:bg-black/5" title="Add to Legal Pad (Strict Format)"><PlusSquare size={18}/></button>
+                           <button onClick={saveToLegalPad} className="p-2.5 rounded-lg hover:bg-black/5" title="Move to workspace"><PlusSquare size={18}/></button>
                            <button onClick={handleCopy} className="p-2.5 rounded-lg hover:bg-black/5" title="Copy Content"><Copy size={18}/></button>
-                           <button onClick={() => window.print()} className="p-2.5 rounded-lg hover:bg-black/5" title="Print Brief"><Printer size={18}/></button>
-                           <button onClick={handleDownload} className="p-2.5 rounded-lg hover:bg-black/5" title="Download HTML"><Download size={18}/></button>
+                           <button onClick={() => window.print()} className="p-2.5 rounded-lg hover:bg-black/5" title="Print Module"><Printer size={18}/></button>
+                           <button onClick={handleDownload} className="p-2.5 rounded-lg hover:bg-black/5" title="Export HTML"><Download size={18}/></button>
                         </div>
                      </div>
-                     <span className="text-[10px] font-black uppercase tracking-[0.4em] mb-4 block opacity-60">LegalPH Doctrinal Reviewer</span>
-                     <h1 className="text-5xl font-serif font-black uppercase leading-[1.1] tracking-tight mb-6">
-                       {topic || "Untitled Module"}
+                     <span className="text-[11px] font-black uppercase tracking-[0.5em] mb-4 block opacity-50">LegalPH Research Series</span>
+                     <h1 className="text-5xl font-serif font-black uppercase leading-[1.1] tracking-tight mb-8">
+                       {topic || "Untitled Chapter"}
                      </h1>
-                     <div className="flex items-center justify-center gap-6 text-[10px] font-bold uppercase tracking-widest opacity-40">
-                        <div className="flex items-center gap-2"><GraduationCap size={12}/> {profile} Edition</div>
-                        <div className="w-1 h-1 bg-current rounded-full"></div>
-                        <div className="flex items-center gap-2"><FileText size={12}/> {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</div>
+                     <div className="flex items-center justify-center gap-6 text-[11px] font-bold uppercase tracking-widest opacity-40">
+                        <div className="flex items-center gap-2"><GraduationCap size={14}/> {profile}</div>
+                        <div className="w-1.5 h-1.5 bg-current rounded-full"></div>
+                        <div className="flex items-center gap-2"><FileText size={14}/> Integrated Study Guide</div>
                      </div>
                   </div>
 
@@ -332,8 +478,8 @@ export const LawReview: React.FC = () => {
                     dangerouslySetInnerHTML={{ __html: syllabus }}
                   />
 
-                  <div className="mt-28 pt-10 border-t border-current/10 text-center opacity-30 italic font-serif text-[10px] tracking-widest">
-                    *** END OF RESEARCH CHAPTER - LEGALPH MASTER SERIES ***
+                  <div className="mt-28 pt-10 border-t border-current/10 text-center opacity-30 italic font-serif text-[11px] tracking-widest">
+                    *** END OF RESEARCH MODULE - LEGALPH MASTER COLLECTION ***
                   </div>
                </div>
             </div>
