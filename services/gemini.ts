@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Type, GenerateContentParameters, GenerateContentResponse } from "@google/genai";
-import { MockBarQuestion } from "../types";
+import { MockBarQuestion, StudentProfile, ProfessorPersona, LectureTurn } from "../types";
 
 /**
  * INTERNAL ARCHITECTURAL LAYER: Internal Metadata Channel
@@ -41,9 +41,6 @@ const JurisdictionScopeRegistry: Record<string, {
   }
 };
 
-/**
- * INTERNAL ARCHITECTURAL LAYER: Jurisdiction Context Resolver
- */
 const JurisdictionContextResolver = {
   resolve: (): string => {
     return (process.env as any).APP_JURISDICTION || 'PH';
@@ -65,7 +62,7 @@ const OutputSchemaRegistry: Record<string, {
     validator: (text) => 
       text.includes('<h1>') && 
       /<h3>\s*SYLLABUS OVERVIEW/i.test(text) && 
-      /<h3>\s*I\.\s*BLACK-LETTER LAW/i.test(text) &&
+      /<h3>\s*II\.\s*BLACK-LETTER LAW/i.test(text) &&
       /<h3>\s*IV\.\s*RECOMMENDED READINGS/i.test(text),
     version: '1.2.0'
   },
@@ -159,17 +156,13 @@ class InferenceGateway {
 
       let textResponse = response.text || "";
 
-      // ENHANCED CLEANUP: Aggressively strip conversational preambles and markdown blocks
       if (textResponse.includes('```')) {
-        // Remove everything before and including the first code fence, and after the last fence
         textResponse = textResponse.replace(/^[\s\S]*?```(?:html|markdown|json)?\n?/i, '').replace(/\n?```[\s\S]*?$/i, '').trim();
       } else {
-        // If no code fence but has HTML, strip everything before the first tag and after the last
         const firstTag = textResponse.indexOf('<');
         const lastTag = textResponse.lastIndexOf('>');
         if (firstTag !== -1 && lastTag !== -1 && lastTag > firstTag) {
            const snippet = textResponse.substring(firstTag, firstTag + 20).toLowerCase();
-           // Only strip if the detected tags look like our structural tags
            if (snippet.includes('<h') || snippet.includes('<p') || snippet.includes('<div')) {
               textResponse = textResponse.substring(firstTag, lastTag + 1).trim();
            }
@@ -240,14 +233,8 @@ export async function generateCaseDigest(
 ): Promise<{ text: string, sources?: any[] }> {
   
   const contentParts: any[] = [];
-  
   if (fileData) {
-    contentParts.push({
-      inlineData: {
-        data: fileData.data,
-        mimeType: fileData.mimeType
-      }
-    });
+    contentParts.push({ inlineData: { data: fileData.data, mimeType: fileData.mimeType } });
   }
   
   contentParts.push({
@@ -362,12 +349,11 @@ export async function generateContract(mode: 'TEMPLATE' | 'CUSTOM', promptOrName
     model: 'gemini-3-pro-preview',
     contents: `
       ${instructions}
-      
       STRICT DRAFTING REQUIREMENTS (HTML ONLY):
       - Start EXACTLY with the contract title in <h3>.
-      - Strip all conversational filler, "Here is your draft", and markdown artifacts (no **, no ***, no ###).
-      - Use ONLY semantic HTML: <h3> for titles, <h4> for Articles/Sections, <p> for clauses, <blockquote> for important citations.
-      - Ensure standard PH contract structure: Title, Parties, Witnesseth/Whereas, Terms & Conditions, and Signature Blocks.
+      - Strip all conversational filler and markdown artifacts.
+      - Use ONLY semantic HTML.
+      - Ensure standard PH contract structure.
     `,
     schemaKey: 'CONTRACT_HTML',
     config: {
@@ -382,15 +368,14 @@ export async function generateJDModuleContent(code: string, title: string): Prom
     model: 'gemini-3-pro-preview',
     contents: `Synthesize a detailed PHILIPPINE JD study module for ${code}: ${title}. 
     REQUIREMENTS: 
-    - Base content EXCLUSIVELY on the Philippine legal system (1987 Constitution, RPC, Civil Code, PH Statutes). 
+    - Base content EXCLUSIVELY on the Philippine legal system. 
     - NEVER refer to US or UK laws. 
-    - Synthesize the specific core strengths of UP (Policy), Ateneo (Practice), and San Beda (Discipline) traditions.
     - Include syllabus overview, black-letter law sections, PH case citations, and recommended readings. 
     - Use JD_MODULE_HTML format. 
     - Output Semantic HTML tags only.`,
     schemaKey: 'JD_MODULE_HTML',
     config: {
-      systemInstruction: "You are a highly distinguished Law Dean from an integrated Philippine Law Center. You provide academic modules STRICTLY based on the Philippine legal system, Constitution, and Jurisprudence. Your pedagogical style synthesizes the traditions of UP Law (Critical Policy), Ateneo Law (Clinical Practice), and San Beda Law (Strict Discipline). UNDER NO CIRCUMSTANCES should you use US, UK, or other foreign laws as a primary basis. Output strictly Semantic HTML."
+      systemInstruction: "You are a highly distinguished Law Dean from an integrated Philippine Law Center. You provide academic modules STRICTLY based on the Philippine legal system, Constitution, and Jurisprudence. Output strictly Semantic HTML."
     }
   });
   return result.text;
@@ -406,4 +391,66 @@ export async function analyzeLegalResearch(prompt: string): Promise<string> {
     }
   });
   return result.text;
+}
+
+/**
+ * PROFESSOR LEXPH: INTERACTIVE PEDAGOGY ENGINE
+ */
+export async function conductJDProfessorSession(
+  subject: string,
+  professor: ProfessorPersona,
+  student: StudentProfile,
+  history: LectureTurn[]
+): Promise<LectureTurn> {
+  const systemPrompt = `
+    IDENTITY: You are Professor LexPH, specifically the ${professor.name} instance. 
+    SPECIALIZATION: ${professor.specialization}.
+    STYLE: ${professor.style} (Alma Mater: ${professor.almaMater}).
+    TONE: ${professor.tone}.
+    JURISDICTION: STRICTLY PHILIPPINE LAW.
+    
+    STUDENT PROFILE:
+    - Level: ${student.level}
+    - English: ${student.englishProficiency}
+    - Rigor: ${student.rigorPreference} (Current Socratic Dial)
+    
+    PEDAGOGICAL LOOP:
+    1. If student just started: Deliver a compelling 'Canonical Lecture' opening on a specific sub-topic of ${subject}. Use Semantic HTML.
+    2. If student answered a Socratic question: 
+       - PROVIDE FEEDBACK: Use <div class="professor-feedback"> to evaluate reasoning (not just correctness).
+       - ADVANCE OR PROBE: If answer is correct/partially correct, either deepen the lecture or move to a 'Hypothetical Scenario' using <div class="hypothetical">.
+       - RECTIFY: If answer is incorrect, remediate using 'Doctrinal Evolution' context.
+    3. SOCRATIC METHOD: Every 2-3 paragraphs, YOU MUST ask a challenging Socratic question based on PH Jurisprudence. 
+       Wrap the question in <div class="socratic-prompt">.
+    
+    STRICT RULES:
+    - NO MARKDOWN symbols. Use <h3>, <p>, <ul>, <li>, <blockquote>.
+    - Explicitly distinguish between Black-letter law and Unsettled Jurisprudence.
+    - Maintain authority. You are the Master Professor.
+  `;
+
+  const messages = history.map(h => ({
+    role: h.role === 'professor' ? 'model' : 'user',
+    parts: [{ text: h.content }]
+  }));
+
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+  const response = await ai.models.generateContent({
+    model: 'gemini-3-pro-preview',
+    contents: messages as any,
+    config: {
+      systemInstruction: systemPrompt,
+      temperature: 0.8
+    }
+  });
+
+  const content = response.text || "Professor is currently reflecting. Please try again.";
+  
+  return {
+    id: Date.now().toString(),
+    role: 'professor',
+    content,
+    type: content.includes('socratic-prompt') ? 'SOCRATIC' : 'LECTURE',
+    timestamp: Date.now()
+  };
 }

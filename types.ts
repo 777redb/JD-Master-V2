@@ -79,3 +79,30 @@ export interface ContractTemplate {
   description: string;
   fields: string[];
 }
+
+// --- JD PROFESSOR EXTENSIONS ---
+
+export interface StudentProfile {
+  name: string;
+  level: string;
+  englishProficiency: 'Basic' | 'Intermediate' | 'Advanced';
+  timeCommitment: 'Intensive' | 'Balanced' | 'Leisurely';
+  rigorPreference: 'Mild' | 'Moderate' | 'Rigorous';
+  masteryPoints: Record<string, number>; 
+}
+
+export interface ProfessorPersona {
+  name: string;
+  specialization: string;
+  style: 'Critical Policy' | 'Clinical Practice' | 'Strict Discipline';
+  almaMater: string;
+  tone: string;
+}
+
+export interface LectureTurn {
+  id: string;
+  role: 'professor' | 'student';
+  content: string;
+  type: 'LECTURE' | 'SOCRATIC' | 'HYPOTHETICAL' | 'RESPONSE' | 'FEEDBACK' | 'SYSTEM';
+  timestamp: number;
+}
