@@ -36,14 +36,16 @@ import {
   Maximize2,
   Minimize2,
   ChevronDown,
-  FileText
+  FileText,
+  Clock,
+  HelpCircle
 } from 'lucide-react';
 
 type Theme = 'light' | 'sepia' | 'dark' | 'night';
 type LegalFont = 'font-serif' | 'font-crimson' | 'font-sans' | 'font-mono';
 
 const THEMES: Record<Theme, { bg: string, text: string, ui: string, border: string, prose: string, pageBg: string, accent: string }> = {
-  light: { bg: 'bg-slate-100', text: 'text-slate-900', ui: 'bg-white border-slate-200', border: 'border-slate-200', prose: 'prose-slate', pageBg: 'bg-white', accent: 'text-amber-700' },
+  light: { bg: 'bg-[#f1f5f9]', text: 'text-slate-900', ui: 'bg-white border-slate-200', border: 'border-slate-200', prose: 'prose-slate', pageBg: 'bg-white', accent: 'text-amber-700' },
   sepia: { bg: 'bg-[#eaddcf]', text: 'text-[#463525]', ui: 'bg-[#f4ecd8] border-[#d3c4b1]', border: 'border-[#d3c4b1]', prose: 'prose-amber', pageBg: 'bg-[#fbf7f0]', accent: 'text-[#78350f]' },
   dark: { bg: 'bg-[#0f172a]', text: 'text-slate-300', ui: 'bg-[#1e293b] border-slate-700', border: 'border-slate-700', prose: 'prose-invert', pageBg: 'bg-[#1e293b]', accent: 'text-amber-400' },
   night: { bg: 'bg-black', text: 'text-gray-400', ui: 'bg-gray-900 border-gray-800', border: 'border-gray-800', prose: 'prose-invert', pageBg: 'bg-[#0a0a0a]', accent: 'text-gray-500' }
@@ -56,7 +58,6 @@ const FONT_OPTIONS: { label: string, value: LegalFont, desc: string }[] = [
   { label: 'JetBrains Mono', value: 'font-mono', desc: 'Technical' },
 ];
 
-// Professor Persona Factory
 const getProfessorForSubject = (code: string): ProfessorPersona => {
   if (code.startsWith('JD 111') || code.startsWith('JD 121')) 
     return { name: 'Dr. Santiago', specialization: 'Constitutional Law', style: 'Critical Policy', almaMater: 'UP Law', tone: 'Distinguished, policy-oriented, authoritative' };
@@ -75,14 +76,12 @@ export const JDProgram: React.FC = () => {
   const [completedSubjects, setCompletedSubjects] = useState<Set<string>>(new Set());
   const [bookmarkedSubjects, setBookmarkedSubjects] = useState<Set<string>>(new Set());
   
-  // Advanced Reader Settings
   const [theme, setTheme] = useState<Theme>('light');
   const [zoomLevel, setZoomLevel] = useState(100);
   const [fontFamily, setFontFamily] = useState<LegalFont>('font-crimson');
   const [textAlign, setTextAlign] = useState<'justify' | 'left'>('justify');
   const [showSettings, setShowSettings] = useState(false);
 
-  // Lecture State
   const [lectureTurns, setLectureTurns] = useState<LectureTurn[]>([]);
   const [userInput, setUserInput] = useState('');
   const [studentProfile, setStudentProfile] = useState<StudentProfile>(() => {
@@ -190,14 +189,14 @@ export const JDProgram: React.FC = () => {
           <span className="text-xs font-bold text-slate-700">Line Alignment</span>
           <div className="flex gap-1 bg-slate-100 p-1 rounded-md">
             <button onClick={() => setTextAlign('left')} className={`p-1.5 rounded ${textAlign === 'left' ? 'bg-white shadow text-amber-600' : 'text-slate-500'}`}><AlignLeft size={16}/></button>
-            <button onClick={() => setTextAlign('justify')} className={`p-1.5 rounded ${textAlign === 'justify' ? 'bg-white shadow text-amber-600' : 'text-slate-500'}`}><AlignJustify size={16}/></button>
+            <button onClick={() => setTextAlign('justify')} className={`p-1.5 rounded ${textAlign === 'justify' ? 'bg-white shadow text-amber-600' : 'text-slate-50'}`}><AlignJustify size={16}/></button>
           </div>
         </div>
         <div>
            <span className="text-xs font-bold text-slate-700 block mb-3">Color Space</span>
            <div className="grid grid-cols-4 gap-2">
               {Object.keys(THEMES).map((t) => (
-                 <button key={t} onClick={() => setTheme(t as Theme)} className={`h-8 rounded-lg border-2 ${THEMES[t as Theme].pageBg} ${theme === t ? 'border-amber-600 ring-2 ring-amber-600' : 'border-slate-200 hover:border-slate-300'}`} title={t} />
+                 <button key={t} onClick={() => setTheme(t as Theme)} className={`h-8 rounded-lg border-2 ${THEMES[t as Theme].bg} ${theme === t ? 'border-amber-600 ring-2 ring-amber-600' : 'border-slate-200 hover:border-slate-300'}`} title={t} />
               ))}
            </div>
         </div>
@@ -218,175 +217,38 @@ export const JDProgram: React.FC = () => {
   const bookStyles = `
     .book-content { 
         text-align: ${textAlign}; 
-        line-height: 2.0; 
+        line-height: 2.1; 
         hyphens: auto; 
         widows: 3;
         orphans: 3;
     }
-    
-    /* Premium Header Hierarchy inspired by reference images */
-    .book-content h1 { 
-        text-align: center; font-weight: 900; font-size: 2.2em; text-transform: uppercase; letter-spacing: 0.15em; 
-        margin: 4rem 0 3.5rem; line-height: 1.1; border-bottom: 4px double currentColor; padding-bottom: 2rem; 
-        text-indent: 0; 
-    }
-    .book-content h2 { 
-        text-align: center; font-weight: 800; font-size: 1.6em; text-transform: uppercase; letter-spacing: 0.1em; 
-        margin: 3.5rem 0 3rem; line-height: 1.2; text-indent: 0; 
-    }
-    .book-content h3 { 
-        font-weight: 800; font-size: 1.4em; text-transform: uppercase; letter-spacing: 0.08em; 
-        margin: 3rem 0 2rem; border-bottom: 1.5px solid rgba(0,0,0,0.1); 
-        padding-bottom: 1rem; text-indent: 0;
-    }
-    .book-content h4 { 
-        font-weight: 800; font-size: 1.2em; text-transform: uppercase; letter-spacing: 0.04em; 
-        margin: 2.5rem 0 1.25rem; text-indent: 0; 
-    }
-    
-    /* Classical Indention Rules */
-    .book-content p { 
-        margin-top: 0; 
-        margin-bottom: 0; 
-        text-indent: 3em; /* Deep indention for book grade */
-        padding-bottom: 0;
-    }
-
-    /* First paragraph after ANY structural element is not indented */
-    .book-content h1 + p, 
-    .book-content h2 + p, 
-    .book-content h3 + p, 
-    .book-content h4 + p, 
-    .book-content div + p, 
-    .book-content blockquote + p, 
-    .book-content .statute-box + p,
-    .book-content ul + p,
-    .book-content ol + p,
-    .book-content hr + p { 
-        text-indent: 0; 
-    }
-    
-    /* No spacing between indented paragraphs for that textbook rhythm */
-    .book-content p + p {
-        margin-top: 0;
-    }
-    
-    /* Block Elements */
-    .book-content blockquote { 
-        margin: 2.5rem 4.5rem; 
-        padding: 2.25rem 2.75rem; 
-        border-left: 6px solid #b45309; 
-        background-color: rgba(0,0,0,0.03); 
-        font-style: normal; 
-        text-indent: 0; 
-        font-family: 'Merriweather', serif; 
-        font-size: 0.9em; 
-        line-height: 1.8;
-        border-radius: 2px;
-        box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
-    }
-    
-    .book-content .statute-box { 
-        border: 1px solid rgba(0,0,0,0.15); 
-        background-color: rgba(251, 191, 36, 0.03); 
-        padding: 2.5rem; 
-        margin: 4.5rem 0; 
-        border-left: 8px solid #f59e0b; 
-        text-indent: 0; 
-        font-family: 'Merriweather', serif; 
-        border-radius: 4px;
-        box-shadow: 0 4px 20px -5px rgba(0,0,0,0.05);
-    }
-
-    .book-content .juris-callout {
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: #b45309;
-        margin-right: 0.5em;
-        text-indent: 0;
-    }
-    
-    .book-content .socratic-prompt { 
-        background: rgba(30, 41, 59, 0.02); 
-        border: 2px solid #fbbf24; 
-        border-radius: 12px; 
-        padding: 2.75rem; 
-        margin: 4.5rem 0; 
-        box-shadow: 0 20px 50px -20px rgba(251, 191, 36, 0.15); 
-        text-indent: 0; 
-        position: relative; 
-    }
-    .book-content .socratic-prompt::before { 
-        content: 'SOCRATIC ENQUIRY'; 
-        position: absolute; 
-        top: -14px; 
-        left: 40px; 
-        background: #fbbf24; 
-        color: #000; 
-        font-size: 11px; 
-        font-weight: 950; 
-        padding: 4px 14px; 
-        border-radius: 4px; 
-        letter-spacing: 0.3em; 
-    }
-    
-    .book-content .professor-feedback { 
-        background: rgba(34, 197, 94, 0.03); 
-        border-left: 6px solid #22c55e; 
-        padding: 2rem 2.5rem; 
-        margin: 3.5rem 0; 
-        font-style: italic; 
-        text-indent: 0; 
-        border-radius: 0 10px 10px 0; 
-        font-size: 0.95em;
-    }
-    
-    .book-content .hypothetical { 
-        border: 2px dashed rgba(0,0,0,0.15); 
-        padding: 2.75rem; 
-        background: rgba(0,0,0,0.01); 
-        border-radius: 16px; 
-        margin: 4.5rem 0; 
-        text-indent: 0; 
-    }
-    
-    .book-content .end-marker { 
-        text-align: center; 
-        margin-top: 10rem; 
-        opacity: 0.2; 
-        font-size: 0.85rem; 
-        letter-spacing: 0.8em; 
-        text-indent: 0; 
-        border-top: 2px solid currentColor; 
-        padding-top: 4rem; 
-        font-weight: 900; 
-    }
-    
-    .book-content ul, .book-content ol { 
-        margin: 2.5rem 0; 
-        padding-left: 5.5rem; 
-        text-indent: 0; 
-    }
-    .book-content li { 
-        margin-bottom: 1.5rem; 
-        text-indent: 0; 
-    }
-    .book-content hr {
-        border: 0;
-        border-top: 1px solid rgba(0,0,0,0.1);
-        margin: 4rem 0;
-    }
+    .book-content h1 { text-align: center; font-weight: 950; font-size: 2.4em; text-transform: uppercase; letter-spacing: 0.2em; margin: 3rem 0 2rem; line-height: 1.1; border-bottom: 5px double currentColor; padding-bottom: 1.5rem; text-indent: 0; }
+    .book-content h2 { text-align: center; font-weight: 900; font-size: 1.7em; text-transform: uppercase; letter-spacing: 0.15em; margin: 2rem 0 2rem; line-height: 1.2; text-indent: 0; }
+    .book-content h3 { text-align: center; font-weight: 950; font-size: 1.5em; text-transform: uppercase; letter-spacing: 0.18em; margin: 3rem 0 1.5rem; border-top: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; padding: 1.25rem 0; text-indent: 0; display: block; line-height: 1; }
+    .book-content h4 { font-weight: 900; font-size: 1.25em; text-transform: uppercase; letter-spacing: 0.1em; margin: 2.5rem 0 1rem; text-indent: 0; border-bottom: 1px solid rgba(0,0,0,0.12); padding-bottom: 0.5rem; }
+    .book-content p { margin-top: 0; margin-bottom: 0; text-indent: 3.5em; padding-bottom: 0; }
+    .book-content h1 + p, .book-content h2 + p, .book-content h3 + p, .book-content h4 + p, .book-content div + p, .book-content blockquote + p, .book-content .statute-box + p, .book-content ul + p, .book-content ol + p, .book-content hr + p { text-indent: 0; }
+    .book-content p + p { margin-top: 0; }
+    .book-content blockquote { margin: 2.5rem 3rem; padding: 2rem 2.5rem; border-left: 8px solid #b45309; background-color: rgba(0,0,0,0.03); font-style: normal; text-indent: 0; font-family: 'Merriweather', serif; font-size: 0.92em; line-height: 1.9; border-radius: 4px; box-shadow: inset 0 2px 6px rgba(0,0,0,0.04); }
+    .book-content .statute-box { border: 2px solid rgba(0,0,0,0.12); background-color: rgba(251, 191, 36, 0.025); padding: 2.5rem; margin: 3rem 0; border-left: 12px solid #f59e0b; text-indent: 0; font-family: 'Merriweather', serif; border-radius: 6px; box-shadow: 0 15px 45px -20px rgba(251, 191, 36, 0.2); }
+    .book-content .socratic-prompt { background: rgba(30, 41, 59, 0.02); border: 2.5px solid #fbbf24; border-radius: 12px; padding: 2.5rem; margin: 4rem 0; box-shadow: 0 25px 60px -25px rgba(251, 191, 36, 0.25); text-indent: 0; position: relative; }
+    .book-content .socratic-prompt::before { content: 'GAUGING QUESTION'; position: absolute; top: -14px; left: 35px; background: #fbbf24; color: #000; font-size: 10px; font-weight: 1000; padding: 4px 14px; border-radius: 4px; letter-spacing: 0.3em; }
+    .book-content ul, .book-content ol { margin: 2.5rem 0; padding-left: 5rem; text-indent: 0; }
+    .book-content li { margin-bottom: 1.5rem; text-indent: 0; }
+    .book-content hr { border: 0; border-top: 2px solid rgba(0,0,0,0.1); margin: 4rem auto; width: 40%; }
   `;
+
+  const isQAPhase = lectureTurns.some(turn => turn.role === 'professor' && turn.content.includes('floor is now open'));
+  const isWaitingForGraspAnswer = lectureTurns.length > 0 && lectureTurns[lectureTurns.length-1].role === 'professor' && lectureTurns[lectureTurns.length-1].content.includes('socratic-prompt');
 
   if (viewMode === 'LECTURE' && activeSubject) {
     const prof = getProfessorForSubject(activeSubject.code);
     return (
-      <div className={`h-full flex flex-col transition-colors duration-500 overflow-hidden animate-in fade-in ${currentTheme.bg}`}>
+      <div className={`h-full flex flex-col transition-all duration-500 overflow-hidden ${currentTheme.bg}`}>
         <style>{bookStyles}</style>
         
-        {/* Lecture Header */}
-        <div className={`h-16 border-b flex items-center justify-between px-6 shrink-0 z-20 shadow-sm ${currentTheme.ui}`}>
+        {/* Optimized Header */}
+        <div className={`h-16 border-b flex items-center justify-between px-6 shrink-0 z-20 shadow-md ${currentTheme.ui}`}>
           <div className="flex items-center gap-4">
             <button onClick={() => setViewMode('GRID')} className={`p-2 rounded-full transition-all ${currentTheme.text} hover:bg-black/5`}>
               <ArrowLeft size={20} />
@@ -397,27 +259,44 @@ export const JDProgram: React.FC = () => {
               </div>
               <div>
                 <h2 className={`text-sm font-bold leading-none ${currentTheme.text}`}>{prof.name}</h2>
-                <p className="text-[10px] text-amber-600 font-bold uppercase tracking-widest mt-1">{prof.specialization}</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <p className="text-[10px] text-amber-600 font-black uppercase tracking-widest">{prof.specialization}</p>
+                  <div className="w-1 h-1 bg-slate-300 rounded-full"></div>
+                  <div className="flex items-center gap-1">
+                     {isQAPhase ? (
+                        <span className="text-[9px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-black uppercase flex items-center gap-1">
+                           <HelpCircle size={10}/> Open Q&A Session
+                        </span>
+                     ) : isWaitingForGraspAnswer ? (
+                        <span className="text-[9px] bg-green-100 text-green-700 px-2 py-0.5 rounded font-black uppercase flex items-center gap-1">
+                           <Zap size={10}/> Dialectical Response
+                        </span>
+                     ) : (
+                        <span className="text-[9px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded font-black uppercase flex items-center gap-1">
+                           <BookOpen size={10}/> Canonical Lecture
+                        </span>
+                     )}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
           <div className="flex items-center gap-4">
-             <div className="hidden md:flex items-center gap-3 bg-black/5 px-4 py-1.5 rounded-full border border-black/5">
-                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Pedagogical Rigor</span>
+             <div className="hidden md:flex items-center gap-2 bg-black/5 px-3 py-1.5 rounded-full border border-black/5">
+                <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest pr-2 border-r border-slate-200">Rigor</span>
                 <div className="flex gap-1">
                    {['Mild', 'Moderate', 'Rigorous'].map(r => (
                      <button 
                         key={r}
                         onClick={() => setStudentProfile({...studentProfile, rigorPreference: r as any})}
-                        className={`text-[9px] px-2 py-0.5 rounded-full font-bold transition-all ${studentProfile.rigorPreference === r ? 'bg-amber-50 text-slate-900' : 'text-slate-400 hover:text-slate-600'}`}
+                        className={`text-[9px] px-2 py-0.5 rounded-full font-bold transition-all ${studentProfile.rigorPreference === r ? 'bg-amber-50 text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
                       >
                         {r}
                       </button>
                    ))}
                 </div>
              </div>
-             <div className="w-px h-6 bg-slate-200 mx-1"></div>
              <button onClick={() => setShowSettings(!showSettings)} className={`p-2 rounded-lg transition-colors ${currentTheme.text} hover:bg-black/5`}>
                 <Settings size={20}/>
              </button>
@@ -426,45 +305,44 @@ export const JDProgram: React.FC = () => {
 
         {showSettings && <AppearanceSettings />}
 
-        {/* Lecture Transcript */}
-        <div ref={scrollRef} className={`flex-1 overflow-y-auto p-4 md:p-12 custom-scrollbar space-y-12 pb-40 scroll-smooth`}>
-           <div className="max-w-5xl mx-auto space-y-24">
+        {/* Improved Main Reading Canvas */}
+        <div ref={scrollRef} className={`flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar space-y-12 pb-32 scroll-smooth bg-[radial-gradient(circle_at_top_right,#e2e8f0,transparent)]`}>
+           <div className="max-w-4xl mx-auto space-y-20">
               {lectureTurns.map((turn) => (
-                <div key={turn.id} className={`flex ${turn.role === 'professor' ? 'justify-start' : 'justify-end'} animate-in slide-in-from-bottom-8 duration-700`}>
+                <div key={turn.id} className={`flex ${turn.role === 'professor' ? 'justify-start' : 'justify-end'} animate-in fade-in slide-in-from-bottom-6 duration-700`}>
                   {turn.role === 'professor' ? (
-                    <div className={`flex gap-10 group w-full ${currentTheme.pageBg} p-12 md:p-24 rounded-sm shadow-2xl border border-black/5 relative overflow-hidden`}>
-                       <div className="absolute top-0 right-0 w-80 h-80 bg-amber-500/[0.03] blur-3xl -mr-40 -mt-40 pointer-events-none"></div>
-                       <div className="shrink-0 pt-4 no-print">
-                          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white shadow-xl ring-4 ring-amber-500/10">
-                            <User size={32} />
+                    <div className={`flex gap-8 group w-full ${currentTheme.pageBg} p-8 md:p-20 rounded-xl shadow-xl border border-slate-200 relative overflow-hidden ring-1 ring-white/50 transition-all hover:shadow-2xl`}>
+                       <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/[0.03] blur-3xl -mr-32 -mt-32 pointer-events-none"></div>
+                       <div className="shrink-0 pt-2 no-print hidden sm:block">
+                          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white shadow-lg ring-2 ring-amber-500/10">
+                            <User size={28} />
                           </div>
                        </div>
-                       <div className="flex-1 space-y-8 relative z-10">
-                          <div className="flex items-center justify-between no-print mb-6">
+                       <div className="flex-1 space-y-6 relative z-10">
+                          <div className="flex items-center justify-between no-print mb-4 border-b border-slate-100 pb-4">
                              <div className="flex items-center gap-4">
-                                <span className="text-[11px] font-black text-amber-600 uppercase tracking-[0.3em]">{prof.name} • {prof.almaMater}</span>
-                                <div className="w-2 h-2 bg-slate-200 rounded-full"></div>
+                                <span className="text-[10px] font-black text-amber-600 uppercase tracking-[0.3em]">{prof.name} • {prof.almaMater}</span>
+                                <div className="w-1 h-1 bg-slate-200 rounded-full"></div>
                                 <span className="text-[10px] text-slate-400 font-mono">{new Date(turn.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                              </div>
-                             <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 transition-colors"><Volume2 size={16}/></button>
-                                <button className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 transition-colors"><Bookmark size={16}/></button>
+                             <div className="flex gap-2">
+                                <button className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 transition-colors" title="Bookmark"><Bookmark size={16}/></button>
                              </div>
                           </div>
                           <div 
-                            className={`book-content ${fontFamily} ${currentTheme.text} transition-all`} 
+                            className={`book-content ${fontFamily} ${currentTheme.text} transition-all tracking-normal`} 
                             style={{ fontSize: `${effectiveFontSize}px` }}
                             dangerouslySetInnerHTML={{ __html: turn.content }} 
                           />
                        </div>
                     </div>
                   ) : (
-                    <div className="flex flex-col items-end gap-3 max-w-[85%] no-print">
-                       <div className="flex items-center gap-4">
+                    <div className="flex flex-col items-end gap-3 max-w-[80%] no-print">
+                       <div className="flex items-center gap-4 mb-1">
                           <span className="text-[10px] text-slate-400 font-mono">{new Date(turn.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                          <span className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em]">Student Submission</span>
+                          <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Student Submission</span>
                        </div>
-                       <div className="bg-slate-900 border border-slate-700 rounded-[2.5rem] rounded-tr-none px-12 py-8 text-slate-100 font-medium text-xl shadow-2xl ring-1 ring-white/10">
+                       <div className="bg-slate-900 border border-slate-700 rounded-3xl rounded-tr-none px-10 py-6 text-slate-100 font-medium text-xl shadow-xl ring-1 ring-white/10 leading-relaxed transition-all hover:ring-white/30">
                           {turn.content}
                        </div>
                     </div>
@@ -473,14 +351,14 @@ export const JDProgram: React.FC = () => {
               ))}
               
               {isLoading && (
-                <div className={`flex gap-10 group w-full ${currentTheme.pageBg} p-24 rounded-sm shadow-2xl border border-black/5 animate-pulse`}>
-                   <div className="w-16 h-16 rounded-2xl bg-slate-200" />
-                   <div className="flex-1 space-y-10 pt-4">
-                      <div className="h-4 w-64 bg-slate-100 rounded" />
-                      <div className="space-y-5">
-                        <div className="h-6 w-full bg-slate-100 rounded" />
-                        <div className="h-6 w-11/12 bg-slate-100 rounded" />
-                        <div className="h-6 w-9/12 bg-slate-100 rounded" />
+                <div className={`flex gap-8 group w-full ${currentTheme.pageBg} p-12 md:p-20 rounded-xl shadow-lg border border-slate-200 animate-pulse`}>
+                   <div className="w-14 h-14 rounded-2xl bg-slate-100 shrink-0" />
+                   <div className="flex-1 space-y-8 pt-2">
+                      <div className="h-4 w-48 bg-slate-100 rounded" />
+                      <div className="space-y-4">
+                        <div className="h-6 w-full bg-slate-50 rounded" />
+                        <div className="h-6 w-11/12 bg-slate-50 rounded" />
+                        <div className="h-6 w-9/12 bg-slate-50 rounded" />
                       </div>
                    </div>
                 </div>
@@ -488,33 +366,43 @@ export const JDProgram: React.FC = () => {
            </div>
         </div>
 
-        {/* Lectern Input Area */}
-        <div className={`shrink-0 p-10 border-t z-30 transition-colors duration-500 ${currentTheme.ui}`}>
-           <div className="max-w-5xl mx-auto relative group">
-              <div className="absolute -top-4 left-10 px-4 py-1.5 bg-amber-600 text-white rounded-md font-black text-[10px] uppercase tracking-widest shadow-xl z-10">Dialectical Response</div>
-              <textarea 
-                value={userInput}
-                onChange={(e) => setUserInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSendMessage())}
-                placeholder="Synthesize your legal reasoning based on the Professor's probe..."
-                className={`w-full border rounded-[3rem] py-10 pl-12 pr-28 text-xl font-medium outline-none transition-all shadow-inner resize-none min-h-[140px] ${theme === 'night' || theme === 'dark' ? 'bg-white/5 border-white/10 text-white placeholder-slate-600 focus:border-amber-500/50' : 'bg-slate-50 border-slate-200 focus:bg-white focus:border-amber-500/50 focus:ring-[12px] focus:ring-amber-500/5'}`}
-              />
-              <button 
-                onClick={handleSendMessage}
-                disabled={isLoading || !userInput.trim()}
-                className="absolute right-8 bottom-8 h-20 w-20 bg-amber-600 text-white rounded-[2rem] flex items-center justify-center shadow-2xl hover:bg-amber-500 disabled:opacity-30 transition-all active:scale-90 group-hover:scale-105"
-              >
-                {isLoading ? <Loader2 size={32} className="animate-spin" /> : <Send size={32} />}
-              </button>
-           </div>
-           <div className="mt-8 flex justify-center gap-12 no-print">
-              <div className="flex items-center gap-3 opacity-60">
-                 <ShieldCheck size={18} className="text-green-600" />
-                 <span className="text-[11px] font-black text-slate-500 uppercase tracking-[0.25em]">Jurisprudential Grounding Active</span>
+        {/* Redesigned Integrated Input Area */}
+        <div className={`shrink-0 p-8 border-t z-30 transition-all duration-500 shadow-[0_-15px_40px_-15px_rgba(0,0,0,0.08)] ${currentTheme.ui}`}>
+           <div className="max-w-4xl mx-auto relative group">
+              <div className="absolute -top-4 left-8 px-4 py-1.5 bg-amber-600 text-white rounded-lg font-black text-[10px] uppercase tracking-widest shadow-lg z-10 border border-white/20 ring-4 ring-[#f1f5f9]">
+                {isQAPhase ? 'Active Inquiry Block' : 'Legal Synthesis Submission'}
               </div>
-              <div className="flex items-center gap-3 opacity-60">
+              
+              <div className="relative flex items-end gap-4 bg-slate-50 border border-slate-200 rounded-3xl p-4 focus-within:bg-white focus-within:border-amber-500 transition-all shadow-inner focus-within:ring-8 focus-within:ring-amber-500/5 group">
+                <textarea 
+                  value={userInput}
+                  onChange={(e) => setUserInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSendMessage())}
+                  placeholder={isQAPhase ? "Submit a clarifying question for ProfessorLex's definitive answer..." : "Submit your synthesis of the doctrine to the Professor..."}
+                  className="flex-1 bg-transparent py-4 px-6 text-xl font-medium outline-none resize-none min-h-[100px] max-h-[250px] scrollbar-hide text-slate-900 placeholder-slate-400"
+                  rows={2}
+                />
+                
+                <div className="flex flex-col gap-2 pb-2">
+                  <button 
+                    onClick={handleSendMessage}
+                    disabled={isLoading || !userInput.trim()}
+                    className="h-14 w-14 bg-amber-600 text-white rounded-2xl flex items-center justify-center shadow-xl hover:bg-amber-500 disabled:opacity-30 transition-all active:scale-90 hover:scale-105 border-2 border-white/10"
+                  >
+                    {isLoading ? <Loader2 size={24} className="animate-spin" /> : <Send size={24} />}
+                  </button>
+                </div>
+              </div>
+           </div>
+           
+           <div className="mt-6 flex justify-center gap-12 no-print opacity-50">
+              <div className="flex items-center gap-3">
+                 <ShieldCheck size={18} className="text-green-600" />
+                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Grounding Verified</span>
+              </div>
+              <div className="flex items-center gap-3">
                  <Sparkles size={18} className="text-amber-500" />
-                 <span className="text-[11px] font-black text-slate-500 uppercase tracking-[0.25em]">Socratic Feedback Engine</span>
+                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Socratic AI Active</span>
               </div>
            </div>
         </div>
@@ -522,13 +410,14 @@ export const JDProgram: React.FC = () => {
     );
   }
 
+  // Module reading view remains largely the same but with proportional padding updates
   if (viewMode === 'MODULE' && activeSubject) {
     return (
       <div className={`h-full flex flex-col transition-colors duration-500 overflow-hidden animate-in fade-in ${currentTheme.bg}`}>
         <style>{bookStyles}</style>
          <div className={`h-14 border-b flex items-center justify-between px-6 shrink-0 z-30 shadow-sm ${currentTheme.ui}`}>
             <button onClick={() => setViewMode('GRID')} className={`flex items-center gap-2 text-sm font-bold transition-all ${currentTheme.text} opacity-70 hover:opacity-100`}>
-              <ArrowLeft size={18} /> Back to Curriculum
+              <ArrowLeft size={18} /> Curriculum
             </button>
             <div className="flex items-center gap-4">
                <div className="flex items-center gap-2">
@@ -545,59 +434,49 @@ export const JDProgram: React.FC = () => {
 
          {showSettings && <AppearanceSettings />}
 
-         <div className={`flex-1 overflow-y-auto p-4 md:p-16 scroll-smooth custom-scrollbar`}>
+         <div className={`flex-1 overflow-y-auto p-4 md:p-12 scroll-smooth custom-scrollbar`}>
             {isLoading ? (
                <div className="h-full flex flex-col items-center justify-center opacity-70">
                   <Loader2 size={64} className="animate-spin text-amber-600 mb-8" />
-                  <p className={`font-serif text-3xl font-black tracking-tighter ${currentTheme.text}`}>Synthesizing Treatise...</p>
-                  <p className="text-[12px] font-bold text-slate-400 uppercase tracking-[0.5em] mt-8 animate-pulse">Compiling Philippine Legal Traditions</p>
+                  <p className={`font-serif text-3xl font-black tracking-tighter ${currentTheme.text}`}>Synthesizing Scholarly Module...</p>
                </div>
             ) : (
-               <div className="max-w-5xl mx-auto mb-48">
+               <div className="max-w-5xl mx-auto mb-40">
                   <div 
-                    className={`min-h-[11in] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.25)] py-32 px-20 md:px-32 rounded-sm transition-all duration-700 relative overflow-hidden ${currentTheme.pageBg} ${currentTheme.text} ${fontFamily}`}
+                    className={`min-h-[11in] shadow-2xl rounded-xl py-24 px-12 md:px-24 transition-all duration-700 relative overflow-hidden ${currentTheme.pageBg} ${currentTheme.text} ${fontFamily}`}
                     style={{ fontSize: `${effectiveFontSize}px` }}
                   >
                      <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/[0.04] blur-3xl -mr-48 -mt-48 pointer-events-none"></div>
-                     <div className="border-b-[4px] border-double pb-20 mb-28 text-center relative z-10 no-print" style={{ borderColor: 'currentColor' }}>
+                     <div className="border-b-[4px] border-double pb-16 mb-20 text-center relative z-10 no-print" style={{ borderColor: 'currentColor' }}>
                         <div className="flex justify-between items-start absolute right-0 top-0 opacity-40 hover:opacity-100 transition-opacity">
                            <div className="flex gap-4">
-                              <button onClick={() => window.print()} className="p-3 rounded-xl hover:bg-black/5" title="Generate Hardcopy"><Printer size={22}/></button>
-                              <button className="p-3 rounded-xl hover:bg-black/5" title="Archive Academic Case"><Bookmark size={22}/></button>
+                              <button onClick={() => window.print()} className="p-3 rounded-xl hover:bg-black/5" title="Print"><Printer size={20}/></button>
+                              <button className="p-3 rounded-xl hover:bg-black/5" title="Bookmark"><Bookmark size={20}/></button>
                            </div>
                         </div>
-                        <span className="text-[13px] font-black uppercase tracking-[0.7em] mb-8 block opacity-60">LegalPH Academic Collection</span>
-                        <h1 className="text-6xl font-serif font-black uppercase leading-[1.05] tracking-tighter mb-12">
+                        <span className="text-[12px] font-black uppercase tracking-[0.7em] mb-6 block opacity-50">LegalPH Research Collection</span>
+                        <h1 className="text-6xl font-serif font-black uppercase leading-[1.05] tracking-tighter mb-10">
                           {activeSubject.title}
                         </h1>
-                        <div className="flex items-center justify-center gap-10 text-[13px] font-black uppercase tracking-[0.4em] opacity-50">
+                        <div className="flex items-center justify-center gap-10 text-[12px] font-black uppercase tracking-[0.4em] opacity-40">
                            <div className="flex items-center gap-3"><BookOpen size={18}/> {activeSubject.code}</div>
-                           <div className="w-2.5 h-2.5 bg-current rounded-full"></div>
-                           <div className="flex items-center gap-3"><FileText size={18}/> {activeSubject.units} Academic Units</div>
+                           <div className="w-2 h-2 bg-current rounded-full"></div>
+                           <div className="flex items-center gap-3"><FileText size={18}/> {activeSubject.units} Units</div>
                         </div>
                      </div>
                      <div className="book-content" dangerouslySetInnerHTML={{ __html: moduleContent || '' }} />
-                     <div className="mt-64 pt-16 border-t-[2px] border-current/10 text-center opacity-30 italic font-serif text-[13px] tracking-[1em]">
-                       *** FINIS MODULE CHAPTER - LEGALPH MASTER COLLECTION ***
+                     <div className="mt-40 pt-16 border-t border-current/10 text-center opacity-30 italic font-serif text-[13px] tracking-[1.2em]">
+                       *** FINIS DOCUMENT ***
                      </div>
                   </div>
                </div>
             )}
          </div>
-
-         {/* Back to Top Floating */}
-         {!isLoading && moduleContent && (
-           <button 
-              onClick={() => scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}
-              className="fixed bottom-16 right-16 p-6 bg-amber-600 text-white rounded-full shadow-[0_20px_50px_-10px_rgba(217,119,6,0.6)] hover:scale-110 transition-transform no-print z-50 group"
-           >
-              <ChevronDown size={28} className="rotate-180 group-hover:-translate-y-1.5 transition-transform" />
-           </button>
-         )}
       </div>
     );
   }
 
+  // Standard curriculum grid remains unchanged.
   return (
     <div className="flex-1 overflow-y-auto px-4 py-8 md:px-8 lg:px-12 animate-in fade-in duration-500 bg-slate-50">
       <div className="max-w-7xl mx-auto h-full flex flex-col">
@@ -698,7 +577,7 @@ export const JDProgram: React.FC = () => {
                                  className="h-10 px-4 bg-slate-100 text-slate-600 rounded-xl text-[11px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-slate-200 transition-all"
                                >
                                   <BookOpen size={14} /> Module
-                               </button>
+                                </button>
                             </div>
                           </div>
                         );
@@ -714,10 +593,3 @@ export const JDProgram: React.FC = () => {
     </div>
   );
 };
-
-// Generic utility icons used in the book viewer
-const Download = ({ size, className }: { size: number, className?: string }) => (
-  <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-  </svg>
-);

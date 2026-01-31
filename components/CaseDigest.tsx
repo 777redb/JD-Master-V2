@@ -36,7 +36,7 @@ type Theme = 'light' | 'sepia' | 'dark' | 'night';
 type LegalFont = 'font-serif' | 'font-crimson' | 'font-sans' | 'font-mono';
 
 const THEMES: Record<Theme, { bg: string, text: string, ui: string, border: string, prose: string, pageBg: string, accent: string }> = {
-  light: { bg: 'bg-slate-100', text: 'text-slate-900', ui: 'bg-white border-slate-200', border: 'border-slate-200', prose: 'prose-slate', pageBg: 'bg-white', accent: 'text-amber-700' },
+  light: { bg: 'bg-[#f1f5f9]', text: 'text-slate-900', ui: 'bg-white border-slate-200', border: 'border-slate-200', prose: 'prose-slate', pageBg: 'bg-white', accent: 'text-amber-700' },
   sepia: { bg: 'bg-[#eaddcf]', text: 'text-[#463525]', ui: 'bg-[#f4ecd8] border-[#d3c4b1]', border: 'border-[#d3c4b1]', prose: 'prose-amber', pageBg: 'bg-[#fbf7f0]', accent: 'text-[#78350f]' },
   dark: { bg: 'bg-[#0f172a]', text: 'text-slate-300', ui: 'bg-[#1e293b] border-slate-700', border: 'border-slate-700', prose: 'prose-invert', pageBg: 'bg-[#1e293b]', accent: 'text-amber-400' },
   night: { bg: 'bg-black', text: 'text-gray-400', ui: 'bg-gray-900 border-gray-800', border: 'border-gray-800', prose: 'prose-invert', pageBg: 'bg-[#0a0a0a]', accent: 'text-gray-500' }
@@ -187,7 +187,7 @@ export const CaseDigest: React.FC = () => {
           .book-content { padding: 0 !important; margin: 0 !important; box-shadow: none !important; width: 100% !important; max-width: none !important; }
         }
 
-        /* PREMIUM BOOK-GRADE LAYOUT ENGINE */
+        /* PREMIUM BOOK-GRADE LAYOUT ENGINE (SCRA Standard) */
         .book-content { 
             text-align: ${textAlign}; 
             line-height: 2.1; 
@@ -199,19 +199,26 @@ export const CaseDigest: React.FC = () => {
         
         /* High-Fidelity Header Hierarchy */
         .book-content h1 { 
-            text-align: center; font-weight: 950; font-size: 2.3em; text-transform: uppercase; letter-spacing: 0.2em; 
-            margin: 4.5rem 0 4rem; line-height: 1.1; border-bottom: 5px double currentColor; padding-bottom: 2.5rem; 
+            text-align: center; 
+            font-weight: 950; 
+            font-size: 2.3em; 
+            text-transform: uppercase; 
+            letter-spacing: 0.2em; 
+            margin: 4.5rem 0 4rem; 
+            line-height: 1.1; 
+            border-bottom: 5px double currentColor; 
+            padding-bottom: 2.5rem; 
             text-indent: 0; 
         }
         
-        /* Centered Uppercase Section Headers with horizontal rules (Standard Supreme Court Report Style) */
+        /* Elite Centered Section Headers (e.g., RATIO DECIDENDI) */
         .book-content h3 { 
             text-align: center;
             font-weight: 1000; 
             font-size: 1.6em; 
             text-transform: uppercase; 
             letter-spacing: 0.22em; 
-            margin: 6rem 0 3.5rem; 
+            margin: 6.5rem 0 3.5rem; 
             border-top: 1.5px solid currentColor; 
             border-bottom: 1.5px solid currentColor; 
             padding: 1.75rem 0; 
@@ -222,7 +229,7 @@ export const CaseDigest: React.FC = () => {
         }
         
         .book-content h4 { 
-            font-weight: 900; 
+            font-weight: 950; 
             font-size: 1.3em; 
             text-transform: uppercase; 
             letter-spacing: 0.12em; 
@@ -233,7 +240,7 @@ export const CaseDigest: React.FC = () => {
             display: block;
         }
         
-        /* Traditional Legal Indention (Standard for Official Reports) */
+        /* Traditional Legal Indention Rules (Premium Publishing Standard) */
         .book-content p { 
             margin-top: 0; 
             margin-bottom: 0; 
@@ -241,7 +248,7 @@ export const CaseDigest: React.FC = () => {
             padding-bottom: 0;
         }
 
-        /* Exceptions: Paragraphs following headers or block containers are NOT indented */
+        /* Exceptions: Paragraphs following headers or containers are NOT indented */
         .book-content h1 + p, 
         .book-content h2 + p, 
         .book-content h3 + p, 
@@ -255,14 +262,14 @@ export const CaseDigest: React.FC = () => {
             text-indent: 0; 
         }
         
-        /* Tight scholastic rhythm: consecutive paragraphs stay joined */
+        /* Scholastic rhythm: paragraphs stay joined visually */
         .book-content p + p {
             margin-top: 0;
         }
         
-        /* Formal Block Quotes (Excerpts from Rulings) */
+        /* Professional Block Quotes (Excerpts from Rulings) */
         .book-content blockquote { 
-            margin: 3.5rem 6rem; 
+            margin: 3.5rem 6.5rem; 
             padding: 3rem 4rem; 
             border-left: 10px solid #b45309; 
             background-color: rgba(0,0,0,0.025); 
@@ -287,7 +294,7 @@ export const CaseDigest: React.FC = () => {
             box-shadow: 0 20px 60px -20px rgba(0,0,0,0.1);
         }
 
-        /* Disposition Styling */
+        /* High-Visibility Disposition Marker */
         .book-content .so-ordered { 
             text-align: center; 
             margin: 10rem auto; 
@@ -302,7 +309,7 @@ export const CaseDigest: React.FC = () => {
             font-size: 1.4em;
         }
 
-        /* Lists Geometries */
+        /* Refined List Geometries */
         .book-content ul, .book-content ol { 
             margin: 4rem 0; 
             padding-left: 8rem; 
@@ -323,7 +330,7 @@ export const CaseDigest: React.FC = () => {
         .book-content .end-marker { 
             text-align: center; 
             margin-top: 20rem; 
-            opacity: 0.2; 
+            opacity: 0.15; 
             font-size: 1rem; 
             letter-spacing: 1.5em; 
             text-indent: 0; 
@@ -344,7 +351,7 @@ export const CaseDigest: React.FC = () => {
              {isInputExpanded && (
                <div className="flex items-center justify-between mb-1">
                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
-                    <ShieldCheck size={12} className="text-green-600" /> Doctrinal Verification Active
+                    <ShieldCheck size={12} className="text-green-600" /> Premium Doctrinal Verification Active
                  </label>
                  {uploadedFile && (
                     <div className="flex items-center gap-3">
@@ -465,86 +472,86 @@ export const CaseDigest: React.FC = () => {
         </div>
       </div>
 
-      <div className={`flex-1 overflow-y-auto p-4 md:p-20 scroll-smooth scrollbar-hide ${currentTheme.bg}`} ref={contentRef}>
+      <div className={`flex-1 overflow-y-auto p-4 md:p-20 lg:p-32 scroll-smooth scrollbar-hide ${currentTheme.bg}`} ref={contentRef}>
         {isProcessing ? (
            <div className="h-full flex flex-col items-center justify-center opacity-70">
-             <div className="relative mb-10">
-                <Loader2 className={`animate-spin text-amber-600`} size={80} />
-                <ShieldCheck className="absolute inset-0 m-auto text-green-600" size={32} />
+             <div className="relative mb-12">
+                <Loader2 className={`animate-spin text-amber-600`} size={84} />
+                <ShieldCheck className="absolute inset-0 m-auto text-green-600" size={36} />
              </div>
              <p className={`font-serif text-3xl font-black tracking-tight animate-pulse ${currentTheme.text}`}>Synthesizing Case Treatise...</p>
              <div className="flex flex-col items-center gap-3 mt-8 text-[12px] font-bold text-slate-400 uppercase tracking-[0.5em]">
                  <span className="flex items-center gap-2"><Globe size={16}/> Accessing High-Court Repositories</span>
-                 <span className="flex items-center gap-2"><FileText size={16}/> Premium Academic Formatting Cycle</span>
+                 <span className="flex items-center gap-2"><FileText size={16}/> Premium Academic Formatting Sequence</span>
                  <span className="flex items-center gap-2"><ImageIcon size={16}/> Analyzing Artifacts Line-by-Line</span>
              </div>
            </div>
         ) : digest ? (
-           <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-20 items-start mb-60 animate-in fade-in slide-in-from-bottom-12 duration-1000">
+           <div className="max-w-[1400px] mx-auto flex flex-col xl:flex-row gap-24 items-start mb-64 animate-in fade-in slide-in-from-bottom-12 duration-1000">
               {/* Main Reading Canvas */}
               <div 
-                className={`flex-1 min-h-[11in] ${currentTheme.pageBg} ${fontFamily} ${currentTheme.text} shadow-[0_60px_150px_-30px_rgba(0,0,0,0.35)] py-48 px-24 md:px-48 rounded-sm transition-all duration-1000 relative overflow-hidden`} 
+                className={`flex-1 min-h-[11in] ${currentTheme.pageBg} ${fontFamily} ${currentTheme.text} shadow-[0_80px_200px_-50px_rgba(0,0,0,0.4)] py-64 px-24 md:px-48 lg:px-64 rounded-sm transition-all duration-1000 relative overflow-hidden`} 
                 style={{ fontSize: `${effectiveFontSize}px` }}
               >
-                  <div className="absolute top-0 right-0 w-[40rem] h-[40rem] bg-amber-500/[0.06] blur-[160px] -mr-80 -mt-80 pointer-events-none"></div>
+                  <div className="absolute top-0 right-0 w-[50rem] h-[50rem] bg-amber-500/[0.06] blur-[180px] -mr-96 -mt-96 pointer-events-none"></div>
                   
-                  <div className={`border-b-[6px] border-double pb-32 mb-40 text-center relative z-10 no-print`} style={{ borderColor: 'currentColor' }}>
+                  <div className={`border-b-[7px] border-double pb-40 mb-48 text-center relative z-10 no-print`} style={{ borderColor: 'currentColor' }}>
                     <div className="flex justify-between items-start absolute right-0 top-0 opacity-40 hover:opacity-100 transition-opacity">
                       <div className="flex gap-6">
-                        <button onClick={saveToLegalPad} className="p-4 rounded-2xl hover:bg-black/5" title="Archive Academic Case"><PlusSquare size={28} /></button>
-                        <button onClick={handleCopy} className="p-4 rounded-2xl hover:bg-black/5" title="Copy Textual Content"><Copy size={28} /></button>
-                        <button onClick={() => window.print()} className="p-4 rounded-2xl hover:bg-black/5" title="Generate Hardcopy"><Printer size={28} /></button>
+                        <button onClick={saveToLegalPad} className="p-5 rounded-2xl hover:bg-black/5" title="Archive Academic Case"><PlusSquare size={32} /></button>
+                        <button onClick={handleCopy} className="p-5 rounded-2xl hover:bg-black/5" title="Copy Textual Content"><Copy size={32} /></button>
+                        <button onClick={() => window.print()} className="p-5 rounded-2xl hover:bg-black/5" title="Generate Hardcopy"><Printer size={32} /></button>
                       </div>
                     </div>
-                    <div className="flex flex-col items-center gap-6 mb-16">
-                        <span className="text-[16px] font-black uppercase tracking-[1em] block opacity-60">LegalPH Academic Collection</span>
-                        <div className="flex items-center gap-4 px-6 py-2.5 bg-green-50 text-green-700 rounded-full text-[14px] font-black uppercase tracking-widest ring-1 ring-green-600/30 shadow-md">
-                            <ShieldCheck size={20}/> Authenticity Verified via Official PH Reports
+                    <div className="flex flex-col items-center gap-8 mb-20">
+                        <span className="text-[18px] font-black uppercase tracking-[1.1em] block opacity-60">LegalPH Academic Collection</span>
+                        <div className="flex items-center gap-5 px-8 py-3 bg-green-50 text-green-700 rounded-full text-[15px] font-black uppercase tracking-widest ring-1 ring-green-600/40 shadow-xl">
+                            <ShieldCheck size={24}/> Authenticity Verified via Official PH Reports
                         </div>
                     </div>
-                    <h1 className="text-8xl font-black mt-16 leading-[1.05] uppercase tracking-tighter selection:bg-amber-200">
+                    <h1 className="text-8xl lg:text-9xl font-black mt-20 leading-[1.02] uppercase tracking-tighter selection:bg-amber-200">
                       {input || "Untitled Case Treatise"}
                     </h1>
-                    <div className="flex items-center justify-center gap-16 text-[16px] font-black uppercase tracking-[0.8em] opacity-40 mt-28">
-                      <div className="flex items-center gap-5"><Globe size={24}/> SCRA Standard</div>
-                      <div className="w-4 h-4 bg-current rounded-full"></div>
-                      <div className="flex items-center gap-5"><Scale size={24}/> Judicial Review v5.0</div>
+                    <div className="flex items-center justify-center gap-20 text-[18px] font-black uppercase tracking-[0.9em] opacity-40 mt-36">
+                      <div className="flex items-center gap-6"><Globe size={28}/> SCRA Standard</div>
+                      <div className="w-5 h-5 bg-current rounded-full"></div>
+                      <div className="flex items-center gap-6"><Scale size={28}/> Judicial Review v5.0</div>
                     </div>
                   </div>
 
                   <div className="book-content" dangerouslySetInnerHTML={{ __html: digest }} />
                   
-                  <div className="mt-[20rem] pt-24 border-t-[4px] border-current/10 text-center opacity-30 italic font-serif text-[16px] tracking-[1.6em]">
+                  <div className="mt-[30rem] pt-32 border-t-[5px] border-current/10 text-center opacity-30 italic font-serif text-[18px] tracking-[1.8em]">
                     *** FINIS DOCUMENT - LEGALPH MASTER COLLECTION ***
                   </div>
               </div>
 
               {/* Verified Sources Sidebar */}
               {sources.length > 0 && (
-                  <div className="w-full lg:w-[420px] shrink-0 space-y-12 no-print sticky top-36">
-                      <div className="p-12 bg-white/50 backdrop-blur-xl border border-slate-200 rounded-[3rem] shadow-2xl">
-                          <h4 className="text-[14px] font-black text-slate-400 uppercase tracking-[0.4em] mb-12 flex items-center gap-5">
-                             <Globe size={24} className="text-blue-500" /> Research Metadata
+                  <div className="w-full xl:w-[460px] shrink-0 space-y-16 no-print sticky top-36">
+                      <div className="p-16 bg-white/50 backdrop-blur-2xl border border-slate-200 rounded-[4rem] shadow-2xl">
+                          <h4 className="text-[16px] font-black text-slate-400 uppercase tracking-[0.5em] mb-16 flex items-center gap-6">
+                             <Globe size={28} className="text-blue-500" /> Research Metadata
                           </h4>
-                          <div className="space-y-10">
+                          <div className="space-y-12">
                               {sources.map((src, idx) => src.web && (
                                   <a 
                                     key={idx} 
                                     href={src.web.uri} 
                                     target="_blank" 
                                     rel="noopener noreferrer"
-                                    className="block p-10 bg-white border border-slate-100 rounded-[2.5rem] hover:border-amber-500 hover:shadow-[0_30px_70px_-30px_rgba(217,119,6,0.4)] transition-all group"
+                                    className="block p-12 bg-white border border-slate-100 rounded-[3rem] hover:border-amber-500 hover:shadow-[0_40px_100px_-30px_rgba(217,119,6,0.5)] transition-all group"
                                   >
-                                      <div className="text-[17px] font-bold text-slate-800 mb-6 group-hover:text-amber-700 line-clamp-2 leading-snug">{src.web.title}</div>
-                                      <div className="flex items-center justify-between pt-5 border-t border-slate-50">
-                                          <span className="text-[13px] text-slate-400 font-mono truncate max-w-[220px]">{new URL(src.web.uri).hostname}</span>
-                                          <ExternalLink size={20} className="text-slate-300 group-hover:text-amber-500" />
+                                      <div className="text-[19px] font-bold text-slate-800 mb-8 group-hover:text-amber-700 line-clamp-2 leading-snug">{src.web.title}</div>
+                                      <div className="flex items-center justify-between pt-6 border-t border-slate-50">
+                                          <span className="text-[14px] text-slate-400 font-mono truncate max-w-[240px]">{new URL(src.web.uri).hostname}</span>
+                                          <ExternalLink size={24} className="text-slate-300 group-hover:text-amber-500" />
                                       </div>
                                   </a>
                               ))}
                           </div>
-                          <div className="mt-20 pt-12 border-t border-slate-100">
-                              <p className="text-[13px] text-slate-400 italic leading-relaxed">
+                          <div className="mt-24 pt-16 border-t border-slate-100">
+                              <p className="text-[14px] text-slate-400 italic leading-relaxed">
                                 Cross-referenced via SC Decisions Portal and Philippine E-Library for authoritative legal verification.
                               </p>
                           </div>
@@ -554,33 +561,33 @@ export const CaseDigest: React.FC = () => {
            </div>
         ) : (
            <div className="h-full flex flex-col items-center justify-center text-slate-300 opacity-50 select-none animate-in fade-in duration-1000">
-              <div className="relative mb-16">
-                 <FileText size={200} className="text-slate-100" />
+              <div className="relative mb-20">
+                 <FileText size={240} className="text-slate-100" />
                  <div className="absolute inset-0 flex items-center justify-center">
-                    <ShieldCheck size={80} className="text-green-600/20" />
+                    <ShieldCheck size={96} className="text-green-600/20" />
                  </div>
               </div>
-              <h2 className={`text-6xl font-serif font-bold text-slate-800 mb-8`}>High-Fidelity Brief AI</h2>
-              <p className={`text-center max-w-xl font-sans text-xl leading-relaxed text-slate-500`}>
+              <h2 className={`text-7xl font-serif font-bold text-slate-800 mb-10`}>High-Fidelity Brief AI</h2>
+              <p className={`text-center max-w-2xl font-sans text-2xl leading-relaxed text-slate-500`}>
                  Enter a landmark case or upload judicial records for line-by-line factual synthesis. Powered by the official Supreme Court portal for verified research.
               </p>
               
-              <div className="mt-24 grid grid-cols-4 gap-16 max-w-5xl w-full">
-                 <div className="flex flex-col items-center gap-5">
-                    <div className="w-20 h-20 bg-white rounded-[2rem] shadow-sm border border-slate-100 flex items-center justify-center text-slate-400"><Search size={40}/></div>
-                    <span className="text-[12px] font-black uppercase tracking-widest">Case Query</span>
+              <div className="mt-32 grid grid-cols-4 gap-20 max-w-6xl w-full">
+                 <div className="flex flex-col items-center gap-6">
+                    <div className="w-24 h-24 bg-white rounded-[2.5rem] shadow-sm border border-slate-100 flex items-center justify-center text-slate-400"><Search size={48}/></div>
+                    <span className="text-[14px] font-black uppercase tracking-widest">Case Query</span>
                  </div>
-                 <div className="flex flex-col items-center gap-5">
-                    <div className="w-20 h-20 bg-white rounded-[2rem] shadow-sm border border-slate-100 flex items-center justify-center text-slate-400"><ImageIcon size={40}/></div>
-                    <span className="text-[12px] font-black uppercase tracking-widest">Doc Review</span>
+                 <div className="flex flex-col items-center gap-6">
+                    <div className="w-24 h-24 bg-white rounded-[2.5rem] shadow-sm border border-slate-100 flex items-center justify-center text-slate-400"><ImageIcon size={48}/></div>
+                    <span className="text-[14px] font-black uppercase tracking-widest">Doc Review</span>
                  </div>
-                 <div className="flex flex-col items-center gap-5">
-                    <div className="w-20 h-20 bg-white rounded-[2rem] shadow-sm border border-slate-100 flex items-center justify-center text-slate-400"><ShieldCheck size={40} className="text-green-500/40" /></div>
-                    <span className="text-[12px] font-black uppercase tracking-widest text-green-600/60">Verified</span>
+                 <div className="flex flex-col items-center gap-6">
+                    <div className="w-24 h-24 bg-white rounded-[2.5rem] shadow-sm border border-slate-100 flex items-center justify-center text-slate-400"><ShieldCheck size={48} className="text-green-500/40" /></div>
+                    <span className="text-[14px] font-black uppercase tracking-widest text-green-600/60">Verified</span>
                  </div>
-                 <div className="flex flex-col items-center gap-5">
-                    <div className="w-20 h-20 bg-white rounded-[2rem] shadow-sm border border-slate-100 flex items-center justify-center text-slate-400"><Globe size={40}/></div>
-                    <span className="text-[12px] font-black uppercase tracking-widest">Global</span>
+                 <div className="flex flex-col items-center gap-6">
+                    <div className="w-24 h-24 bg-white rounded-[2.5rem] shadow-sm border border-slate-100 flex items-center justify-center text-slate-400"><Globe size={48}/></div>
+                    <span className="text-[14px] font-black uppercase tracking-widest">Global</span>
                  </div>
               </div>
            </div>
@@ -590,9 +597,9 @@ export const CaseDigest: React.FC = () => {
         {digest && (
           <button 
              onClick={() => contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}
-             className="fixed bottom-20 right-20 p-8 bg-amber-600 text-white rounded-full shadow-[0_30px_70px_-10px_rgba(217,119,6,0.7)] hover:scale-110 transition-transform no-print z-50 group"
+             className="fixed bottom-24 right-24 p-10 bg-amber-600 text-white rounded-full shadow-[0_40px_100px_-10px_rgba(217,119,6,0.8)] hover:scale-110 transition-transform no-print z-50 group"
           >
-             <ChevronDown size={36} className="rotate-180 group-hover:-translate-y-2.5 transition-transform" />
+             <ChevronDown size={48} className="rotate-180 group-hover:-translate-y-3 transition-transform" />
           </button>
         )}
       </div>
