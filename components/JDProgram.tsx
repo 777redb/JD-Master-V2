@@ -16,29 +16,19 @@ import {
   AlignJustify,
   ArrowLeft,
   Bookmark,
-  BookmarkCheck,
   PlusSquare,
-  Share2,
   Printer,
-  Check,
   MessageSquare,
-  Play,
-  Zap,
   User,
-  MoreVertical,
-  Volume2,
   ShieldCheck,
   Send,
   BookOpen,
   Sparkles,
-  Type,
-  Palette,
-  Maximize2,
-  Minimize2,
   ChevronDown,
   FileText,
   Clock,
-  HelpCircle
+  HelpCircle,
+  Zap
 } from 'lucide-react';
 
 type Theme = 'light' | 'sepia' | 'dark' | 'night';
@@ -215,13 +205,7 @@ export const JDProgram: React.FC = () => {
   );
 
   const bookStyles = `
-    .book-content { 
-        text-align: ${textAlign}; 
-        line-height: 2.1; 
-        hyphens: auto; 
-        widows: 3;
-        orphans: 3;
-    }
+    .book-content { text-align: ${textAlign}; line-height: 2.1; hyphens: auto; widows: 3; orphans: 3; }
     .book-content h1 { text-align: center; font-weight: 950; font-size: 2.4em; text-transform: uppercase; letter-spacing: 0.2em; margin: 3rem 0 2rem; line-height: 1.1; border-bottom: 5px double currentColor; padding-bottom: 1.5rem; text-indent: 0; }
     .book-content h2 { text-align: center; font-weight: 900; font-size: 1.7em; text-transform: uppercase; letter-spacing: 0.15em; margin: 2rem 0 2rem; line-height: 1.2; text-indent: 0; }
     .book-content h3 { text-align: center; font-weight: 950; font-size: 1.5em; text-transform: uppercase; letter-spacing: 0.18em; margin: 3rem 0 1.5rem; border-top: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; padding: 1.25rem 0; text-indent: 0; display: block; line-height: 1; }
@@ -246,8 +230,6 @@ export const JDProgram: React.FC = () => {
     return (
       <div className={`h-full flex flex-col transition-all duration-500 overflow-hidden ${currentTheme.bg}`}>
         <style>{bookStyles}</style>
-        
-        {/* Optimized Header */}
         <div className={`h-16 border-b flex items-center justify-between px-6 shrink-0 z-20 shadow-md ${currentTheme.ui}`}>
           <div className="flex items-center gap-4">
             <button onClick={() => setViewMode('GRID')} className={`p-2 rounded-full transition-all ${currentTheme.text} hover:bg-black/5`}>
@@ -281,7 +263,6 @@ export const JDProgram: React.FC = () => {
               </div>
             </div>
           </div>
-
           <div className="flex items-center gap-4">
              <div className="hidden md:flex items-center gap-2 bg-black/5 px-3 py-1.5 rounded-full border border-black/5">
                 <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest pr-2 border-r border-slate-200">Rigor</span>
@@ -302,10 +283,7 @@ export const JDProgram: React.FC = () => {
              </button>
           </div>
         </div>
-
         {showSettings && <AppearanceSettings />}
-
-        {/* Improved Main Reading Canvas */}
         <div ref={scrollRef} className={`flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar space-y-12 pb-32 scroll-smooth bg-[radial-gradient(circle_at_top_right,#e2e8f0,transparent)]`}>
            <div className="max-w-4xl mx-auto space-y-20">
               {lectureTurns.map((turn) => (
@@ -349,7 +327,6 @@ export const JDProgram: React.FC = () => {
                   )}
                 </div>
               ))}
-              
               {isLoading && (
                 <div className={`flex gap-8 group w-full ${currentTheme.pageBg} p-12 md:p-20 rounded-xl shadow-lg border border-slate-200 animate-pulse`}>
                    <div className="w-14 h-14 rounded-2xl bg-slate-100 shrink-0" />
@@ -365,14 +342,11 @@ export const JDProgram: React.FC = () => {
               )}
            </div>
         </div>
-
-        {/* Redesigned Integrated Input Area */}
         <div className={`shrink-0 p-8 border-t z-30 transition-all duration-500 shadow-[0_-15px_40px_-15px_rgba(0,0,0,0.08)] ${currentTheme.ui}`}>
            <div className="max-w-4xl mx-auto relative group">
               <div className="absolute -top-4 left-8 px-4 py-1.5 bg-amber-600 text-white rounded-lg font-black text-[10px] uppercase tracking-widest shadow-lg z-10 border border-white/20 ring-4 ring-[#f1f5f9]">
                 {isQAPhase ? 'Active Inquiry Block' : 'Legal Synthesis Submission'}
               </div>
-              
               <div className="relative flex items-end gap-4 bg-slate-50 border border-slate-200 rounded-3xl p-4 focus-within:bg-white focus-within:border-amber-500 transition-all shadow-inner focus-within:ring-8 focus-within:ring-amber-500/5 group">
                 <textarea 
                   value={userInput}
@@ -382,7 +356,6 @@ export const JDProgram: React.FC = () => {
                   className="flex-1 bg-transparent py-4 px-6 text-xl font-medium outline-none resize-none min-h-[100px] max-h-[250px] scrollbar-hide text-slate-900 placeholder-slate-400"
                   rows={2}
                 />
-                
                 <div className="flex flex-col gap-2 pb-2">
                   <button 
                     onClick={handleSendMessage}
@@ -394,7 +367,6 @@ export const JDProgram: React.FC = () => {
                 </div>
               </div>
            </div>
-           
            <div className="mt-6 flex justify-center gap-12 no-print opacity-50">
               <div className="flex items-center gap-3">
                  <ShieldCheck size={18} className="text-green-600" />
@@ -410,7 +382,6 @@ export const JDProgram: React.FC = () => {
     );
   }
 
-  // Module reading view remains largely the same but with proportional padding updates
   if (viewMode === 'MODULE' && activeSubject) {
     return (
       <div className={`h-full flex flex-col transition-colors duration-500 overflow-hidden animate-in fade-in ${currentTheme.bg}`}>
@@ -431,9 +402,7 @@ export const JDProgram: React.FC = () => {
                </button>
             </div>
          </div>
-
          {showSettings && <AppearanceSettings />}
-
          <div className={`flex-1 overflow-y-auto p-4 md:p-12 scroll-smooth custom-scrollbar`}>
             {isLoading ? (
                <div className="h-full flex flex-col items-center justify-center opacity-70">
@@ -476,7 +445,6 @@ export const JDProgram: React.FC = () => {
     );
   }
 
-  // Standard curriculum grid remains unchanged.
   return (
     <div className="flex-1 overflow-y-auto px-4 py-8 md:px-8 lg:px-12 animate-in fade-in duration-500 bg-slate-50">
       <div className="max-w-7xl mx-auto h-full flex flex-col">
@@ -538,7 +506,6 @@ export const JDProgram: React.FC = () => {
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-1">Year Level Progress Cluster</p>
                 </div>
               </div>
-
               <div className="grid grid-cols-1 gap-8">
                 {year.semesters.map(sem => (
                   <div key={sem.name} className="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden transition-all hover:shadow-xl hover:shadow-slate-200/50">
@@ -559,12 +526,10 @@ export const JDProgram: React.FC = () => {
                               </div>
                               <span className="text-[10px] font-black text-slate-300 uppercase tracking-tighter">{sub.units} Units</span>
                             </div>
-                            
                             <h4 className="text-lg font-serif font-black text-slate-800 leading-tight mb-2 group-hover:text-amber-800 transition-colors">
                               {sub.title}
                             </h4>
                             <p className="text-xs text-slate-500 font-medium mb-6 line-clamp-1 opacity-70">Synthesized expertise from {prof.almaMater} traditions.</p>
-                            
                             <div className="flex gap-2">
                                <button 
                                  onClick={() => enterLectureHall(sub)}
